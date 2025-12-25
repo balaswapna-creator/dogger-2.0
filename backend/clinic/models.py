@@ -21,28 +21,36 @@ from django.utils import timezone
 # ============================================================================
 
 
+# Add these related_name parameters to your User model in clinic/models.py
+
 class User(AbstractUser):
-    """Extended user model for clinic staff"""
-
-    ROLE_CHOICES = [
-        ('admin', 'Administrator'),
-        ('doctor', 'Veterinarian'),
-        ('receptionist', 'Receptionist'),
-        ('lab_tech', 'Lab Technician'),
-    ]
-
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='receptionist')
-    phone = models.CharField(max_length=15, blank=True)
-    license_number = models.CharField(max_length=50, blank=True, help_text="Veterinary license number")
-    signature = models.ImageField(upload_to='signatures/', blank=True, null=True)
-    is_active_subscription = models.BooleanField(default=True)
-    subscription_expires = models.DateTimeField(null=True, blank=True)
-
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    role = models.CharField(max_length=20, choices=[
+        ('admin', 'Admin'),
+        ('doctor', 'Doctor'),
+        ('staff', 'Staff'),
+    ])
+    
+    groups = models.ManyToManyField(
+        'auth.Group',
+        verbose_name='groups',
+        blank=True,
+        help_text='The groups this user belongs to.',
+        related_name='clinic_users',  # ADD THIS LINE
+        related_query_name='clinic_user',  # ADD THIS LINE
+    )
+    
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        verbose_name='user permissions',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        related_name='clinic_users',  # ADD THIS LINE
+        related_query_name='clinic_user',  # ADD THIS LINE
+    )
+    
     class Meta:
         db_table = 'clinic_users'
-
-    def __str__(self):
-        return f"{self.get_full_name()} ({self.role})"
 
 
 # ============================================================================
