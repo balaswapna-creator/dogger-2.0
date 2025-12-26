@@ -269,8 +269,9 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import api from '../services/api';
 
-// Configuration
-const BACKEND_URL = 'http://localhost:8001';
+// ✅ FIXED: Use environment variable for backend URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
+const BACKEND_URL = API_BASE_URL.replace('/api', '');
 const MEDIA_URL = `${BACKEND_URL}/media/`;
 
 const patients = ref([]);
@@ -317,15 +318,11 @@ const filteredPatients = computed(() => {
 const getPhotoUrl = (patient) => {
   if (!patient.photo) return null;
   
-  if (patient.photo.startsWith('http://') && patient.photo.includes(':')) {
+  if (patient.photo.startsWith('http')) {
     return patient.photo;
   }
   
-  if (patient.photo.startsWith('http://localhost/media')) {
-    return patient.photo.replace('http://localhost/media', MEDIA_URL);
-  }
-  
-  const photoPath = patient.photo.replace(/^\/+/, '');
+  const photoPath = patient.photo.replace(/^\/+/, '').replace('media/', '');
   return `${MEDIA_URL}${photoPath}`;
 };
 
@@ -356,10 +353,10 @@ const fetchData = async () => {
       ? ownersData.data 
       : (ownersData.data.results || []);
     
-    console.log('Loaded patients:', patients.value.length);
-    console.log('Loaded owners:', owners.value.length);
+    console.log('✅ Loaded patients:', patients.value.length);
+    console.log('✅ Loaded owners:', owners.value.length);
   } catch (error) {
-    console.error('Error fetching data:', error);
+    console.error('❌ Error fetching data:', error);
     patients.value = [];
     owners.value = [];
   } finally {
@@ -382,7 +379,7 @@ const handleFileSelect = (event) => {
     };
     reader.readAsDataURL(file);
     
-    console.log('Uploading new photo:', file.name);
+    console.log('📁 File selected:', file.name);
   }
 };
 
@@ -403,7 +400,7 @@ const openCamera = async () => {
       videoElement.value.srcObject = videoStream;
     }
   } catch (error) {
-    console.error('Camera error:', error);
+    console.error('📷 Camera error:', error);
     alert('Could not access camera. Please use file upload instead.');
     showCamera.value = false;
   }
@@ -465,35 +462,41 @@ const openAddModal = () => {
 
 const savePatient = async () => {
   try {
+    // Validation
     if (!form.value.owner) {
-      alert('Please select an owner');
+      alert('❌ Please select an owner');
       return;
     }
     if (!form.value.pet_name) {
-      alert('Please enter pet name');
+      alert('❌ Please enter pet name');
       return;
     }
     if (!form.value.species) {
-      alert('Please select species');
+      alert('❌ Please select species');
       return;
     }
     if (!form.value.breed) {
-      alert('Please enter breed');
+      alert('❌ Please enter breed');
       return;
     }
     if (!form.value.gender) {
-      alert('Please select gender');
+      alert('❌ Please select gender');
       return;
     }
     
+    console.log('💾 Saving patient...');
+    console.log('📋 Form data:', form.value);
+    
     const formData = new FormData();
     
+    // Add all required fields
     formData.append('owner', String(form.value.owner));
     formData.append('pet_name', String(form.value.pet_name));
     formData.append('species', String(form.value.species));
     formData.append('breed', String(form.value.breed));
     formData.append('gender', String(form.value.gender));
     
+    // Add optional fields
     if (form.value.date_of_birth) {
       formData.append('date_of_birth', String(form.value.date_of_birth));
     }
@@ -507,43 +510,40 @@ const savePatient = async () => {
       formData.append('medical_history', String(form.value.medical_history));
     }
     
+    // Add photo if present
     if (photoFile.value) {
       formData.append('photo', photoFile.value);
-      console.log('Sending data:');
-      console.log('name:', form.value.pet_name);
-      console.log('species:', form.value.species);
-      console.log('owner:', form.value.owner);
-      console.log('breed:', form.value.breed);
-      console.log('gender:', form.value.gender);
+      console.log('📷 Photo attached:', photoFile.value.name);
     }
     
+    // Make API request
     if (editingPatient.value) {
       await api.put(`/patients/${editingPatient.value}/`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      alert('Pet updated successfully! ✅');
+      alert('✅ Pet updated successfully!');
     } else {
       await api.post('/patients/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      alert('Pet added successfully! ✅');
+      alert('✅ Pet added successfully!');
     }
     
     closeModal();
     fetchData();
   } catch (error) {
-    console.error('Error saving patient:', error);
-    console.error('Error response:', error.response?.data);
+    console.error('❌ Error saving patient:', error);
+    console.error('📄 Error response:', error.response?.data);
     
     if (error.response?.data) {
       const errors = error.response.data;
-      let errorMsg = 'Failed to save pet:\n';
+      let errorMsg = 'Failed to save pet:\n\n';
       Object.keys(errors).forEach(key => {
         errorMsg += `${key}: ${JSON.stringify(errors[key])}\n`;
       });
       alert(errorMsg);
     } else {
-      alert('Failed to save pet. Please try again.');
+      alert('❌ Failed to save pet. Please try again.\n\n' + error.message);
     }
   }
 };
@@ -569,15 +569,15 @@ const editPatient = (patient) => {
 };
 
 const deletePatient = async (id) => {
-  if (!confirm('Are you sure you want to delete this pet? This action cannot be undone.')) return;
+  if (!confirm('⚠️ Are you sure you want to delete this pet? This action cannot be undone.')) return;
   
   try {
     await api.delete(`/patients/${id}/`);
-    alert('Pet deleted successfully! ✅');
+    alert('✅ Pet deleted successfully!');
     fetchData();
   } catch (error) {
-    console.error('Error deleting patient:', error);
-    alert('Failed to delete pet. Please try again.');
+    console.error('❌ Error deleting patient:', error);
+    alert('❌ Failed to delete pet. Please try again.');
   }
 };
 
@@ -604,6 +604,10 @@ const closeModal = () => {
 };
 
 onMounted(() => {
+  console.log('🚀 Component mounted');
+  console.log('🔗 API Base URL:', API_BASE_URL);
+  console.log('🔗 Backend URL:', BACKEND_URL);
+  console.log('🔗 Media URL:', MEDIA_URL);
   fetchData();
 });
 
