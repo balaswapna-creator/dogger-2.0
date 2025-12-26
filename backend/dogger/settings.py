@@ -12,8 +12,12 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-produc
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
-
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'dogger2-backend.onrender.com',  # Add your backend domain
+    '.onrender.com',  # Allow all Render subdomains
+]
 AUTH_USER_MODEL = 'clinic.User'
 
 # Application definition
@@ -131,8 +135,11 @@ REST_FRAMEWORK = {
 # CORS settings - Update after getting frontend URL
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:81,http://localhost:5173'
+    default='http://localhost:81,"https://dogger2-frontend.onrender.com",http://localhost:5173'
 ).split(',')
+
+# OR temporarily for testing:
+CORS_ALLOW_ALL_ORIGINS = True  # This allows any domain (testing only!)
 
 CORS_ALLOW_CREDENTIALS = True
 
