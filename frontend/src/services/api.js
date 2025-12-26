@@ -1,10 +1,10 @@
 import axios from 'axios';
 
-// Use your laptop WiFi IP
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:81/api/';
+// Use environment variable for API URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8001/api/',
+  baseURL: API_BASE_URL, // ✅ Use the variable, not hardcoded localhost
   headers: {
     'Content-Type': 'application/json',
   },
@@ -44,19 +44,19 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-
+    
     // If 401 and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-
+      
       try {
         const refreshToken = localStorage.getItem('refresh_token');
         if (refreshToken) {
-          // Try to refresh the token
-          const response = await axios.post('http://127.0.0.1:8001/api/token/refresh/', {
+          // Try to refresh the token - use API_BASE_URL instead of hardcoded localhost
+          const response = await axios.post(`${API_BASE_URL}/token/refresh/`, {
             refresh: refreshToken
           });
-
+          
           const newAccessToken = response.data.access;
           localStorage.setItem('access_token', newAccessToken);
           
@@ -71,7 +71,7 @@ api.interceptors.response.use(
         window.location.href = '/login';
       }
     }
-
+    
     return Promise.reject(error);
   }
 );
