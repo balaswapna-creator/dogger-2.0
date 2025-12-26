@@ -1,219 +1,652 @@
 <template>
-  <div style="min-height: 100vh; background: linear-gradient(135deg, #064e3b 0%, #047857 50%, #065f46 100%); padding: 24px;">
-    <!-- Header -->
-    <div style="background: linear-gradient(90deg, #064e3b 0%, #065f46 100%); color: white; border-radius: 24px; padding: 32px; margin-bottom: 32px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <h1 style="font-size: 36px; font-weight: bold; margin-bottom: 8px;">🐾 Sri Adithya Pet Clinic</h1>
-          <p style="color: #a7f3d0; font-size: 16px;">Dr. A. Balasubramanian, B.V.Sc, MBA</p>
-        </div>
-        <div style="text-align: right;">
-          <p style="font-size: 14px; margin-bottom: 4px;">{{ currentDate }}</p>
-          <p style="font-size: 12px; color: #a7f3d0;">Dogger 2.0</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Stats Cards -->
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 32px;">
-      <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); border: 2px solid #047857;">
-        <p style="color: #6b7280; font-size: 14px; margin-bottom: 8px;">Total Patients</p>
-        <p style="font-size: 40px; font-weight: bold; color: #047857;">{{ stats.totalPatients }}</p>
-      </div>
-      <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); border: 2px solid #2563eb;">
-        <p style="color: #6b7280; font-size: 14px; margin-bottom: 8px;">Today's Visits</p>
-        <p style="font-size: 40px; font-weight: bold; color: #2563eb;">{{ stats.todayVisits }}</p>
-      </div>
-      <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); border: 2px solid #9333ea;">
-        <p style="color: #6b7280; font-size: 14px; margin-bottom: 8px;">Vaccinations Due</p>
-        <p style="font-size: 40px; font-weight: bold; color: #9333ea;">{{ stats.vaccinationsDue }}</p>
-      </div>
-      <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); border: 2px solid #ea580c;">
-        <p style="color: #6b7280; font-size: 14px; margin-bottom: 8px;">Pending Payments</p>
-        <p style="font-size: 40px; font-weight: bold; color: #ea580c;">₹{{ stats.pendingAmount }}</p>
-      </div>
-    </div>
-
-    <!-- Action Buttons -->
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px;">
-      <button @click="$router.push('/patients')" 
-        style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 32px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4); border: none; cursor: pointer; transition: all 0.3s;">
-        <div style="font-size: 48px; margin-bottom: 12px;">➕</div>
-        <div style="font-weight: bold; font-size: 18px; margin-bottom: 4px;">Add Patient</div>
-        <div style="font-size: 14px; opacity: 0.9;">Register new pet</div>
-      </button>
-
-      <button @click="$router.push('/patients')" 
-        style="background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%); color: white; padding: 32px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(168, 85, 247, 0.4); border: none; cursor: pointer; transition: all 0.3s;">
-        <div style="font-size: 48px; margin-bottom: 12px;">👥</div>
-        <div style="font-weight: bold; font-size: 18px; margin-bottom: 4px;">View Patients</div>
-        <div style="font-size: 14px; opacity: 0.9;">Browse all records</div>
-      </button>
-
-      <button @click="showSearch = true" 
-        style="background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); color: white; padding: 32px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(236, 72, 153, 0.4); border: none; cursor: pointer; transition: all 0.3s;">
-        <div style="font-size: 48px; margin-bottom: 12px;">🔍</div>
-        <div style="font-weight: bold; font-size: 18px; margin-bottom: 4px;">Search</div>
-        <div style="font-size: 14px; opacity: 0.9;">Find patient records</div>
-      </button>
-
-      <button @click="$router.push('/vaccinations')" 
-        style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; padding: 32px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(249, 115, 22, 0.4); border: none; cursor: pointer; transition: all 0.3s;">
-        <div style="font-size: 48px; margin-bottom: 12px;">💉</div>
-        <div style="font-weight: bold; font-size: 18px; margin-bottom: 4px;">Vaccinations</div>
-        <div style="font-size: 14px; opacity: 0.9;">Track immunizations</div>
-      </button>
-    </div>
-
-    <!-- Recent Activity -->
-    <div style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 24px; padding: 32px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); border: 2px solid #047857;">
-      <h2 style="font-size: 24px; font-weight: bold; color: #1f2937; margin-bottom: 24px; display: flex; align-items: center;">
-        <span style="margin-right: 12px;">🕐</span> Recent Activity
-      </h2>
-      
-      <!-- Patient List -->
-      <div v-if="loading" style="text-align: center; padding: 40px; color: #6b7280;">
-        Loading patients...
-      </div>
-      
-      <div v-else-if="recentPatients.length === 0" style="text-align: center; padding: 40px; color: #6b7280;">
-        No patients yet. Add your first patient!
-      </div>
-
-      <div v-else style="display: flex; flex-direction: column; gap: 16px;">
-        <div v-for="patient in recentPatients" :key="patient.id"
-          @click="$router.push('/patients')"
-          style="display: flex; align-items: center; justify-content: space-between; padding: 16px; background: linear-gradient(90deg, #a7f3d0 0%, #6ee7b7 100%); border-radius: 12px; cursor: pointer; transition: all 0.3s;">
-          <div style="display: flex; align-items: center; gap: 16px;">
-            <div style="background: #047857; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px;">
-              {{ patient.species === 'dog' ? '🐕' : patient.species === 'cat' ? '🐱' : '🐾' }}
-            </div>
-            <div>
-              <p style="font-weight: bold; color: #1f2937; margin-bottom: 4px;">{{ patient.pet_name }}</p>
-              <p style="font-size: 14px; color: #4b5563;">{{ patient.breed || patient.species.toUpperCase() }} • Owner: {{ patient.owner_name }}</p>
-            </div>
+  <div class="dashboard-wrapper">
+    <!-- Header with Clinic Name -->
+    <header class="clinic-header">
+      <div class="header-content">
+        <div class="clinic-branding">
+          <div class="clinic-logo">
+            <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="25" cy="25" r="23" fill="#7C3AED" stroke="#06B6D4" stroke-width="2"/>
+              <path d="M25 10 L25 22 M15 25 L35 25" stroke="white" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="20" cy="35" r="3" fill="white"/>
+              <circle cx="30" cy="35" r="3" fill="white"/>
+              <path d="M18 32 Q25 28 32 32" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+            </svg>
           </div>
-          <div style="text-align: right;">
-            <p style="font-size: 12px; color: #6b7280;">{{ formatDate(patient.created_at) }}</p>
+          <div class="clinic-info">
+            <h1>Sri Adithya Pet Clinic</h1>
+            <p>Professional Care for Your Beloved Pets</p>
+          </div>
+        </div>
+        <div class="user-info">
+          <span class="welcome-text">Welcome, {{ userName }}</span>
+          <button @click="logout" class="logout-btn">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Dashboard Content -->
+    <div class="dashboard-container">
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card patients-card">
+          <div class="stat-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <h3>{{ stats.totalPatients }}</h3>
+            <p>Total Patients</p>
+          </div>
+        </div>
+
+        <div class="stat-card owners-card">
+          <div class="stat-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <h3>{{ stats.totalOwners }}</h3>
+            <p>Pet Owners</p>
+          </div>
+        </div>
+
+        <div class="stat-card appointments-card">
+          <div class="stat-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <h3>{{ stats.todayAppointments }}</h3>
+            <p>Today's Appointments</p>
+          </div>
+        </div>
+
+        <div class="stat-card revenue-card">
+          <div class="stat-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="1" x2="12" y2="23"></line>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <h3>₹{{ stats.monthlyRevenue }}</h3>
+            <p>Monthly Revenue</p>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Search Dialog -->
-    <div v-if="showSearch" @click="showSearch = false"
-      style="position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 50;">
-      <div @click.stop style="background: white; border-radius: 16px; padding: 32px; max-width: 448px; width: 100%; margin: 16px;">
-        <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 16px;">Search Patients</h2>
-        <input v-model="searchQuery" type="text"
-          style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 12px; margin-bottom: 16px; font-size: 16px;"
-          placeholder="Enter patient name"
-          @keyup.enter="doSearch">
-        <div style="display: flex; gap: 12px;">
-          <button @click="doSearch" 
-            style="flex: 1; background: #047857; color: white; padding: 12px; border-radius: 12px; font-weight: 600; border: none; cursor: pointer;">
-            Search
-          </button>
-          <button @click="showSearch = false" 
-            style="padding: 12px 24px; border: 2px solid #d1d5db; border-radius: 12px; background: white; cursor: pointer;">
-            Cancel
-          </button>
+      <!-- Quick Actions & Recent Activity -->
+      <div class="content-grid">
+        <!-- Quick Actions -->
+        <div class="card quick-actions-card">
+          <div class="card-header">
+            <h2>Quick Actions</h2>
+          </div>
+          <div class="card-body">
+            <div class="action-buttons">
+              <button @click="$router.push('/patients/new')" class="action-btn add-patient">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>Add New Patient</span>
+              </button>
+              
+              <button @click="$router.push('/owners/new')" class="action-btn add-owner">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="8.5" cy="7" r="4"></circle>
+                  <line x1="20" y1="8" x2="20" y2="14"></line>
+                  <line x1="23" y1="11" x2="17" y2="11"></line>
+                </svg>
+                <span>Add Owner</span>
+              </button>
+              
+              <button @click="$router.push('/vaccinations')" class="action-btn vaccination">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path>
+                  <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path>
+                  <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"></path>
+                  <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path>
+                </svg>
+                <span>Record Vaccination</span>
+              </button>
+              
+              <button @click="$router.push('/payments')" class="action-btn payment">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                  <line x1="1" y1="10" x2="23" y2="10"></line>
+                </svg>
+                <span>Add Payment</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card recent-activity-card">
+          <div class="card-header">
+            <h2>Recent Activity</h2>
+          </div>
+          <div class="card-body">
+            <div v-if="recentActivity.length === 0" class="no-activity">
+              <p>No recent activity</p>
+            </div>
+            <div v-else class="activity-list">
+              <div v-for="activity in recentActivity" :key="activity.id" class="activity-item">
+                <div class="activity-icon" :class="activity.type">
+                  <svg v-if="activity.type === 'owner'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                  <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="12" r="10"/>
+                  </svg>
+                </div>
+                <div class="activity-content">
+                  <p class="activity-title">{{ activity.title }}</p>
+                  <p class="activity-time">{{ activity.time }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Patients Table -->
+      <div class="card recent-patients-card">
+        <div class="card-header">
+          <h2>Recent Patients</h2>
+          <button @click="$router.push('/patients')" class="view-all-btn">View All</button>
+        </div>
+        <div class="card-body">
+          <div v-if="recentPatients.length === 0" class="no-data">
+            <p>No patients yet. Add your first patient!</p>
+          </div>
+          <div v-else class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Patient Name</th>
+                  <th>Species</th>
+                  <th>Owner</th>
+                  <th>Last Visit</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="patient in recentPatients" :key="patient.id">
+                  <td>
+                    <div class="patient-name">
+                      <div class="patient-avatar">{{ patient.name.charAt(0) }}</div>
+                      <span>{{ patient.name }}</span>
+                    </div>
+                  </td>
+                  <td>{{ patient.species }}</td>
+                  <td>{{ patient.owner_name }}</td>
+                  <td>{{ formatDate(patient.last_visit) }}</td>
+                  <td>
+                    <button @click="viewPatient(patient.id)" class="btn-view">View</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue';
-import api from '../services/api';
+<script>
+import { ref, onMounted } from 'vue'
+import api from '../services/api'
 
-const patients = ref([]);
-const consultations = ref([]);
-const payments = ref([]);
-const vaccinations = ref([]);
-const loading = ref(false);
-const showSearch = ref(false);
-const searchQuery = ref('');
+export default {
+  name: 'DashboardView',
+  setup() {
+    const userName = ref('Admin')
+    const stats = ref({
+      totalPatients: 0,
+      totalOwners: 0,
+      todayAppointments: 0,
+      monthlyRevenue: '0'
+    })
+    const recentPatients = ref([])
+    const recentActivity = ref([])
 
-const currentDate = computed(() => {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const now = new Date();
-  return `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
-});
+    const fetchDashboardData = async () => {
+      try {
+        // Fetch patients
+        const patientsRes = await api.get('/patients/')
+        const patients = patientsRes.data || []
+        stats.value.totalPatients = patients.length
+        recentPatients.value = patients.slice(0, 5)
 
-const stats = computed(() => {
-  const patientsData = patients.value.results || patients.value;
-  const consultationsData = consultations.value.results || consultations.value;
-  const paymentsData = payments.value.results || payments.value;
-  const vaccinationsData = vaccinations.value.results || vaccinations.value;
-  
-  const patientsArray = Array.isArray(patientsData) ? patientsData : [];
-  const consultationsArray = Array.isArray(consultationsData) ? consultationsData : [];
-  const paymentsArray = Array.isArray(paymentsData) ? paymentsData : [];
-  const vaccinationsArray = Array.isArray(vaccinationsData) ? vaccinationsData : [];
+        // Fetch owners
+        const ownersRes = await api.get('/owners/')
+        const owners = ownersRes.data || []
+        stats.value.totalOwners = owners.length
 
-  const today = new Date().toISOString().split('T')[0];
-  const now = new Date();
-  const oneWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        // Build recent activity
+        recentActivity.value = [
+          ...owners.slice(0, 3).map(owner => ({
+            id: `owner-${owner.id}`,
+            type: 'owner',
+            title: `${owner.name} - ${owner.phone}`,
+            time: 'Just added'
+          }))
+        ]
 
-  return {
-    totalPatients: patientsArray.length,
-    todayVisits: consultationsArray.filter(c => c.visit_date.split('T')[0] === today).length,
-    vaccinationsDue: vaccinationsArray.filter(v => {
-      if (!v.next_due_date) return false;
-      const due = new Date(v.next_due_date);
-      return due >= now && due <= oneWeek;
-    }).length,
-    pendingAmount: paymentsArray.filter(p => p.payment_status === 'pending').reduce((sum, p) => sum + parseFloat(p.amount || 0), 0).toFixed(0)
-  };
-});
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error)
+      }
+    }
 
-const recentPatients = computed(() => {
-  const patientsData = patients.value.results || patients.value;
-  const patientsArray = Array.isArray(patientsData) ? patientsData : [];
-  return patientsArray.slice(0, 5);
-});
+    const formatDate = (dateString) => {
+      if (!dateString) return 'Never'
+      const date = new Date(dateString)
+      return date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
+    }
 
-const fetchAllData = async () => {
-  loading.value = true;
-  try {
-    const [patientsRes, consultationsRes, paymentsRes, vaccinationsRes] = await Promise.all([
-      api.get('/patients/'),
-      api.get('/medical-records/'),
-      api.get('/payments/'),
-      api.get('/vaccinations/')
-    ]);
+    const viewPatient = (id) => {
+      window.location.href = `/patients/${id}`
+    }
 
-    patients.value = patientsRes.data;
-    consultations.value = consultationsRes.data;
-    payments.value = paymentsRes.data;
-    vaccinations.value = vaccinationsRes.data;
-  } catch (error) {
-    console.error('Error fetching dashboard data:', error);
-  } finally {
-    loading.value = false;
+    const logout = () => {
+      localStorage.removeItem('token')
+      window.location.href = '/login'
+    }
+
+    onMounted(() => {
+      fetchDashboardData()
+    })
+
+    return {
+      userName,
+      stats,
+      recentPatients,
+      recentActivity,
+      formatDate,
+      viewPatient,
+      logout
+    }
   }
-};
-
-const formatDate = (dateString) => {
-  if (!dateString) return 'N/A';
-  const date = new Date(dateString);
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  return `${months[date.getMonth()]} ${date.getDate()}`;
-};
-
-const doSearch = () => {
-  if (searchQuery.value.trim()) {
-    // Simple search - just navigate to patients page
-    // You can enhance this to filter by search query
-    showSearch.value = false;
-    searchQuery.value = '';
-  }
-};
-
-onMounted(() => {
-  fetchAllData();
-});
+}
 </script>
+
+<style scoped>
+.dashboard-wrapper {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+}
+
+/* Header Styling */
+.clinic-header {
+  background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%);
+  color: white;
+  padding: 20px 40px;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
+}
+
+.header-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.clinic-branding {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.clinic-logo {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.clinic-info h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+
+.clinic-info p {
+  margin: 5px 0 0 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.welcome-text {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.logout-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Dashboard Container */
+.dashboard-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #7C3AED, #06B6D4);
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.2);
+}
+
+.stat-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.patients-card .stat-icon { background: linear-gradient(135deg, #7C3AED, #5B21B6); }
+.owners-card .stat-icon { background: linear-gradient(135deg, #06B6D4, #0891B2); }
+.appointments-card .stat-icon { background: linear-gradient(135deg, #8B5CF6, #7C3AED); }
+.revenue-card .stat-icon { background: linear-gradient(135deg, #14B8A6, #0D9488); }
+
+.stat-content h3 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.stat-content p {
+  margin: 5px 0 0 0;
+  font-size: 14px;
+  color: #6B7280;
+  font-weight: 500;
+}
+
+/* Content Grid */
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+/* Card Styling */
+.card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.card-header {
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.view-all-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.view-all-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.card-body {
+  padding: 24px;
+}
+
+/* Quick Actions */
+.action-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.action-btn {
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.action-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+}
+
+.action-btn.add-owner { background: linear-gradient(135deg, #06B6D4, #0891B2); }
+.action-btn.vaccination { background: linear-gradient(135deg, #8B5CF6, #7C3AED); }
+.action-btn.payment { background: linear-gradient(135deg, #14B8A6, #0D9488); }
+
+/* Recent Activity */
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.activity-item:hover {
+  background: #F9FAFB;
+}
+
+.activity-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.activity-icon.owner { background: linear-gradient(135deg, #06B6D4, #0891B2); }
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.activity-time {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: #9CA3AF;
+}
+
+/* Table Styling */
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table thead {
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+}
+
+.data-table th {
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.data-table td {
+  padding: 16px;
+  border-bottom: 1px solid #E5E7EB;
+  font-size: 14px;
+  color: #374151;
+}
+
+.data-table tbody tr:hover {
+  background: #F9FAFB;
+}
+
+.patient-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.patient-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.btn-view {
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.btn-view:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.no-data, .no-activity {
+  text-align: center;
+  padding: 40px;
+  color: #9CA3AF;
+}
+
+@media (max-width: 968px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .action-buttons {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
