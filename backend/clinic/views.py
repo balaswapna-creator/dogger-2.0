@@ -130,7 +130,13 @@ class PatientViewSet(viewsets.ModelViewSet):
         photo = self.request.FILES.get('photo')
         if photo:
             photo = self.resize_image(photo)
-        serializer.save(created_by=self.request.user, photo=photo if photo else None)
+
+        # ✅ FIX: Check if user is authenticated before setting created_by
+        if self.request.user and self.request.user.is_authenticated:
+            serializer.save(created_by=self.request.user, photo=photo if photo else None)
+        else:
+            serializer.save(photo=photo if photo else None)  # Don't set created_by for anonymous
+        
     
     def perform_update(self, serializer):
         photo = self.request.FILES.get('photo')
