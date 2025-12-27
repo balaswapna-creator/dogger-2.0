@@ -1,22 +1,13 @@
+"""
+Clinic App Serializers - Complete and Fixed
+✅ FIXED VERSION
+"""
 from rest_framework import serializers
 from .models import (
     User, Owner, Patient, MedicalRecord, Prescription,
-    Vaccination, LabTest, SharedURL, Payment, Subscription, AuditLog
+    Vaccination, LabTest, SharedURL, Payment, Subscription, 
+    AuditLog, PetPassbook
 )
-from rest_framework import serializers
-from .models import PetPassbook, Patient, Owner, MedicalRecord, Vaccination, Prescription
-from rest_framework import serializers
-from .models import Passbook, Prescription
-
-class PassbookSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Passbook
-        fields = '__all__'
-
-class PrescriptionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Prescription
-        fields = '__all__'
 
 
 # ============================================================================
@@ -91,6 +82,7 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
     def get_doctor_name(self, obj):
         return obj.doctor.get_full_name() if obj.doctor else None
 
+
 # ============================================================================
 # PRESCRIPTION SERIALIZER
 # ============================================================================
@@ -145,6 +137,7 @@ class VaccinationSerializer(serializers.ModelSerializer):
     
     def get_owner_name(self, obj):
         return obj.patient.owner.name if obj.patient and obj.patient.owner else None
+
 
 # ============================================================================
 # LAB TEST SERIALIZER
@@ -265,9 +258,10 @@ class AuditLogSerializer(serializers.ModelSerializer):
             return obj.user.get_full_name() or obj.user.username
         return None
 
-# ============================================
-# FILE: backend/clinic/serializers.py (ADD THIS)
-# ============================================
+
+# ============================================================================
+# PASSBOOK SERIALIZERS
+# ============================================================================
 
 class PassbookSerializer(serializers.ModelSerializer):
     patient_name = serializers.CharField(source='patient.pet_name', read_only=True)
@@ -299,7 +293,7 @@ class PassbookPublicSerializer(serializers.Serializer):
     clinic_name = serializers.SerializerMethodField()
     clinic_address = serializers.SerializerMethodField()
     
-    # Pet info
+    # Pet info  
     pet_name = serializers.CharField(source='patient.pet_name')
     species = serializers.CharField(source='patient.species')
     breed = serializers.CharField(source='patient.breed')
@@ -312,7 +306,7 @@ class PassbookPublicSerializer(serializers.Serializer):
     owner_name = serializers.SerializerMethodField()
     owner_phone = serializers.SerializerMethodField()
     
-    # Medical data (only if active subscription)
+    # Medical data
     vaccinations = serializers.SerializerMethodField()
     consultations = serializers.SerializerMethodField()
     
@@ -329,20 +323,17 @@ class PassbookPublicSerializer(serializers.Serializer):
     
     def get_owner_name(self, obj):
         try:
-            owner = Owner.objects.get(id=obj.patient.owner_id)
-            return owner.name
-        except Owner.DoesNotExist:
+            return obj.patient.owner.name
+        except:
             return "N/A"
     
     def get_owner_phone(self, obj):
         try:
-            owner = Owner.objects.get(id=obj.patient.owner_id)
-            # Mask phone number for privacy
-            phone = owner.phone
+            phone = obj.patient.owner.phone
             if len(phone) > 4:
                 return phone[:4] + "****" + phone[-2:]
             return phone
-        except Owner.DoesNotExist:
+        except:
             return "N/A"
     
     def get_vaccinations(self, obj):

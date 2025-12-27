@@ -1,6 +1,7 @@
 """
 Dogger 2.0 - Complete Django Models with Table Prefixes
 Sri Adithya Pet Clinic Management System
+✅ FIXED VERSION - No Duplicates
 """
 
 from django.db import models
@@ -23,7 +24,8 @@ class User(AbstractUser):
         ('admin', 'Admin'),
         ('doctor', 'Doctor'),
         ('staff', 'Staff'),
-    ])
+    ], default='doctor')
+    phone = models.CharField(max_length=15, blank=True)
     
     groups = models.ManyToManyField(
         'auth.Group',
@@ -44,7 +46,10 @@ class User(AbstractUser):
     )
     
     class Meta:
-        db_table = 'dogger_users'  # ✅ FIXED PREFIX
+        db_table = 'dogger_users'
+
+    def __str__(self):
+        return self.username
 
 
 # ============================================================================
@@ -65,7 +70,7 @@ class Owner(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='owners_created')
 
     class Meta:
-        db_table = 'dogger_owners'  # ✅ FIXED PREFIX
+        db_table = 'dogger_owners'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['phone']),
@@ -117,7 +122,7 @@ class Patient(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='patients_created')    
 
     class Meta:
-        db_table = 'dogger_patients'  # ✅ FIXED PREFIX
+        db_table = 'dogger_patients'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['pet_name']),
@@ -192,7 +197,7 @@ class MedicalRecord(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'dogger_medical_records'  # ✅ FIXED PREFIX
+        db_table = 'dogger_medical_records'
         ordering = ['-visit_date']
         indexes = [
             models.Index(fields=['patient', '-visit_date']),
@@ -202,6 +207,10 @@ class MedicalRecord(models.Model):
     def __str__(self):
         return f"{self.patient.pet_name} - {self.visit_type} - {self.visit_date.date()}"
 
+
+# ============================================================================
+# PRESCRIPTION (SINGLE DEFINITION)
+# ============================================================================
 
 class Prescription(models.Model):
     """Prescription linked to a medical record"""
@@ -217,7 +226,7 @@ class Prescription(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'dogger_prescriptions'  # ✅ FIXED PREFIX
+        db_table = 'dogger_prescriptions'
         ordering = ['medication_name']
 
     def __str__(self):
@@ -242,7 +251,7 @@ class Vaccination(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        db_table = 'dogger_vaccinations'  # ✅ FIXED PREFIX
+        db_table = 'dogger_vaccinations'
         ordering = ['-date_administered']
     
     def save(self, *args, **kwargs):
@@ -294,7 +303,7 @@ class LabTest(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'dogger_lab_tests'  # ✅ FIXED PREFIX
+        db_table = 'dogger_lab_tests'
         ordering = ['-ordered_date']
         indexes = [
             models.Index(fields=['patient', '-ordered_date']),
@@ -331,7 +340,7 @@ class SharedURL(models.Model):
     ip_addresses = models.JSONField(default=list, blank=True)
 
     class Meta:
-        db_table = 'dogger_shared_urls'  # ✅ FIXED PREFIX
+        db_table = 'dogger_shared_urls'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['short_code']),
@@ -391,7 +400,7 @@ class Payment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'dogger_payments'  # ✅ FIXED PREFIX
+        db_table = 'dogger_payments'
         ordering = ['-payment_date']
         indexes = [
             models.Index(fields=['patient', '-payment_date']),
@@ -431,7 +440,7 @@ class Subscription(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'dogger_subscriptions'  # ✅ FIXED PREFIX
+        db_table = 'dogger_subscriptions'
 
     def __str__(self):
         return f"{self.user.username} - {self.plan}"
@@ -469,7 +478,7 @@ class AuditLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
-        db_table = 'dogger_audit_logs'  # ✅ FIXED PREFIX
+        db_table = 'dogger_audit_logs'
         ordering = ['-timestamp']
         indexes = [
             models.Index(fields=['-timestamp']),
@@ -503,7 +512,7 @@ class PetPassbook(models.Model):
     access_count = models.IntegerField(default=0)
     
     class Meta:
-        db_table = 'dogger_pet_passbooks'  # ✅ FIXED PREFIX
+        db_table = 'dogger_pet_passbooks'
         ordering = ['-created_at']
     
     def __str__(self):
