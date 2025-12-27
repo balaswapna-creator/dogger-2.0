@@ -131,12 +131,11 @@ class PatientViewSet(viewsets.ModelViewSet):
         if photo:
             photo = self.resize_image(photo)
         
-        # ✅ FIX: Only set created_by if user is authenticated
+        # Only set created_by if user is authenticated
         save_kwargs = {}
         if photo:
             save_kwargs['photo'] = photo
         
-        # Only add created_by if user exists and is authenticated
         if hasattr(self.request, 'user') and self.request.user and self.request.user.is_authenticated:
             save_kwargs['created_by'] = self.request.user
         
@@ -152,68 +151,59 @@ class PatientViewSet(viewsets.ModelViewSet):
     
     def resize_image(self, photo):
         """Resize image to max 300x300, maintain aspect ratio, compress"""
-    try:
-        from PIL import Image
-        from io import BytesIO
-        from django.core.files.uploadedfile import InMemoryUploadedFile
-        import sys
-        
-        img = Image.open(photo)
-        
-        # Convert RGBA to RGB if needed
-        if img.mode in ('RGBA', 'LA', 'P'):
-            background = Image.new('RGB', img.size, (255, 255, 255))
-            if img.mode == 'RGBA':
-                background.paste(img, mask=img.split()[-1])
-            else:
-                background.paste(img)
-            img = background
-        
-        # Resize maintaining aspect ratio
-        img.thumbnail((300, 300), Image.Resampling.LANCZOS)
-        
-        # Save to BytesIO
-        output = BytesIO()
-        img.save(output, format='JPEG', quality=85, optimize=True)
-        output.seek(0)
-        
-        # ✅ FIX: Use output.tell() to get actual size instead of sys.getsizeof()
-        file_size = output.getbuffer().nbytes
-        
-        # Create new InMemoryUploadedFile
-        return InMemoryUploadedFile(
-            output,
-            'ImageField',
-            f"{photo.name.split('.')[0]}_resized.jpg",
-            'image/jpeg',
-            file_size,  # ✅ FIXED: Use actual bytes size
-            None
-        )
-    except Exception as e:
-        print(f"⚠️ Error resizing image: {e}")
-        return photo  # Return original if resize fails
+        try:
+            img = Image.open(photo)
+            
+            # Convert RGBA to RGB if needed
+            if img.mode in ('RGBA', 'LA', 'P'):
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                if img.mode == 'RGBA':
+                    background.paste(img, mask=img.split()[-1])
+                else:
+                    background.paste(img)
+                img = background
+            
+            # Resize maintaining aspect ratio
+            img.thumbnail((300, 300), Image.Resampling.LANCZOS)
+            
+            # Save to BytesIO
+            output = BytesIO()
+            img.save(output, format='JPEG', quality=85, optimize=True)
+            output.seek(0)
+            
+            # Get actual file size
+            file_size = output.getbuffer().nbytes
+            
+            # Create new InMemoryUploadedFile
+            return InMemoryUploadedFile(
+                output,
+                'ImageField',
+                f"{photo.name.split('.')[0]}_resized.jpg",
+                'image/jpeg',
+                file_size,
+                None
+            )
+        except Exception as e:
+            print(f"Error resizing image: {e}")
+            return photo  # Return original if resize fails
     
     @action(detail=True, methods=['get'])
     def passbook(self, request, pk=None):
         """Get patient passbook/history"""
         patient = self.get_object()
-        # TODO: Implement passbook generation
         return Response({'message': 'Passbook feature coming soon'})
     
     @action(detail=True, methods=['post'])
     def share_url(self, request, pk=None):
         """Create share URL for patient"""
         patient = self.get_object()
-        # TODO: Implement share URL generation
         return Response({'message': 'Share URL feature coming soon'})
     
     @action(detail=True, methods=['get'])
     def qr_code(self, request, pk=None):
         """Generate QR code for patient"""
         patient = self.get_object()
-        # TODO: Implement QR code generation
         return Response({'message': 'QR code feature coming soon'})
-
 
 class MedicalRecordViewSet(viewsets.ModelViewSet):
     """
