@@ -5,6 +5,19 @@ from .models import (
 )
 from rest_framework import serializers
 from .models import PetPassbook, Patient, Owner, MedicalRecord, Vaccination, Prescription
+from rest_framework import serializers
+from .models import Passbook, Prescription
+
+class PassbookSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Passbook
+        fields = '__all__'
+
+class PrescriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Prescription
+        fields = '__all__'
+
 
 # ============================================================================
 # USER SERIALIZER

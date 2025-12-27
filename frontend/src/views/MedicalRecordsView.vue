@@ -111,18 +111,26 @@ export default {
     const error = ref(null)
 
     const fetchRecords = async () => {
+      loading = true
       try {
-        loading.value = true
-        error.value = null
-        const response = await api.get('/medical-records/')
-        records.value = response.data || []
-      } catch (err) {
-        console.error('Error fetching records:', err)
-        error.value = 'Failed to load medical records. Please try again.'
-      } finally {
-        loading.value = false
-      }
-    }
+        // ✅ Use /medical-records/ endpoint (with dash)
+       const response = await fetch(`${API_URL}/medical-records/`, {
+         headers: {
+           'Authorization': `Token ${localStorage.getItem('token')}`
+         }
+       })
+    
+       if (!response.ok) throw new Error('Failed to fetch records')
+    
+       const data = await response.json()
+       records = data
+     } catch (error) {
+       console.error('Error:', error)
+       alert('Failed to load medical records')
+     } finally {
+       loading = false
+     }
+   }
 
     const formatDate = (dateString) => {
       if (!dateString) return 'N/A'

@@ -28,13 +28,34 @@ router.register(r'prescriptions', PrescriptionViewSet, basename='prescription')
 router.register(r'passbooks', PassbookViewSet, basename='passbook')
 
 urlpatterns = [
-    # Include all router URLs
-    path('', include(router.urls)),
-    path('auth/me/', views.current_user, name='current-user'),
+    # Dashboard
+    path('dashboard/', views.dashboard_stats, name='dashboard'),
     
-    # PUBLIC PASSBOOK ACCESS (no authentication required)
-    # This MUST be outside the router to work properly
-    path('passbook/<uuid:token>/', 
-         PassbookPublicViewSet.as_view({'get': 'retrieve'}), 
-         name='passbook-public'),
+    # Patients
+    path('patients/', views.patient_list, name='patient_list'),
+    path('patients/<int:pk>/', views.patient_detail, name='patient_detail'),
+    
+    # Owners
+    path('owners/', views.owner_list, name='owner_list'),
+    path('owners/<int:pk>/', views.owner_detail, name='owner_detail'),
+    
+    # Medical Records
+    path('medical-records/', views.medical_record_list, name='medical_record_list'),
+    path('medical-records/<int:pk>/', views.medical_record_detail, name='medical_record_detail'),
+    
+    # Vaccinations
+    path('vaccinations/', views.vaccination_list, name='vaccination_list'),
+    path('vaccinations/<int:pk>/', views.vaccination_detail, name='vaccination_detail'),
+    
+    # Payments
+    path('payments/', views.payment_list, name='payment_list'),
+    path('payments/<int:pk>/', views.payment_detail, name='payment_detail'),
+    
+    # ✅ FIXED: Added missing passbooks endpoints
+    path('passbooks/', views.passbook_list, name='passbook_list'),
+    path('passbooks/<int:pk>/', views.passbook_detail, name='passbook_detail'),
+    
+    # ✅ FIXED: Added missing prescriptions endpoints
+    path('prescriptions/', views.prescription_list, name='prescription_list'),
+    path('prescriptions/<int:pk>/', views.prescription_detail, name='prescription_detail'),
 ]

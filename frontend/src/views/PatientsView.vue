@@ -439,44 +439,48 @@ const openAddModal = () => {
 };
 
 const savePatient = async () => {
-  try {
-    if (!form.value.owner || !form.value.pet_name || !form.value.species || !form.value.breed || !form.value.gender) {
-      alert('Please fill in all required fields (marked with *)');
-      return;
-    }
-    
-    const formData = new FormData();
-    formData.append('owner', String(form.value.owner));
-    formData.append('pet_name', String(form.value.pet_name));
-    formData.append('species', String(form.value.species));
-    formData.append('breed', String(form.value.breed));
-    formData.append('gender', String(form.value.gender));
-    
-    if (form.value.date_of_birth) formData.append('date_of_birth', String(form.value.date_of_birth));
-    if (form.value.color) formData.append('color', String(form.value.color));
-    if (form.value.weight) formData.append('weight', String(form.value.weight));
-    if (form.value.medical_history) formData.append('medical_history', String(form.value.medical_history));
-    if (photoFile.value) formData.append('photo', photoFile.value);
-    
-    if (editingPatient.value) {
-      await api.put(`/patients/${editingPatient.value}/`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      alert('Pet updated successfully!');
-    } else {
-      await api.post('/patients/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      alert('Pet added successfully!');
-    }
-    
-    closeModal();
-    fetchData();
-  } catch (error) {
-    console.error('Error saving patient:', error);
-    alert('Failed to save pet. Please try again.');
+  if (!newPatient.name || !newPatient.species || !newPatient.owner) {
+    alert('Please fill in all required fields')
+    return
   }
-};
+  
+  try {
+    const formData = new FormData()
+    formData.append('name', newPatient.name)
+    formData.append('species', newPatient.species)
+    formData.append('breed', newPatient.breed)
+    formData.append('age', newPatient.age)
+    formData.append('gender', newPatient.gender)
+    formData.append('owner', newPatient.owner)
+    
+    // ✅ FIX: Only append photo if it exists
+    if (newPatient.photo) {
+      formData.append('photo', newPatient.photo)
+    }
+    
+    const response = await fetch(`${API_URL}/patients/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${localStorage.getItem('token')}`
+        // ✅ IMPORTANT: Don't set Content-Type for FormData
+      },
+      body: formData
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(JSON.stringify(errorData))
+    }
+    
+    await fetchPatients()
+    showAddModal = false
+    resetForm()
+    alert('Patient saved successfully!')
+  } catch (error) {
+    console.error('Error saving patient:', error)
+    alert('Failed to save patient: ' + error.message)
+  }
+}
 
 const editPatient = (patient) => {
   editingPatient.value = patient.id;

@@ -33,6 +33,91 @@ from .serializers import PassbookSerializer, PassbookPublicSerializer
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from .models import Passbook, Prescription
+from .serializers import PassbookSerializer, PrescriptionSerializer
+
+# ✅ Passbook Views
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def passbook_list(request):
+    if request.method == 'GET':
+        passbooks = Passbook.objects.all()
+        serializer = PassbookSerializer(passbooks, many=True)
+        return Response(serializer.data)
+    
+    elif request.method == 'POST':
+        serializer = PassbookSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def passbook_detail(request, pk):
+    try:
+        passbook = Passbook.objects.get(pk=pk)
+    except Passbook.DoesNotExist:
+        return Response({'error': 'Passbook not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = PassbookSerializer(passbook)
+        return Response(serializer.data)
+    
+    elif request.method == 'PUT':
+        serializer = PassbookSerializer(passbook, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        passbook.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+# ✅ Prescription Views
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def prescription_list(request):
+    if request.method == 'GET':
+        prescriptions = Prescription.objects.all()
+        serializer = PrescriptionSerializer(prescriptions, many=True)
+        return Response(serializer.data)
+    
+    elif request.method == 'POST':
+        serializer = PrescriptionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def prescription_detail(request, pk):
+    try:
+        prescription = Prescription.objects.get(pk=pk)
+    except Prescription.DoesNotExist:
+        return Response({'error': 'Prescription not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = PrescriptionSerializer(prescription)
+        return Response(serializer.data)
+    
+    elif request.method == 'PUT':
+        serializer = PrescriptionSerializer(prescription, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        prescription.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [],
