@@ -1,166 +1,172 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-emerald-900 via-emerald-700 to-emerald-800 p-6">
-    <!-- Simple White Container -->
-    <div class="bg-white rounded-xl shadow-lg p-6">
-      <!-- Header -->
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-900">🐕 Patients (Pets)</h1>
-        <button 
-          @click="openAddModal"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold"
-        >
-          ➕ Add New Pet
+  <div class="patients-wrapper">
+    <!-- Header Card -->
+    <div class="header-card">
+      <div class="header-content">
+        <div class="header-title">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="10" r="3"></circle>
+            <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"></path>
+          </svg>
+          <h1>Patients (Pets)</h1>
+        </div>
+        <button @click="openAddModal" class="btn-add">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Add New Pet</span>
         </button>
-      </div>
-
-      <!-- Search -->
-      <input 
-        v-model="searchQuery"
-        type="text" 
-        placeholder="🔍 Search pets..."
-        class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg mb-6"
-      />
-
-      <!-- Loading State -->
-      <div v-if="isLoading" class="text-center py-12">
-        <div class="text-4xl mb-4">⏳</div>
-        <p class="text-gray-600">Loading patients...</p>
-      </div>
-
-      <!-- Patients Table -->
-      <div v-else-if="filteredPatients.length > 0" class="overflow-x-auto">
-        <table class="w-full">
-          <thead class="bg-emerald-600 text-white">
-            <tr>
-              <th class="px-4 py-3 text-left">Photo</th>
-              <th class="px-4 py-3 text-left">Pet Name</th>
-              <th class="px-4 py-3 text-left">Species</th>
-              <th class="px-4 py-3 text-left">Breed</th>
-              <th class="px-4 py-3 text-left">Owner</th>
-              <th class="px-4 py-3 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="patient in filteredPatients" :key="patient.id" class="border-b hover:bg-gray-50">
-              <td class="px-4 py-3">
-                <img 
-                  v-if="getPhotoUrl(patient)" 
-                  :src="getPhotoUrl(patient)" 
-                  class="w-12 h-12 rounded-full object-cover"
-                  alt="Pet photo"
-                  @error="handleImageError"
-                />
-                <div v-else class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                  🐾
-                </div>
-              </td>
-              <td class="px-4 py-3 font-semibold">{{ patient.pet_name }}</td>
-              <td class="px-4 py-3">{{ patient.species }}</td>
-              <td class="px-4 py-3">{{ patient.breed }}</td>
-              <td class="px-4 py-3">{{ getOwnerName(patient.owner) }}</td>
-              <td class="px-4 py-3">
-                <div class="flex gap-2">
-                  <button 
-                    @click="editPatient(patient)"
-                    class="bg-amber-500 hover:bg-amber-600 text-white p-2 rounded"
-                    title="Edit"
-                  >
-                    ✏️
-                  </button>
-                  <button 
-                    @click="deletePatient(patient.id)"
-                    class="bg-red-500 hover:bg-red-600 text-white p-2 rounded"
-                    title="Delete"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div v-else class="text-center py-12 text-gray-500">
-        <p class="text-xl">🐾 No patients found</p>
-        <p class="mt-2">Add your first patient to get started</p>
       </div>
     </div>
 
-    <!-- Add/Edit Modal -->
-    <div v-if="showAddModal || editingPatient" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div class="bg-white rounded-xl max-w-3xl w-full my-8">
-        <!-- Modal Header -->
-        <div class="bg-emerald-600 text-white p-6">
-          <h2 class="text-2xl font-bold">{{ editingPatient ? 'Edit Pet' : 'Add New Pet' }}</h2>
+    <!-- Search Card -->
+    <div class="search-card">
+      <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <path d="m21 21-4.35-4.35"></path>
+      </svg>
+      <input 
+        v-model="searchQuery"
+        type="text" 
+        placeholder="Search pets by name, species, breed, or owner..."
+        class="search-input"
+      />
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading patients...</p>
+    </div>
+
+    <!-- Patients Grid -->
+    <div v-else-if="filteredPatients.length > 0" class="patients-grid">
+      <div v-for="patient in filteredPatients" :key="patient.id" class="patient-card">
+        <div class="patient-photo">
+          <img 
+            v-if="getPhotoUrl(patient)" 
+            :src="getPhotoUrl(patient)" 
+            :alt="patient.pet_name"
+            @error="handleImageError"
+          />
+          <div v-else class="photo-placeholder">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+            </svg>
+          </div>
         </div>
         
-        <!-- Modal Body -->
-        <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-          <!-- Photo Upload Section -->
-          <div class="border-4 border-dashed border-gray-300 rounded-lg p-6 text-center">
-            <h3 class="text-lg font-semibold mb-4">📷 Pet Photo</h3>
-            
-            <!-- Photo Preview -->
-            <div v-if="photoPreview" class="mb-4">
-              <img :src="photoPreview" class="w-32 h-32 mx-auto rounded-lg object-cover" alt="Preview" />
-              <button 
-                type="button"
-                @click="removePhoto"
-                class="mt-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
-              >
-                ✖️ Remove Photo
+        <div class="patient-info">
+          <h3>{{ patient.pet_name }}</h3>
+          <div class="patient-details">
+            <span class="detail-badge species">{{ patient.species }}</span>
+            <span class="detail-badge">{{ patient.breed }}</span>
+          </div>
+          <p class="owner-name">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            {{ getOwnerName(patient.owner) }}
+          </p>
+        </div>
+        
+        <div class="patient-actions">
+          <button @click="editPatient(patient)" class="btn-edit" title="Edit">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
+          <button @click="deletePatient(patient.id)" class="btn-delete" title="Delete">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else class="empty-state">
+      <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"></circle>
+        <circle cx="12" cy="10" r="3"></circle>
+        <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"></path>
+      </svg>
+      <h3>No Patients Found</h3>
+      <p>Add your first patient to get started</p>
+      <button @click="openAddModal" class="btn-empty-action">Add First Pet</button>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div v-if="showAddModal || editingPatient" class="modal-overlay" @click.self="closeModal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2>{{ editingPatient ? 'Edit Pet' : 'Add New Pet' }}</h2>
+          <button @click="closeModal" class="btn-close">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <!-- Photo Upload -->
+          <div class="photo-upload-section">
+            <div v-if="photoPreview" class="photo-preview">
+              <img :src="photoPreview" alt="Preview" />
+              <button @click="removePhoto" class="btn-remove-photo">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
               </button>
             </div>
-
-            <!-- Photo Buttons -->
-            <div v-else class="space-y-3">
-              <div>
-                <button 
-                  type="button"
-                  @click="openCamera"
-                  class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold w-full"
-                >
-                  📷 Take Photo with Camera
-                </button>
-              </div>
-              <div>
-                <label class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-semibold cursor-pointer inline-block w-full">
-                  📁 Choose from Files
-                  <input 
-                    type="file" 
-                    @change="handleFileSelect"
-                    accept="image/*"
-                    class="hidden"
-                    ref="fileInput"
-                  />
-                </label>
-              </div>
+            <div v-else class="photo-buttons">
+              <button @click="openCamera" class="btn-camera">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+                Take Photo
+              </button>
+              <label class="btn-file">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Choose File
+                <input type="file" @change="handleFileSelect" accept="image/*" ref="fileInput" class="file-input"/>
+              </label>
             </div>
           </div>
 
-          <!-- Owner Selection -->
-          <div>
-            <label class="block font-semibold mb-2">Owner *</label>
-            <select v-model="form.owner" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg">
-              <option value="">Select Owner</option>
-              <option v-for="owner in owners" :key="owner.id" :value="owner.id">
-                {{ owner.name }}
-              </option>
-            </select>
-          </div>
+          <!-- Form Fields -->
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label>Owner *</label>
+              <select v-model="form.owner">
+                <option value="">Select Owner</option>
+                <option v-for="owner in owners" :key="owner.id" :value="owner.id">
+                  {{ owner.name }}
+                </option>
+              </select>
+            </div>
 
-          <!-- Pet Name -->
-          <div>
-            <label class="block font-semibold mb-2">Pet Name *</label>
-            <input v-model="form.pet_name" type="text" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg" />
-          </div>
+            <div class="form-group full-width">
+              <label>Pet Name *</label>
+              <input v-model="form.pet_name" type="text" placeholder="e.g., Max, Bella"/>
+            </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Species -->
-            <div>
-              <label class="block font-semibold mb-2">Species *</label>
-              <select v-model="form.species" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg">
+            <div class="form-group">
+              <label>Species *</label>
+              <select v-model="form.species">
                 <option value="">Select Species</option>
                 <option value="dog">Dog</option>
                 <option value="cat">Cat</option>
@@ -169,65 +175,51 @@
                 <option value="other">Other</option>
               </select>
             </div>
-            
-            <!-- Breed -->
-            <div>
-              <label class="block font-semibold mb-2">Breed *</label>
-              <input v-model="form.breed" type="text" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg" />
-            </div>
-          </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Gender -->
-            <div>
-              <label class="block font-semibold mb-2">Gender *</label>
-              <select v-model="form.gender" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg">
+            <div class="form-group">
+              <label>Breed *</label>
+              <input v-model="form.breed" type="text" placeholder="e.g., Labrador"/>
+            </div>
+
+            <div class="form-group">
+              <label>Gender *</label>
+              <select v-model="form.gender">
                 <option value="">Select Gender</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
               </select>
             </div>
-            
-            <!-- Date of Birth -->
-            <div>
-              <label class="block font-semibold mb-2">Date of Birth</label>
-              <input v-model="form.date_of_birth" type="date" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg" />
+
+            <div class="form-group">
+              <label>Date of Birth</label>
+              <input v-model="form.date_of_birth" type="date"/>
+            </div>
+
+            <div class="form-group">
+              <label>Color</label>
+              <input v-model="form.color" type="text" placeholder="e.g., Brown, Black"/>
+            </div>
+
+            <div class="form-group">
+              <label>Weight (kg)</label>
+              <input v-model="form.weight" type="number" step="0.1" placeholder="0.0"/>
+            </div>
+
+            <div class="form-group full-width">
+              <label>Medical History</label>
+              <textarea v-model="form.medical_history" rows="3" placeholder="Optional medical notes..."></textarea>
             </div>
           </div>
 
-          <!-- Color -->
-          <div>
-            <label class="block font-semibold mb-2">Color</label>
-            <input v-model="form.color" type="text" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg" placeholder="e.g. Brown, Black, White" />
-          </div>
-
-          <!-- Weight -->
-          <div>
-            <label class="block font-semibold mb-2">Weight (kg)</label>
-            <input v-model="form.weight" type="number" step="0.1" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg" />
-          </div>
-
-          <!-- Medical History -->
-          <div>
-            <label class="block font-semibold mb-2">Medical History</label>
-            <textarea v-model="form.medical_history" rows="2" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg" placeholder="Optional"></textarea>
-          </div>
-
-          <!-- Action Buttons -->
-          <div class="flex gap-3 pt-4">
-            <button 
-              type="button"
-              @click="savePatient"
-              class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-semibold"
-            >
-              💾 Save Pet
-            </button>
-            <button 
-              type="button"
-              @click="closeModal"
-              class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold"
-            >
-              ✖️ Cancel
+          <div class="modal-actions">
+            <button @click="closeModal" class="btn-cancel">Cancel</button>
+            <button @click="savePatient" class="btn-save">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              Save Pet
             </button>
           </div>
         </div>
@@ -235,29 +227,25 @@
     </div>
 
     <!-- Camera Modal -->
-    <div v-if="showCamera" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-      <div class="bg-white rounded-xl p-6 max-w-2xl w-full">
-        <h3 class="text-xl font-bold mb-4">📷 Take Photo</h3>
-        
-        <div class="relative">
-          <video ref="videoElement" autoplay playsinline class="w-full rounded-lg"></video>
-          <canvas ref="canvasElement" class="hidden"></canvas>
-        </div>
-
-        <div class="flex gap-3 mt-4">
-          <button 
-            type="button"
-            @click="capturePhoto"
-            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold"
-          >
-            📸 Capture Photo
+    <div v-if="showCamera" class="modal-overlay">
+      <div class="camera-modal">
+        <div class="camera-header">
+          <h3>Take Photo</h3>
+          <button @click="closeCamera" class="btn-close">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
           </button>
-          <button 
-            type="button"
-            @click="closeCamera"
-            class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold"
-          >
-            ✖️ Cancel
+        </div>
+        <video ref="videoElement" autoplay playsinline class="camera-video"></video>
+        <canvas ref="canvasElement" class="camera-canvas"></canvas>
+        <div class="camera-actions">
+          <button @click="capturePhoto" class="btn-capture">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="12" r="10"></circle>
+            </svg>
+            Capture
           </button>
         </div>
       </div>
@@ -269,7 +257,6 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import api from '../services/api';
 
-// ✅ FIXED: Use environment variable for backend URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
 const BACKEND_URL = API_BASE_URL.replace('/api', '');
 const MEDIA_URL = `${BACKEND_URL}/media/`;
@@ -311,23 +298,19 @@ const filteredPatients = computed(() => {
   return patients.value.filter(p => 
     p.pet_name?.toLowerCase().includes(query) ||
     p.species?.toLowerCase().includes(query) ||
-    p.breed?.toLowerCase().includes(query)
+    p.breed?.toLowerCase().includes(query) ||
+    getOwnerName(p.owner).toLowerCase().includes(query)
   );
 });
 
 const getPhotoUrl = (patient) => {
   if (!patient.photo) return null;
-  
-  if (patient.photo.startsWith('http')) {
-    return patient.photo;
-  }
-  
+  if (patient.photo.startsWith('http')) return patient.photo;
   const photoPath = patient.photo.replace(/^\/+/, '').replace('media/', '');
   return `${MEDIA_URL}${photoPath}`;
 };
 
 const handleImageError = (event) => {
-  console.warn('Failed to load image:', event.target.src);
   event.target.style.display = 'none';
 };
 
@@ -352,11 +335,8 @@ const fetchData = async () => {
     owners.value = Array.isArray(ownersData.data) 
       ? ownersData.data 
       : (ownersData.data.results || []);
-    
-    console.log('✅ Loaded patients:', patients.value.length);
-    console.log('✅ Loaded owners:', owners.value.length);
   } catch (error) {
-    console.error('❌ Error fetching data:', error);
+    console.error('Error fetching data:', error);
     patients.value = [];
     owners.value = [];
   } finally {
@@ -378,8 +358,6 @@ const handleFileSelect = (event) => {
       photoPreview.value = e.target.result;
     };
     reader.readAsDataURL(file);
-    
-    console.log('📁 File selected:', file.name);
   }
 };
 
@@ -400,7 +378,7 @@ const openCamera = async () => {
       videoElement.value.srcObject = videoStream;
     }
   } catch (error) {
-    console.error('📷 Camera error:', error);
+    console.error('Camera error:', error);
     alert('Could not access camera. Please use file upload instead.');
     showCamera.value = false;
   }
@@ -462,89 +440,41 @@ const openAddModal = () => {
 
 const savePatient = async () => {
   try {
-    // Validation
-    if (!form.value.owner) {
-      alert('❌ Please select an owner');
+    if (!form.value.owner || !form.value.pet_name || !form.value.species || !form.value.breed || !form.value.gender) {
+      alert('Please fill in all required fields (marked with *)');
       return;
     }
-    if (!form.value.pet_name) {
-      alert('❌ Please enter pet name');
-      return;
-    }
-    if (!form.value.species) {
-      alert('❌ Please select species');
-      return;
-    }
-    if (!form.value.breed) {
-      alert('❌ Please enter breed');
-      return;
-    }
-    if (!form.value.gender) {
-      alert('❌ Please select gender');
-      return;
-    }
-    
-    console.log('💾 Saving patient...');
-    console.log('📋 Form data:', form.value);
     
     const formData = new FormData();
-    
-    // Add all required fields
     formData.append('owner', String(form.value.owner));
     formData.append('pet_name', String(form.value.pet_name));
     formData.append('species', String(form.value.species));
     formData.append('breed', String(form.value.breed));
     formData.append('gender', String(form.value.gender));
     
-    // Add optional fields
-    if (form.value.date_of_birth) {
-      formData.append('date_of_birth', String(form.value.date_of_birth));
-    }
-    if (form.value.color) {
-      formData.append('color', String(form.value.color));
-    }
-    if (form.value.weight) {
-      formData.append('weight', String(form.value.weight));
-    }
-    if (form.value.medical_history) {
-      formData.append('medical_history', String(form.value.medical_history));
-    }
+    if (form.value.date_of_birth) formData.append('date_of_birth', String(form.value.date_of_birth));
+    if (form.value.color) formData.append('color', String(form.value.color));
+    if (form.value.weight) formData.append('weight', String(form.value.weight));
+    if (form.value.medical_history) formData.append('medical_history', String(form.value.medical_history));
+    if (photoFile.value) formData.append('photo', photoFile.value);
     
-    // Add photo if present
-    if (photoFile.value) {
-      formData.append('photo', photoFile.value);
-      console.log('📷 Photo attached:', photoFile.value.name);
-    }
-    
-    // Make API request
     if (editingPatient.value) {
       await api.put(`/patients/${editingPatient.value}/`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      alert('✅ Pet updated successfully!');
+      alert('Pet updated successfully!');
     } else {
       await api.post('/patients/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      alert('✅ Pet added successfully!');
+      alert('Pet added successfully!');
     }
     
     closeModal();
     fetchData();
   } catch (error) {
-    console.error('❌ Error saving patient:', error);
-    console.error('📄 Error response:', error.response?.data);
-    
-    if (error.response?.data) {
-      const errors = error.response.data;
-      let errorMsg = 'Failed to save pet:\n\n';
-      Object.keys(errors).forEach(key => {
-        errorMsg += `${key}: ${JSON.stringify(errors[key])}\n`;
-      });
-      alert(errorMsg);
-    } else {
-      alert('❌ Failed to save pet. Please try again.\n\n' + error.message);
-    }
+    console.error('Error saving patient:', error);
+    alert('Failed to save pet. Please try again.');
   }
 };
 
@@ -569,15 +499,15 @@ const editPatient = (patient) => {
 };
 
 const deletePatient = async (id) => {
-  if (!confirm('⚠️ Are you sure you want to delete this pet? This action cannot be undone.')) return;
+  if (!confirm('Are you sure you want to delete this pet? This action cannot be undone.')) return;
   
   try {
     await api.delete(`/patients/${id}/`);
-    alert('✅ Pet deleted successfully!');
+    alert('Pet deleted successfully!');
     fetchData();
   } catch (error) {
-    console.error('❌ Error deleting patient:', error);
-    alert('❌ Failed to delete pet. Please try again.');
+    console.error('Error deleting patient:', error);
+    alert('Failed to delete pet. Please try again.');
   }
 };
 
@@ -604,10 +534,6 @@ const closeModal = () => {
 };
 
 onMounted(() => {
-  console.log('🚀 Component mounted');
-  console.log('🔗 API Base URL:', API_BASE_URL);
-  console.log('🔗 Backend URL:', BACKEND_URL);
-  console.log('🔗 Media URL:', MEDIA_URL);
   fetchData();
 });
 
@@ -617,18 +543,622 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-video {
-  max-height: 400px;
+.patients-wrapper {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Header Card */
+.header-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-title svg {
+  color: #7C3AED;
+}
+
+.header-title h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.btn-add {
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.btn-add:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+}
+
+/* Search Card */
+.search-card {
+  background: white;
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.search-icon {
+  color: #9CA3AF;
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  color: #1F2937;
+}
+
+.search-input::placeholder {
+  color: #9CA3AF;
+}
+
+/* Loading State */
+.loading-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #E5E7EB;
+  border-top-color: #7C3AED;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Patients Grid */
+.patients-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.patient-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transition: all 0.3s;
+  position: relative;
+}
+
+.patient-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.15);
+}
+
+.patient-photo {
+  width: 100%;
+  height: 200px;
+  background: linear-gradient(135deg, #7C3AED, #06B6D4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.patient-photo img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
 }
 
+.photo-placeholder {
+  color: white;
+}
+
+.patient-info {
+  padding: 20px;
+}
+
+.patient-info h3 {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.patient-details {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.detail-badge {
+  background: #F3F4F6;
+  color: #4B5563;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.detail-badge.species {
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+}
+
+.owner-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6B7280;
+  font-size: 14px;
+  margin: 0;
+}
+
+.owner-name svg {
+  color: #06B6D4;
+}
+
+.patient-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.btn-edit, .btn-delete {
+  flex: 1;
+  background: #F3F4F6;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-edit {
+  color: #7C3AED;
+}
+
+.btn-edit:hover {
+  background: #EDE9FE;
+}
+
+.btn-delete {
+  color: #EF4444;
+}
+
+.btn-delete:hover {
+  background: #FEE2E2;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.empty-state svg {
+  color: #D1D5DB;
+  margin-bottom: 20px;
+}
+
+.empty-state h3 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  color: #1F2937;
+}
+
+.empty-state p {
+  color: #6B7280;
+  margin: 0 0 24px 0;
+}
+
+.btn-empty-action {
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-empty-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.modal-container {
+  background: white;
+  border-radius: 20px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 20px 20px 0 0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.btn-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.btn-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Photo Upload Section */
+.photo-upload-section {
+  margin-bottom: 24px;
+  padding: 24px;
+  border: 2px dashed #D1D5DB;
+  border-radius: 12px;
+  background: #F9FAFB;
+}
+
+.photo-preview {
+  text-align: center;
+  position: relative;
+}
+
+.photo-preview img {
+  width: 200px;
+  height: 200px;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-remove-photo {
+  position: absolute;
+  top: -8px;
+  right: calc(50% - 108px);
+  background: #EF4444;
+  color: white;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  transition: all 0.3s;
+}
+
+.btn-remove-photo:hover {
+  transform: scale(1.1);
+}
+
+.photo-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.btn-camera, .btn-file {
+  background: linear-gradient(135deg, #06B6D4, #0891B2);
+  color: white;
+  border: none;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s;
+}
+
+.btn-camera:hover, .btn-file:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.3);
+}
+
+.file-input {
+  display: none;
+}
+
+/* Form Grid */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 12px 16px;
+  border: 2px solid #E5E7EB;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #1F2937;
+  transition: all 0.3s;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #7C3AED;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.btn-cancel {
+  flex: 1;
+  background: #F3F4F6;
+  color: #4B5563;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-cancel:hover {
+  background: #E5E7EB;
+}
+
+.btn-save {
+  flex: 2;
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.btn-save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+}
+
+/* Camera Modal */
+.camera-modal {
+  background: white;
+  border-radius: 20px;
+  max-width: 600px;
+  width: 100%;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.camera-header {
+  background: linear-gradient(135deg, #06B6D4, #0891B2);
+  color: white;
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.camera-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.camera-video {
+  width: 100%;
+  height: 400px;
+  object-fit: cover;
+  background: #000;
+}
+
+.camera-canvas {
+  display: none;
+}
+
+.camera-actions {
+  padding: 20px;
+  background: #F9FAFB;
+  display: flex;
+  justify-content: center;
+}
+
+.btn-capture {
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.btn-capture:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
-  .grid-cols-2 {
+  .patients-wrapper {
+    padding: 16px;
+  }
+  
+  .patients-grid {
     grid-template-columns: 1fr;
   }
   
-  video {
-    max-height: 300px;
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-group {
+    grid-column: 1 / -1;
+  }
+  
+  .photo-buttons {
+    grid-template-columns: 1fr;
+  }
+  
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .btn-add {
+    width: 100%;
+    justify-content: center;
   }
 }
+
 </style>
