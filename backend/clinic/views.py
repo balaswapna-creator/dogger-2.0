@@ -152,35 +152,46 @@ class PatientViewSet(viewsets.ModelViewSet):
     
     def resize_image(self, photo):
         """Resize image to max 300x300, maintain aspect ratio, compress"""
-        try:
-            img = Image.open(photo)
-            
-            # Convert RGBA to RGB if needed
-            if img.mode in ('RGBA', 'LA', 'P'):
-                background = Image.new('RGB', img.size, (255, 255, 255))
-                background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
-                img = background
-            
-            # Resize maintaining aspect ratio
-            img.thumbnail((300, 300), Image.Resampling.LANCZOS)
-            
-            # Save to BytesIO
-            output = BytesIO()
-            img.save(output, format='JPEG', quality=85, optimize=True)
-            output.seek(0)
-            
-            # Create new InMemoryUploadedFile
-            return InMemoryUploadedFile(
-                output,
-                'ImageField',
-                f"{photo.name.split('.')[0]}_resized.jpg",
-                'image/jpeg',
-                sys.getsizeof(output),
-                None
-            )
-        except Exception as e:
-            print(f"Error resizing image: {e}")
-            return photo  # Return original if resize fails
+    try:
+        from PIL import Image
+        from io import BytesIO
+        from django.core.files.uploadedfile import InMemoryUploadedFile
+        import sys
+        
+        img = Image.open(photo)
+        
+        # Convert RGBA to RGB if needed
+        if img.mode in ('RGBA', 'LA', 'P'):
+            background = Image.new('RGB', img.size, (255, 255, 255))
+            if img.mode == 'RGBA':
+                background.paste(img, mask=img.split()[-1])
+            else:
+                background.paste(img)
+            img = background
+        
+        # Resize maintaining aspect ratio
+        img.thumbnail((300, 300), Image.Resampling.LANCZOS)
+        
+        # Save to BytesIO
+        output = BytesIO()
+        img.save(output, format='JPEG', quality=85, optimize=True)
+        output.seek(0)
+        
+        # ✅ FIX: Use output.tell() to get actual size instead of sys.getsizeof()
+        file_size = output.getbuffer().nbytes
+        
+        # Create new InMemoryUploadedFile
+        return InMemoryUploadedFile(
+            output,
+            'ImageField',
+            f"{photo.name.split('.')[0]}_resized.jpg",
+            'image/jpeg',
+            file_size,  # ✅ FIXED: Use actual bytes size
+            None
+        )
+    except Exception as e:
+        print(f"⚠️ Error resizing image: {e}")
+        return photo  # Return original if resize fails
     
     @action(detail=True, methods=['get'])
     def passbook(self, request, pk=None):
