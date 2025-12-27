@@ -1,5 +1,5 @@
 // FILE: frontend/src/router/index.js
-// Complete working router configuration
+// Fixed router configuration with all routes
 
 import { createRouter, createWebHistory } from 'vue-router'
 
@@ -31,7 +31,7 @@ const router = createRouter({
     {
       path: '/login',
       name: 'Login',
-      component: () => import('../views/LoginView.vue'),  // ✅ Changed to LoginView
+      component: () => import('../views/LoginView.vue'),
       meta: { requiresAuth: false }
     },
     {
@@ -52,10 +52,25 @@ const router = createRouter({
       component: () => import('../views/VaccinationsView.vue'),
       meta: { requiresAuth: true }
     },
+    // ✅ FIXED: Changed from /medical-records to /records
     {
-      path: '/medical-records',
+      path: '/records',
       name: 'MedicalRecords',
       component: () => import('../views/MedicalRecordsView.vue'),
+      meta: { requiresAuth: true }
+    },
+    // ✅ ADDED: Missing /passbooks route
+    {
+      path: '/passbooks',
+      name: 'Passbooks',
+      component: () => import('../views/PassbooksView.vue'),
+      meta: { requiresAuth: true }
+    },
+    // ✅ ADDED: Missing /prescriptions route
+    {
+      path: '/prescriptions',
+      name: 'Prescriptions',
+      component: () => import('../views/PrescriptionsView.vue'),
       meta: { requiresAuth: true }
     },
     {
@@ -63,6 +78,13 @@ const router = createRouter({
       name: 'Payments',
       component: () => import('../views/PaymentsView.vue'),
       meta: { requiresAuth: true }
+    },
+    // ✅ ADDED: Public passbook view (no auth required)
+    {
+      path: '/passbook/:id',
+      name: 'PublicPassbook',
+      component: () => import('../views/PublicPassbookView.vue'),
+      meta: { requiresAuth: false }
     }
   ]
 })
