@@ -4,7 +4,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 // Import all views
-import PatientDetailView from '../views/PatientDetailView.vue'
 import LoginView from '../views/LoginView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import PatientsView from '../views/PatientsView.vue'
@@ -15,6 +14,7 @@ import VaccinationsView from '../views/VaccinationsView.vue'
 import PrescriptionsView from '../views/PrescriptionsView.vue'
 import PassbooksView from '../views/PassbooksView.vue'
 import PublicPassbookView from '../views/PublicPassbookView.vue'
+import PatientDetailView from '../views/PatientDetailView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -46,7 +46,7 @@ const router = createRouter({
       name: 'patient-detail',
       component: PatientDetailView,
       meta: { requiresAuth: true }
-    }
+    },
     {
       path: '/owners',
       name: 'Owners',
@@ -59,21 +59,18 @@ const router = createRouter({
       component: () => import('../views/VaccinationsView.vue'),
       meta: { requiresAuth: true }
     },
-    // ✅ FIXED: Changed from /medical-records to /records
     {
       path: '/records',
       name: 'MedicalRecords',
       component: () => import('../views/MedicalRecordsView.vue'),
       meta: { requiresAuth: true }
     },
-    // ✅ ADDED: Missing /passbooks route
     {
       path: '/passbooks',
       name: 'Passbooks',
       component: () => import('../views/PassbooksView.vue'),
       meta: { requiresAuth: true }
     },
-    // ✅ ADDED: Missing /prescriptions route
     {
       path: '/prescriptions',
       name: 'Prescriptions',
@@ -86,7 +83,6 @@ const router = createRouter({
       component: () => import('../views/PaymentsView.vue'),
       meta: { requiresAuth: true }
     },
-    // ✅ ADDED: Public passbook view (no auth required)
     {
       path: '/passbook/:id',
       name: 'PublicPassbook',
