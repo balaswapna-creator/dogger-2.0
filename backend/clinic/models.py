@@ -24,8 +24,8 @@ class User(AbstractUser):
         ('admin', 'Admin'),
         ('doctor', 'Doctor'),
         ('staff', 'Staff'),
-    ], default='doctor')
-    phone = models.CharField(max_length=15, blank=True)
+    ])
+    phone = models.CharField(max_length=15, blank=True, null=True)  # Same indent as 'role'
     
     groups = models.ManyToManyField(
         'auth.Group',
