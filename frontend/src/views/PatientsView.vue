@@ -760,6 +760,34 @@ onBeforeUnmount(() => {
 }
 
 .btn-view, .btn-edit, .btn-delete {
+  background: #F3F4F6;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-view {
+  color: #06B6D4;
+}
+
+.btn-view:hover {
+  background: #CFFAFE;
+}
+
+.btn-edit {
+  color: #7C3AED;
+}
+
+.btn-edit:hover {
+  background: #EDE9FE;
+}
+
+.btn-delete {  
   color: #EF4444;
 }
 
@@ -1159,31 +1187,4 @@ onBeforeUnmount(() => {
   }
 }
 </style>
-  background: #F3F4F6;
-  border: none;
-  padding: 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-view {
-  color: #06B6D4;
-}
-
-.btn-view:hover {
-  background: #CFFAFE;
-}
-
-.btn-edit {
-  color: #7C3AED;
-}
-
-.btn-edit:hover {
-  background: #EDE9FE;
-}
-
-.btn-delete {
+ 
