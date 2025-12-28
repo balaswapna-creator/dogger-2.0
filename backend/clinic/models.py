@@ -1,7 +1,7 @@
 """
 Dogger 2.0 - Complete Django Models with Table Prefixes
 Sri Adithya Pet Clinic Management System
-✅ FIXED VERSION - No Duplicates
+✅ FIXED VERSION - QR Code Issue Resolved
 """
 
 from django.db import models
@@ -25,7 +25,7 @@ class User(AbstractUser):
         ('doctor', 'Doctor'),
         ('staff', 'Staff'),
     ])
-    phone = models.CharField(max_length=15, blank=True, null=True)  # Same indent as 'role'
+    phone = models.CharField(max_length=15, blank=True, null=True)
     
     groups = models.ManyToManyField(
         'auth.Group',
@@ -134,17 +134,34 @@ class Patient(models.Model):
         return f"{self.pet_name} ({self.species}) - {self.owner.name}"
 
     def save(self, *args, **kwargs):
+        """✅ FIXED: Generate QR code without infinite recursion"""
+        is_new = self.pk is None
+        
+        # Save first to get the ID
         super().save(*args, **kwargs)
-        if not self.qr_code:
-            qr_data = f"https://dogger.clinic/passbook/{self.id}"
-            qr = qrcode.QRCode(version=1, box_size=10, border=2)
-            qr.add_data(qr_data)
-            qr.make(fit=True)
-            img = qr.make_image(fill_color="#226C3B", back_color="white")
-            buffer = BytesIO()
-            img.save(buffer, format='PNG')
-            filename = f'qr_{self.id}.png'
-            self.qr_code.save(filename, File(buffer), save=True)
+        
+        # Generate QR code only for new patients without QR
+        if is_new and not self.qr_code:
+            try:
+                qr_data = f"https://dogger.clinic/passbook/{self.id}"
+                qr = qrcode.QRCode(version=1, box_size=10, border=2)
+                qr.add_data(qr_data)
+                qr.make(fit=True)
+                img = qr.make_image(fill_color="#226C3B", back_color="white")
+                
+                buffer = BytesIO()
+                img.save(buffer, format='PNG')
+                buffer.seek(0)  # ✅ CRITICAL FIX: Reset buffer position
+                
+                filename = f'qr_{self.id}.png'
+                # ✅ Use save=False to avoid recursion
+                self.qr_code.save(filename, File(buffer), save=False)
+                
+                # ✅ Update only the qr_code field
+                super().save(update_fields=['qr_code'])
+            except Exception as e:
+                # Don't crash patient creation if QR fails
+                print(f"⚠️ QR code generation failed for patient {self.id}: {e}")
 
     @property
     def age_string(self):
@@ -209,7 +226,7 @@ class MedicalRecord(models.Model):
 
 
 # ============================================================================
-# PRESCRIPTION (SINGLE DEFINITION)
+# PRESCRIPTION
 # ============================================================================
 
 class Prescription(models.Model):
