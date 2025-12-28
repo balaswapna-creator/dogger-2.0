@@ -59,14 +59,14 @@
         </div>
         
         <div class="passbook-content">
-          <h3>{{ passbook.patient_name }}</h3>
+          <h3>{{ getPatientName(passbook) }}</h3>
           <div class="passbook-details">
             <div class="detail-row">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
-              <span>{{ passbook.owner_name }}</span>
+              <span>{{ getOwnerName(passbook) }}</span>
             </div>
             <div class="detail-row qr-code">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -75,7 +75,7 @@
                 <rect x="14" y="14" width="7" height="7"></rect>
                 <rect x="3" y="14" width="7" height="7"></rect>
               </svg>
-              <span class="qr-id">{{ passbook.qr_code }}</span>
+              <span class="qr-id">{{ getAccessToken(passbook) }}</span>
             </div>
           </div>
         </div>
@@ -108,16 +108,48 @@ export default {
         loading.value = true
         error.value = null
         const response = await api.get('/passbooks/')
-        passbooks.value = response.data || []
+        
+        // ✅ FIXED: Handle array or paginated response
+        const data = response.data || []
+        passbooks.value = Array.isArray(data) ? data : (data.results || [])
+        
       } catch (err) {
         console.error('Error fetching passbooks:', err)
         error.value = 'Failed to load passbooks. Please try again.'
+        passbooks.value = []
       } finally {
         loading.value = false
       }
     }
 
+    // ✅ FIXED: Safe helper functions to prevent null errors
+    const getPatientName = (passbook) => {
+      if (!passbook) return 'Unknown'
+      if (passbook.patient_name) return passbook.patient_name
+      if (passbook.patient?.pet_name) return passbook.patient.pet_name
+      return 'Unknown Patient'
+    }
+
+    const getOwnerName = (passbook) => {
+      if (!passbook) return 'Unknown'
+      if (passbook.owner_name) return passbook.owner_name
+      if (passbook.patient?.owner_name) return passbook.patient.owner_name
+      return 'Unknown Owner'
+    }
+
+    const getAccessToken = (passbook) => {
+      if (!passbook) return 'N/A'
+      if (passbook.qr_code) return passbook.qr_code
+      if (passbook.access_token) return String(passbook.access_token).slice(0, 8)
+      if (passbook.id) return String(passbook.id).slice(0, 8)
+      return 'N/A'
+    }
+
     const viewPassbook = (id) => {
+      if (!id) {
+        console.error('No passbook ID provided')
+        return
+      }
       window.open(`/passbook/${id}`, '_blank')
     }
 
@@ -129,6 +161,9 @@ export default {
       passbooks,
       loading,
       error,
+      getPatientName,
+      getOwnerName,
+      getAccessToken,
       viewPassbook,
       fetchPassbooks
     }
@@ -324,6 +359,7 @@ export default {
   font-family: 'Courier New', monospace;
   font-weight: 600;
   color: #0F766E;
+  word-break: break-all;
 }
 
 .btn-view-passbook {

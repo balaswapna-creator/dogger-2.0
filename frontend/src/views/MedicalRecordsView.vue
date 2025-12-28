@@ -68,20 +68,20 @@
                     <line x1="8" y1="2" x2="8" y2="6"></line>
                     <line x1="3" y1="10" x2="21" y2="10"></line>
                   </svg>
-                  {{ formatDate(record.date) }}
+                  {{ formatDate(record.visit_date) }}
                 </div>
               </td>
               <td>
                 <div class="patient-info">
-                  <div class="patient-avatar">{{ getInitial(record.patient_name) }}</div>
-                  <span>{{ record.patient_name }}</span>
+                  <div class="patient-avatar">{{ getInitial(getPatientName(record)) }}</div>
+                  <span>{{ getPatientName(record) }}</span>
                 </div>
               </td>
-              <td>{{ record.owner_name }}</td>
+              <td>{{ getOwnerName(record) }}</td>
               <td>
                 <span class="diagnosis-badge">{{ record.diagnosis || 'Not specified' }}</span>
               </td>
-              <td class="treatment-cell">{{ record.treatment || '-' }}</td>
+              <td class="treatment-cell">{{ record.treatment_plan || '-' }}</td>
               <td>
                 <button @click="viewRecord(record.id)" class="btn-view">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -106,8 +106,7 @@ import api from '../services/api'
 export default {
   name: 'MedicalRecordsView',
   setup() {
-    // ✅ FIXED: Changed from const to let
-    let records = ref([])
+    const records = ref([])
     const loading = ref(true)
     const error = ref(null)
 
@@ -115,13 +114,12 @@ export default {
       loading.value = true
       error.value = null
       try {
-        // ✅ FIXED: Use api service instead of fetch
+        // ✅ FIXED: Use api service with correct endpoint
         const response = await api.get('/medical-records/')
         
-        // ✅ FIXED: Properly assign to records.value
-        records.value = Array.isArray(response.data) 
-          ? response.data 
-          : (response.data.results || [])
+        // ✅ FIXED: Handle both array and paginated responses
+        const data = response.data || []
+        records.value = Array.isArray(data) ? data : (data.results || [])
           
       } catch (err) {
         console.error('Error fetching records:', err)
@@ -132,22 +130,47 @@ export default {
       }
     }
 
+    // ✅ FIXED: Safe helper functions to prevent null errors
+    const getPatientName = (record) => {
+      if (!record) return 'Unknown'
+      if (record.patient_name) return record.patient_name
+      if (record.patient?.pet_name) return record.patient.pet_name
+      return 'Unknown Patient'
+    }
+
+    const getOwnerName = (record) => {
+      if (!record) return 'Unknown'
+      if (record.owner_name) return record.owner_name
+      if (record.patient?.owner_name) return record.patient.owner_name
+      if (record.patient?.owner?.name) return record.patient.owner.name
+      return 'Unknown Owner'
+    }
+
     const formatDate = (dateString) => {
       if (!dateString) return 'N/A'
-      const date = new Date(dateString)
-      return date.toLocaleDateString('en-IN', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
+      try {
+        const date = new Date(dateString)
+        return date.toLocaleDateString('en-IN', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        })
+      } catch (e) {
+        return 'Invalid Date'
+      }
     }
 
     const getInitial = (name) => {
-      return name ? name.charAt(0).toUpperCase() : '?'
+      if (!name || typeof name !== 'string') return '?'
+      return name.charAt(0).toUpperCase()
     }
 
     const viewRecord = (id) => {
-      window.location.href = `/records/${id}`
+      if (!id) {
+        console.error('No record ID provided')
+        return
+      }
+      window.location.href = `/records`
     }
 
     onMounted(() => {
@@ -158,6 +181,8 @@ export default {
       records,
       loading,
       error,
+      getPatientName,
+      getOwnerName,
       formatDate,
       getInitial,
       viewRecord,
