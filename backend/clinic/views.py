@@ -1,6 +1,6 @@
 """
 Clinic App Views - Complete with Dashboard Stats
-✅ FIXED VERSION
+✅ FIXED VERSION - Indentation Corrected
 """
 from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import action, api_view, permission_classes
@@ -146,20 +146,21 @@ class PatientViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
     
     def perform_create(self, serializer):
+        """✅ FIXED INDENTATION"""
         try:
-           photo = self.request.FILES.get('photo')
-           if photo:
-               photo = self.resize_image(photo)
+            photo = self.request.FILES.get('photo')
+            if photo:
+                photo = self.resize_image(photo)
         
-           save_kwargs = {}
-           if photo:
-               save_kwargs['photo'] = photo
+            save_kwargs = {}
+            if photo:
+                save_kwargs['photo'] = photo
         
-           # Don't set created_by for now
-           serializer.save(**save_kwargs)
-       except Exception as e:
-           print(f"❌ Error creating patient: {e}")
-           raise
+            # Don't set created_by for now
+            serializer.save(**save_kwargs)
+        except Exception as e:
+            print(f"❌ Error creating patient: {e}")
+            raise
     
     def perform_update(self, serializer):
         photo = self.request.FILES.get('photo')
