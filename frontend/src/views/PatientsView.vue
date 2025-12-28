@@ -74,6 +74,13 @@
         </div>
         
         <div class="patient-actions">
+          <!-- ✅ NEW: View Details Button -->
+          <button @click="viewPatientDetails(patient.id)" class="btn-view" title="View Details">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
           <button @click="editPatient(patient)" class="btn-edit" title="Edit">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -255,7 +262,10 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { useRouter } from 'vue-router';
 import api from '../services/api';
+
+const router = useRouter();
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 const BACKEND_URL = API_BASE_URL.replace('/api', '');
@@ -318,6 +328,11 @@ const getOwnerName = (ownerId) => {
   if (!Array.isArray(owners.value)) return 'Unknown';
   const owner = owners.value.find(o => o.id === ownerId);
   return owner ? owner.name : 'Unknown';
+};
+
+// ✅ NEW: View Patient Details Function
+const viewPatientDetails = (patientId) => {
+  router.push(`/patients/${patientId}`);
 };
 
 const fetchData = async () => {
@@ -438,7 +453,6 @@ const openAddModal = () => {
   photoFile.value = null;
 };
 
-// ✅ FIXED savePatient function
 const savePatient = async () => {
   if (!form.value.pet_name || !form.value.species || !form.value.owner) {
     alert('Please fill in all required fields (Pet Name, Species, Owner)')
@@ -736,35 +750,16 @@ onBeforeUnmount(() => {
   color: #06B6D4;
 }
 
+/* ✅ Updated Patient Actions - 3 Buttons */
 .patient-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
   padding: 12px 20px;
   border-top: 1px solid #E5E7EB;
 }
 
-.btn-edit, .btn-delete {
-  flex: 1;
-  background: #F3F4F6;
-  border: none;
-  padding: 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-edit {
-  color: #7C3AED;
-}
-
-.btn-edit:hover {
-  background: #EDE9FE;
-}
-
-.btn-delete {
+.btn-view, .btn-edit, .btn-delete {
   color: #EF4444;
 }
 
@@ -1158,6 +1153,37 @@ onBeforeUnmount(() => {
     width: 100%;
     justify-content: center;
   }
+  
+  .patient-actions {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+</style>
+  background: #F3F4F6;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-</style>
+.btn-view {
+  color: #06B6D4;
+}
+
+.btn-view:hover {
+  background: #CFFAFE;
+}
+
+.btn-edit {
+  color: #7C3AED;
+}
+
+.btn-edit:hover {
+  background: #EDE9FE;
+}
+
+.btn-delete {

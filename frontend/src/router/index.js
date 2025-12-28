@@ -4,6 +4,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 // Import all views
+import PatientDetailView from '../views/PatientDetailView.vue'
 import LoginView from '../views/LoginView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import PatientsView from '../views/PatientsView.vue'
@@ -40,6 +41,12 @@ const router = createRouter({
       component: () => import('../views/PatientsView.vue'),
       meta: { requiresAuth: true }
     },
+    {
+      path: '/patients/:id',
+      name: 'patient-detail',
+      component: PatientDetailView,
+      meta: { requiresAuth: true }
+    }
     {
       path: '/owners',
       name: 'Owners',
