@@ -257,7 +257,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import api from '../services/api';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 const BACKEND_URL = API_BASE_URL.replace('/api', '');
 const MEDIA_URL = `${BACKEND_URL}/media/`;
 
@@ -438,47 +438,44 @@ const openAddModal = () => {
   photoFile.value = null;
 };
 
+// ✅ FIXED savePatient function
 const savePatient = async () => {
-  if (!newPatient.name || !newPatient.species || !newPatient.owner) {
-    alert('Please fill in all required fields')
+  if (!form.value.pet_name || !form.value.species || !form.value.owner) {
+    alert('Please fill in all required fields (Pet Name, Species, Owner)')
     return
   }
   
   try {
     const formData = new FormData()
-    formData.append('name', newPatient.name)
-    formData.append('species', newPatient.species)
-    formData.append('breed', newPatient.breed)
-    formData.append('age', newPatient.age)
-    formData.append('gender', newPatient.gender)
-    formData.append('owner', newPatient.owner)
+    formData.append('pet_name', form.value.pet_name)
+    formData.append('species', form.value.species)
+    formData.append('breed', form.value.breed || '')
+    formData.append('gender', form.value.gender)
+    formData.append('owner', form.value.owner)
     
-    // ✅ FIX: Only append photo if it exists
-    if (newPatient.photo) {
-      formData.append('photo', newPatient.photo)
+    if (form.value.date_of_birth) formData.append('date_of_birth', form.value.date_of_birth)
+    if (form.value.color) formData.append('color', form.value.color)
+    if (form.value.weight) formData.append('weight', form.value.weight)
+    if (form.value.medical_history) formData.append('medical_history', form.value.medical_history)
+    if (photoFile.value) formData.append('photo', photoFile.value)
+    
+    let response
+    if (editingPatient.value) {
+      response = await api.put(`/patients/${editingPatient.value}/`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+    } else {
+      response = await api.post('/patients/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
     }
     
-    const response = await fetch(`${API_URL}/patients/`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Token ${localStorage.getItem('token')}`
-        // ✅ IMPORTANT: Don't set Content-Type for FormData
-      },
-      body: formData
-    })
-    
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(JSON.stringify(errorData))
-    }
-    
-    await fetchPatients()
-    showAddModal = false
-    resetForm()
-    alert('Patient saved successfully!')
+    alert(editingPatient.value ? 'Pet updated successfully!' : 'Pet saved successfully!')
+    closeModal()
+    await fetchData()
   } catch (error) {
     console.error('Error saving patient:', error)
-    alert('Failed to save patient: ' + error.message)
+    alert('Failed to save pet: ' + (error.response?.data?.detail || error.message))
   }
 }
 
@@ -503,7 +500,7 @@ const editPatient = (patient) => {
 };
 
 const deletePatient = async (id) => {
-  if (!confirm('Are you sure you want to delete this pet? This action cannot be undone.')) return;
+  if (!confirm('Are you sure you want to delete this pet?')) return;
   
   try {
     await api.delete(`/patients/${id}/`);
@@ -511,7 +508,7 @@ const deletePatient = async (id) => {
     fetchData();
   } catch (error) {
     console.error('Error deleting patient:', error);
-    alert('Failed to delete pet. Please try again.');
+    alert('Failed to delete pet.');
   }
 };
 
@@ -532,9 +529,7 @@ const closeModal = () => {
     medical_history: ''
   };
   closeCamera();
-  if (fileInput.value) {
-    fileInput.value.value = '';
-  }
+  if (fileInput.value) fileInput.value.value = '';
 };
 
 onMounted(() => {

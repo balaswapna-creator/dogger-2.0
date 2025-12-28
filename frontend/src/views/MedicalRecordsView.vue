@@ -106,31 +106,31 @@ import api from '../services/api'
 export default {
   name: 'MedicalRecordsView',
   setup() {
-    const records = ref([])
+    // ✅ FIXED: Changed from const to let
+    let records = ref([])
     const loading = ref(true)
     const error = ref(null)
 
     const fetchRecords = async () => {
-      loading = true
+      loading.value = true
+      error.value = null
       try {
-        // ✅ Use /medical-records/ endpoint (with dash)
-       const response = await fetch(`${API_URL}/medical-records/`, {
-         headers: {
-           'Authorization': `Token ${localStorage.getItem('token')}`
-         }
-       })
-    
-       if (!response.ok) throw new Error('Failed to fetch records')
-    
-       const data = await response.json()
-       records = data
-     } catch (error) {
-       console.error('Error:', error)
-       alert('Failed to load medical records')
-     } finally {
-       loading = false
-     }
-   }
+        // ✅ FIXED: Use api service instead of fetch
+        const response = await api.get('/medical-records/')
+        
+        // ✅ FIXED: Properly assign to records.value
+        records.value = Array.isArray(response.data) 
+          ? response.data 
+          : (response.data.results || [])
+          
+      } catch (err) {
+        console.error('Error fetching records:', err)
+        error.value = 'Failed to load medical records. Please try again.'
+        records.value = []
+      } finally {
+        loading.value = false
+      }
+    }
 
     const formatDate = (dateString) => {
       if (!dateString) return 'N/A'
@@ -147,7 +147,7 @@ export default {
     }
 
     const viewRecord = (id) => {
-      window.location.href = `/record/${id}`
+      window.location.href = `/records/${id}`
     }
 
     onMounted(() => {

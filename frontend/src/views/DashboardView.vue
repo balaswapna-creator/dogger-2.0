@@ -228,24 +228,77 @@ export default {
       try {
         // Fetch patients
         const patientsRes = await api.get('/patients/')
-        const patients = patientsRes.data || []
+        
+        // ✅ FIXED: Check if data is array before slicing
+        const patientsData = patientsRes.data || []
+        const patients = Array.isArray(patientsData) 
+          ? patientsData 
+          : (patientsData.results || [])
+        
         stats.value.totalPatients = patients.length
-        recentPatients.value = patients.slice(0, 5)
+        
+        // ✅ FIXED: Only slice if we have an array
+        recentPatients.value = Array.isArray(patients) 
+          ? patients.slice(0, 5) 
+          : []
 
         // Fetch owners
         const ownersRes = await api.get('/owners/')
-        const owners = ownersRes.data || []
+        const ownersData = ownersRes.data || []
+        const owners = Array.isArray(ownersData) 
+          ? ownersData 
+          : (ownersData.results || [])
+        
         stats.value.totalOwners = owners.length
 
         // Build recent activity
-        recentActivity.value = [
-          ...owners.slice(0, 3).map(owner => ({
+        // ✅ FIXED: Check if owners is array before slicing
+        if (Array.isArray(owners) && owners.length > 0) {
+          recentActivity.value = owners.slice(0, 3).map(owner => ({
             id: `owner-${owner.id}`,
             type: 'owner',
             title: `${owner.name} - ${owner.phone}`,
-            time: 'Just added'
+            time: 'Recently added'
           }))
-        ]
+        }
+
+        // Fetch today's appointments (from vaccinations or medical records)
+        try {
+          const vaccinationsRes = await api.get('/vaccinations/')
+          const vaccinations = Array.isArray(vaccinationsRes.data) 
+            ? vaccinationsRes.data 
+            : (vaccinationsRes.data.results || [])
+          
+          // Count today's vaccinations as appointments
+          const today = new Date().toISOString().split('T')[0]
+          stats.value.todayAppointments = vaccinations.filter(v => 
+            v.date_administered?.startsWith(today)
+          ).length
+        } catch (err) {
+          console.log('Could not fetch vaccinations for appointments count')
+        }
+
+        // Fetch revenue (from payments)
+        try {
+          const paymentsRes = await api.get('/payments/')
+          const payments = Array.isArray(paymentsRes.data) 
+            ? paymentsRes.data 
+            : (paymentsRes.data.results || [])
+          
+          // Calculate this month's revenue
+          const now = new Date()
+          const thisMonth = payments.filter(p => {
+            const paymentDate = new Date(p.payment_date)
+            return paymentDate.getMonth() === now.getMonth() &&
+                   paymentDate.getFullYear() === now.getFullYear() &&
+                   p.payment_status === 'completed'
+          })
+          
+          const total = thisMonth.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
+          stats.value.monthlyRevenue = total.toFixed(2)
+        } catch (err) {
+          console.log('Could not fetch payments for revenue calculation')
+        }
 
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
