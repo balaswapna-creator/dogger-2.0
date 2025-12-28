@@ -94,7 +94,7 @@
           </div>
           <div class="card-body">
             <div class="action-buttons">
-              <button @click="$router.push('/patients/new')" class="action-btn add-patient">
+              <button @click="$router.push('/patients')" class="action-btn add-patient">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -102,7 +102,7 @@
                 <span>Add New Patient</span>
               </button>
               
-              <button @click="$router.push('/owners/new')" class="action-btn add-owner">
+              <button @click="$router.push('/owners')" class="action-btn add-owner">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                   <circle cx="8.5" cy="7" r="4"></circle>
@@ -187,12 +187,12 @@
                 <tr v-for="patient in recentPatients" :key="patient.id">
                   <td>
                     <div class="patient-name">
-                      <div class="patient-avatar">{{ patient.name.charAt(0) }}</div>
-                      <span>{{ patient.name }}</span>
+                      <div class="patient-avatar">{{ getFirstChar(patient.pet_name) }}</div>
+                      <span>{{ patient.pet_name }}</span>
                     </div>
                   </td>
                   <td>{{ patient.species }}</td>
-                  <td>{{ patient.owner_name }}</td>
+                  <td>{{ patient.owner_name || 'N/A' }}</td>
                   <td>{{ formatDate(patient.last_visit) }}</td>
                   <td>
                     <button @click="viewPatient(patient.id)" class="btn-view">View</button>
@@ -226,32 +226,37 @@ export default {
 
     const fetchDashboardData = async () => {
       try {
-        // Fetch patients
-        const patientsRes = await api.get('/patients/')
+        // ✅ FIXED: Fetch from dashboard API endpoint
+        const dashboardRes = await api.get('/dashboard/')
         
-        // ✅ FIXED: Check if data is array before slicing
+        if (dashboardRes.data) {
+          stats.value = {
+            totalPatients: dashboardRes.data.total_patients || 0,
+            totalOwners: dashboardRes.data.total_owners || 0,
+            todayAppointments: dashboardRes.data.consultations_this_week || 0,
+            monthlyRevenue: (dashboardRes.data.revenue_this_month || 0).toFixed(2)
+          }
+        }
+
+        // Fetch recent patients for table
+        const patientsRes = await api.get('/patients/')
         const patientsData = patientsRes.data || []
         const patients = Array.isArray(patientsData) 
           ? patientsData 
           : (patientsData.results || [])
-        
-        stats.value.totalPatients = patients.length
         
         // ✅ FIXED: Only slice if we have an array
         recentPatients.value = Array.isArray(patients) 
           ? patients.slice(0, 5) 
           : []
 
-        // Fetch owners
+        // Fetch owners for recent activity
         const ownersRes = await api.get('/owners/')
         const ownersData = ownersRes.data || []
         const owners = Array.isArray(ownersData) 
           ? ownersData 
           : (ownersData.results || [])
-        
-        stats.value.totalOwners = owners.length
 
-        // Build recent activity
         // ✅ FIXED: Check if owners is array before slicing
         if (Array.isArray(owners) && owners.length > 0) {
           recentActivity.value = owners.slice(0, 3).map(owner => ({
@@ -262,57 +267,36 @@ export default {
           }))
         }
 
-        // Fetch today's appointments (from vaccinations or medical records)
-        try {
-          const vaccinationsRes = await api.get('/vaccinations/')
-          const vaccinations = Array.isArray(vaccinationsRes.data) 
-            ? vaccinationsRes.data 
-            : (vaccinationsRes.data.results || [])
-          
-          // Count today's vaccinations as appointments
-          const today = new Date().toISOString().split('T')[0]
-          stats.value.todayAppointments = vaccinations.filter(v => 
-            v.date_administered?.startsWith(today)
-          ).length
-        } catch (err) {
-          console.log('Could not fetch vaccinations for appointments count')
-        }
-
-        // Fetch revenue (from payments)
-        try {
-          const paymentsRes = await api.get('/payments/')
-          const payments = Array.isArray(paymentsRes.data) 
-            ? paymentsRes.data 
-            : (paymentsRes.data.results || [])
-          
-          // Calculate this month's revenue
-          const now = new Date()
-          const thisMonth = payments.filter(p => {
-            const paymentDate = new Date(p.payment_date)
-            return paymentDate.getMonth() === now.getMonth() &&
-                   paymentDate.getFullYear() === now.getFullYear() &&
-                   p.payment_status === 'completed'
-          })
-          
-          const total = thisMonth.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
-          stats.value.monthlyRevenue = total.toFixed(2)
-        } catch (err) {
-          console.log('Could not fetch payments for revenue calculation')
-        }
-
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
+        // Set default values on error
+        stats.value = {
+          totalPatients: 0,
+          totalOwners: 0,
+          todayAppointments: 0,
+          monthlyRevenue: '0'
+        }
       }
+    }
+
+    // ✅ FIXED: Safe charAt function
+    const getFirstChar = (str) => {
+      if (!str || typeof str !== 'string') return '?'
+      return str.charAt(0).toUpperCase()
     }
 
     const formatDate = (dateString) => {
       if (!dateString) return 'Never'
-      const date = new Date(dateString)
-      return date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
+      try {
+        const date = new Date(dateString)
+        return date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
+      } catch (e) {
+        return 'Invalid'
+      }
     }
 
     const viewPatient = (id) => {
-      window.location.href = `/patients/${id}`
+      window.location.href = `/patients`
     }
 
     const logout = () => {
@@ -329,6 +313,7 @@ export default {
       stats,
       recentPatients,
       recentActivity,
+      getFirstChar,
       formatDate,
       viewPatient,
       logout
