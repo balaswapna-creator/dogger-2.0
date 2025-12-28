@@ -146,23 +146,20 @@ class PatientViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
     
     def perform_create(self, serializer):
-    try:
-        photo = self.request.FILES.get('photo')
-        if photo:
-            photo = self.resize_image(photo)
+        try:
+           photo = self.request.FILES.get('photo')
+           if photo:
+               photo = self.resize_image(photo)
         
-        save_kwargs = {}
-        if photo:
-            save_kwargs['photo'] = photo
+           save_kwargs = {}
+           if photo:
+               save_kwargs['photo'] = photo
         
-        # Don't set created_by for now - remove this field requirement
-        # if self.request.user.is_authenticated:
-        #     save_kwargs['created_by'] = self.request.user
-        
-        serializer.save(**save_kwargs)
-    except Exception as e:
-        print(f"❌ Error creating patient: {e}")
-        raise
+           # Don't set created_by for now
+           serializer.save(**save_kwargs)
+       except Exception as e:
+           print(f"❌ Error creating patient: {e}")
+           raise
     
     def perform_update(self, serializer):
         photo = self.request.FILES.get('photo')
