@@ -206,7 +206,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import axios from 'axios';
+import api from '../services/api';
 
 const route = useRoute();
 const loading = ref(true);
@@ -232,7 +232,8 @@ const fetchPassbook = async () => {
   }
   
   try {
-    const response = await axios.get(`http://127.0.0.1:8000/api/passbook/${token}/`);
+    // Use the api service which already has the correct base URL
+    const response = await api.get(`/passbook/${token}/`);
     
     if (response.data.success) {
       passbook.value = response.data.data;
@@ -268,5 +269,43 @@ onMounted(() => {
   button {
     display: none;
   }
+}
+
+/* Tailwind CSS classes used (make sure Tailwind is configured) */
+.min-h-screen { min-height: 100vh; }
+.bg-gradient-to-br { background-image: linear-gradient(to bottom right, var(--tw-gradient-stops)); }
+.from-emerald-50 { --tw-gradient-from: #ecfdf5; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(236, 253, 245, 0)); }
+.to-emerald-100 { --tw-gradient-to: #d1fae5; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.text-center { text-align: center; }
+.animate-spin { animation: spin 1s linear infinite; }
+.rounded-full { border-radius: 9999px; }
+.h-16 { height: 4rem; }
+.w-16 { width: 4rem; }
+.border-b-4 { border-bottom-width: 4px; }
+.border-emerald-600 { border-color: #059669; }
+.mx-auto { margin-left: auto; margin-right: auto; }
+.mb-4 { margin-bottom: 1rem; }
+.text-gray-600 { color: #4b5563; }
+.font-semibold { font-weight: 600; }
+.p-4 { padding: 1rem; }
+.bg-white { background-color: #ffffff; }
+.rounded-xl { border-radius: 0.75rem; }
+.shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+.p-8 { padding: 2rem; }
+.max-w-md { max-width: 28rem; }
+.w-full { width: 100%; }
+.text-6xl { font-size: 3.75rem; line-height: 1; }
+.text-2xl { font-size: 1.5rem; line-height: 2rem; }
+.font-bold { font-weight: 700; }
+.text-red-700 { color: #b91c1c; }
+.mb-2 { margin-bottom: 0.5rem; }
+.max-w-4xl { max-width: 56rem; }
+.pb-20 { padding-bottom: 5rem; }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>

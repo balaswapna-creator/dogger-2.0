@@ -105,6 +105,93 @@
       </div>
     </div>
 
+   <!-- View Record Modal -->
+<div v-if="viewingRecord" class="modal-overlay" @click.self="closeViewModal">
+  <div class="view-modal">
+    <div class="modal-header-select">
+      <h2>Medical Record Details</h2>
+      <button @click="closeViewModal" class="btn-close-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="view-content">
+      <!-- Patient Info -->
+      <div class="view-section">
+        <h3>Patient Information</h3>
+        <div class="info-grid">
+          <div><strong>Patient:</strong> {{ getPatientName(viewingRecord) }}</div>
+          <div><strong>Owner:</strong> {{ getOwnerName(viewingRecord) }}</div>
+          <div><strong>Visit Date:</strong> {{ formatDate(viewingRecord.visit_date) }}</div>
+          <div><strong>Visit Type:</strong> {{ viewingRecord.visit_type }}</div>
+        </div>
+      </div>
+
+      <!-- Chief Complaint -->
+      <div class="view-section" v-if="viewingRecord.chief_complaint">
+        <h3>Chief Complaint</h3>
+        <p>{{ viewingRecord.chief_complaint }}</p>
+      </div>
+
+      <!-- History -->
+      <div class="view-section" v-if="viewingRecord.history">
+        <h3>History</h3>
+        <p>{{ viewingRecord.history }}</p>
+      </div>
+
+      <!-- Diagnosis -->
+      <div class="view-section">
+        <h3>Diagnosis</h3>
+        <p>{{ viewingRecord.diagnosis || 'Not specified' }}</p>
+      </div>
+
+      <!-- Treatment Plan -->
+      <div class="view-section">
+        <h3>Treatment Plan</h3>
+        <p>{{ viewingRecord.treatment_plan || 'Not specified' }}</p>
+      </div>
+
+      <!-- Clinical Notes -->
+      <div class="view-section" v-if="viewingRecord.clinical_notes">
+        <h3>Clinical Notes</h3>
+        <pre class="clinical-notes">{{ viewingRecord.clinical_notes }}</pre>
+      </div>
+
+      <!-- Vitals -->
+      <div class="view-section" v-if="viewingRecord.temperature || viewingRecord.weight || viewingRecord.heart_rate">
+        <h3>Vitals</h3>
+        <div class="info-grid">
+          <div v-if="viewingRecord.temperature"><strong>Temperature:</strong> {{ viewingRecord.temperature }}°F</div>
+          <div v-if="viewingRecord.weight"><strong>Weight:</strong> {{ viewingRecord.weight }} kg</div>
+          <div v-if="viewingRecord.heart_rate"><strong>Heart Rate:</strong> {{ viewingRecord.heart_rate }} bpm</div>
+        </div>
+      </div>
+
+      <!-- Follow-up -->
+      <div class="view-section" v-if="viewingRecord.follow_up_notes || viewingRecord.next_visit_date">
+        <h3>Follow-up</h3>
+        <div v-if="viewingRecord.next_visit_date">
+          <strong>Next Visit:</strong> {{ formatDate(viewingRecord.next_visit_date) }}
+        </div>
+        <p v-if="viewingRecord.follow_up_notes">{{ viewingRecord.follow_up_notes }}</p>
+      </div>
+
+      <!-- Fee -->
+      <div class="view-section" v-if="viewingRecord.consultation_fee">
+        <h3>Consultation Fee</h3>
+        <p class="fee-amount">₹{{ viewingRecord.consultation_fee }}</p>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button @click="closeViewModal" class="btn-cancel">Close</button>
+    </div>
+  </div>
+</div>
+
     <!-- Patient Selection Modal -->
     <div v-if="showForm && !selectedPatient" class="modal-overlay" @click.self="closeForm">
       <div class="modal-container patient-select">
@@ -705,12 +792,27 @@ Additional Notes: ${form.value.notes || 'None'}
       }
     }
 
-    const viewRecord = (id) => {
+    const viewingRecord = ref(null)
+    
+    const viewRecord = async (id) => {
       if (!id) {
         console.error('No record ID provided')
         return
       }
-      console.log('View record:', id)
+      
+      try {
+        console.log('Fetching record:', id)
+        const response = await api.get(`/medical-records/${id}/`)
+        viewingRecord.value = response.data
+        console.log('Record loaded:', response.data)
+      } catch (err) {
+        console.error('Error loading record:', err)
+        alert('Failed to load record details')
+      }
+    }
+    
+    const closeViewModal = () => {
+      viewingRecord.value = null
     }
 
     onMounted(() => {
@@ -727,6 +829,7 @@ Additional Notes: ${form.value.notes || 'None'}
       patientSearch,
       form,
       filteredPatients,
+      viewingRecord,
       getPatientName,
       getOwnerName,
       getPatientOwnerName,
@@ -739,6 +842,7 @@ Additional Notes: ${form.value.notes || 'None'}
       handleSaveRecord,
       closeForm,
       viewRecord,
+      closeViewModal,
       fetchRecords
     }
   }
@@ -1440,5 +1544,74 @@ Additional Notes: ${form.value.notes || 'None'}
   .btn-cancel, .btn-save {
     flex: 1;
   }
+/* View Modal */
+.view-modal {
+  background: white;
+  border-radius: 20px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+.view-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+}
+
+.view-section {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.view-section:last-child {
+  border-bottom: none;
+}
+
+.view-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #8B5CF6;
+}
+
+.view-section p {
+  margin: 0;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.info-grid div {
+  color: #374151;
+}
+
+.clinical-notes {
+  background: #F9FAFB;
+  padding: 16px;
+  border-radius: 8px;
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.6;
+  border: 1px solid #E5E7EB;
+}
+
+.fee-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: #10B981;
+}
+
 }
 </style>

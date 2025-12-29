@@ -377,12 +377,13 @@ const fetchPatientData = async () => {
     const patientId = route.params.id;
     
     // Fetch all data in parallel
-    const [patientRes, ownersRes, recordsRes, vaccRes, paymentsRes] = await Promise.all([
+    const [patientRes, ownersRes, recordsRes, vaccRes, paymentsRes, passbooksRes] = await Promise.all([
       api.get(`/patients/${patientId}/`),
       api.get('/owners/'),
       api.get('/medical-records/'),
       api.get('/vaccinations/'),
-      api.get('/payments/')
+      api.get('/payments/'),
+      api.get('/passbooks/')
     ]);
     
     patient.value = patientRes.data;
@@ -398,6 +399,10 @@ const fetchPatientData = async () => {
     const allPayments = Array.isArray(paymentsRes.data) ? paymentsRes.data : (paymentsRes.data.results || []);
     payments.value = allPayments.filter(p => p.patient === parseInt(patientId));
     
+    // Check if passbook exists
+    const allPassbooks = Array.isArray(passbooksRes.data) ? passbooksRes.data : (passbooksRes.data.results || []);
+    hasPassbook.value = allPassbooks.some(pb => pb.patient === parseInt(patientId));
+    
   } catch (err) {
     console.error('Error fetching patient data:', err);
     error.value = err.response?.data?.detail || 'Failed to load patient details';
@@ -408,6 +413,36 @@ const fetchPatientData = async () => {
 
 const editPatient = () => {
   router.push(`/patients?edit=${patient.value.id}`);
+};
+
+const createPassbook = async () => {
+  if (!patient.value?.id) return;
+  
+  creatingPassbook.value = true;
+  try {
+    const response = await api.post('/passbooks/', {
+      patient: patient.value.id,
+      is_enabled: true,
+      subscription_type: 'yearly'
+    });
+    
+    alert('Digital passbook created successfully!');
+    hasPassbook.value = true;
+    
+    // Optionally refresh data
+    await fetchPatientData();
+  } catch (err) {
+    console.error('Error creating passbook:', err);
+    alert('Failed to create passbook: ' + (err.response?.data?.detail || err.message));
+  } finally {
+    creatingPassbook.value = false;
+  }
+};
+
+const viewPassbook = () => {
+  if (patient.value?.id) {
+    router.push('/passbooks');
+  }
 };
 
 onMounted(() => {
@@ -924,4 +959,127 @@ onMounted(() => {
     justify-content: center;
   }
 }
-</style> 
+
+/* Passbook Section Styles */
+.passbook-section {
+  background: linear-gradient(135deg, #F0FDF4, #DCFCE7);
+  border: 2px solid #10B981;
+}
+
+.passbook-active {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 20px;
+}
+
+.passbook-badge {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #14B8A6, #0D9488);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.passbook-info {
+  flex: 1;
+}
+
+.passbook-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #065F46;
+}
+
+.passbook-info p {
+  margin: 0 0 16px 0;
+  color: #047857;
+  font-size: 14px;
+}
+
+.btn-view-passbook {
+  background: linear-gradient(135deg, #14B8A6, #0D9488);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s;
+}
+
+.btn-view-passbook:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(20, 184, 166, 0.4);
+}
+
+.passbook-inactive {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.passbook-inactive svg {
+  color: #10B981;
+  margin-bottom: 16px;
+}
+
+.passbook-inactive h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #065F46;
+}
+
+.passbook-inactive p {
+  margin: 0 0 24px 0;
+  color: #047857;
+  font-size: 14px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.btn-create-passbook {
+  background: linear-gradient(135deg, #10B981, #059669);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-create-passbook:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.btn-create-passbook:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.mini-spinner {
+  width: 18px;
+  height: 18px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+</style>
