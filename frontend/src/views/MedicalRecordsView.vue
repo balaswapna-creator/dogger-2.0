@@ -649,46 +649,39 @@ Additional Notes: ${form.value.notes || 'None'}
 
         console.log('Sending record data:', recordData);
         
-        const response = await api.post('/medical-records/', recordData)
-        
-        console.log('Record saved successfully:', response.data);
-        alert('Clinical record saved successfully!')
-        closeForm()
-        await fetchRecords()
-      } catch (err) {
-        console.error('Error saving record:', err)
-        console.error('Error response:', err.response?.data)
-        
-        let errorMsg = 'Failed to save record';
-        
-        if (err.response?.data) {
-          const errorData = err.response.data;
-          if (typeof errorData === 'object') {
-            // Format validation errors
-            const errors = Object.entries(errorData)
-              .map(([field, messages]) => {
-                const msgArray = Array.isArray(messages) ? messages : [messages];
-                return `${field}: ${msgArray.join(', ')}`;
-              })
-              .join('\n');
-            errorMsg = errors || errorMsg;
-          } else {
-            errorMsg = errorData;
-          }
-        } else if (err.message) {
-          errorMsg = err.message;
-        }
-        
-        alert(errorMsg)
+    const response = await api.post('/medical-records/', recordData)
+    
+    console.log('Record saved successfully:', response.data)
+    alert('Clinical record saved successfully!')
+    closeForm()
+    await fetchRecords()
+  } catch (err) {
+    console.error('Error saving record:', err)
+    console.error('Error response:', err.response?.data)
+    
+    let errorMsg = 'Failed to save record'
+    
+    if (err.response?.data) {
+      const errorData = err.response.data
+      if (typeof errorData === 'object') {
+        const errors = Object.entries(errorData)
+          .map(([field, messages]) => {
+            const msgArray = Array.isArray(messages) ? messages : [messages]
+            return `${field}: ${msgArray.join(', ')}`
+          })
+          .join('\n')
+        errorMsg = errors || errorMsg
+      } else {
+        errorMsg = errorData
       }
+    } else if (err.message) {
+      errorMsg = err.message
     }
-        console.log('Record saved successfully:', response.data);
-        alert('Clinical record saved successfully!')
-        closeForm()
-        await fetchRecords()
-      } catch (err) {
-        console.error('Error saving record:', err)
-        console.error('Error response:', err.response?.data)
+    
+    alert(errorMsg)
+  }
+}
+        
         
         const errorMsg = err.response?.data?.detail 
           || err.response?.data?.message
