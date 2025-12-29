@@ -105,89 +105,194 @@
       </div>
     </div>
 
-   <!-- View Record Modal -->
+   <!-- Styled Medical Record View Modal -->
 <div v-if="viewingRecord" class="modal-overlay" @click.self="closeViewModal">
-  <div class="view-modal">
-    <div class="modal-header-select">
-      <h2>Medical Record Details</h2>
-      <button @click="closeViewModal" class="btn-close-icon">
+  <div class="record-view-modal">
+    <!-- Header -->
+    <div class="record-header">
+      <div class="clinic-info">
+        <h1>🏥 Sri Adithya Pet Clinic</h1>
+        <p>Dr. A. Balasubramanian, B.V.Sc, MBA(H A)</p>
+        <p class="clinic-address">No:16,Sriram Nagar,Theni, Tamil Nadu - 625531</p>
+      </div>
+      <button @click="closeViewModal" class="btn-close-modal">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </button>
     </div>
-    
-    <div class="view-content">
-      <!-- Patient Info -->
-      <div class="view-section">
-        <h3>Patient Information</h3>
-        <div class="info-grid">
-          <div><strong>Patient:</strong> {{ getPatientName(viewingRecord) }}</div>
-          <div><strong>Owner:</strong> {{ getOwnerName(viewingRecord) }}</div>
-          <div><strong>Visit Date:</strong> {{ formatDate(viewingRecord.visit_date) }}</div>
-          <div><strong>Visit Type:</strong> {{ viewingRecord.visit_type }}</div>
+
+    <div class="record-body">
+      <!-- Patient & Visit Info Card -->
+      <div class="info-card">
+        <h2 class="card-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="10" r="3"></circle>
+            <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"></path>
+          </svg>
+          Patient Information
+        </h2>
+        <div class="info-grid-2">
+          <div class="info-item">
+            <span class="label">Patient Name</span>
+            <span class="value">{{ getPatientName(viewingRecord) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Owner</span>
+            <span class="value">{{ getOwnerName(viewingRecord) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Visit Date</span>
+            <span class="value">{{ formatDate(viewingRecord.visit_date) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Visit Type</span>
+            <span class="value visit-type">{{ viewingRecord.visit_type }}</span>
+          </div>
         </div>
       </div>
 
       <!-- Chief Complaint -->
-      <div class="view-section" v-if="viewingRecord.chief_complaint">
-        <h3>Chief Complaint</h3>
-        <p>{{ viewingRecord.chief_complaint }}</p>
+      <div class="info-card complaint-card" v-if="viewingRecord.chief_complaint">
+        <h2 class="card-title red">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          Chief Complaint
+        </h2>
+        <p class="content-text">{{ viewingRecord.chief_complaint }}</p>
       </div>
 
       <!-- History -->
-      <div class="view-section" v-if="viewingRecord.history">
-        <h3>History</h3>
-        <p>{{ viewingRecord.history }}</p>
-      </div>
-
-      <!-- Diagnosis -->
-      <div class="view-section">
-        <h3>Diagnosis</h3>
-        <p>{{ viewingRecord.diagnosis || 'Not specified' }}</p>
-      </div>
-
-      <!-- Treatment Plan -->
-      <div class="view-section">
-        <h3>Treatment Plan</h3>
-        <p>{{ viewingRecord.treatment_plan || 'Not specified' }}</p>
-      </div>
-
-      <!-- Clinical Notes -->
-      <div class="view-section" v-if="viewingRecord.clinical_notes">
-        <h3>Clinical Notes</h3>
-        <pre class="clinical-notes">{{ viewingRecord.clinical_notes }}</pre>
+      <div class="info-card" v-if="viewingRecord.history">
+        <h2 class="card-title amber">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+          Medical History
+        </h2>
+        <p class="content-text">{{ viewingRecord.history }}</p>
       </div>
 
       <!-- Vitals -->
-      <div class="view-section" v-if="viewingRecord.temperature || viewingRecord.weight || viewingRecord.heart_rate">
-        <h3>Vitals</h3>
-        <div class="info-grid">
-          <div v-if="viewingRecord.temperature"><strong>Temperature:</strong> {{ viewingRecord.temperature }}°F</div>
-          <div v-if="viewingRecord.weight"><strong>Weight:</strong> {{ viewingRecord.weight }} kg</div>
-          <div v-if="viewingRecord.heart_rate"><strong>Heart Rate:</strong> {{ viewingRecord.heart_rate }} bpm</div>
+      <div class="info-card vitals-card" v-if="viewingRecord.temperature || viewingRecord.weight || viewingRecord.heart_rate">
+        <h2 class="card-title green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+          </svg>
+          Vital Signs
+        </h2>
+        <div class="vitals-grid-view">
+          <div class="vital-box" v-if="viewingRecord.temperature">
+            <div class="vital-icon temp">🌡️</div>
+            <div class="vital-info">
+              <span class="vital-label">Temperature</span>
+              <span class="vital-value">{{ viewingRecord.temperature }}°F</span>
+            </div>
+          </div>
+          <div class="vital-box" v-if="viewingRecord.weight">
+            <div class="vital-icon weight">⚖️</div>
+            <div class="vital-info">
+              <span class="vital-label">Weight</span>
+              <span class="vital-value">{{ viewingRecord.weight }} kg</span>
+            </div>
+          </div>
+          <div class="vital-box" v-if="viewingRecord.heart_rate">
+            <div class="vital-icon heart">💓</div>
+            <div class="vital-info">
+              <span class="vital-label">Heart Rate</span>
+              <span class="vital-value">{{ viewingRecord.heart_rate }} bpm</span>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <!-- Clinical Notes -->
+      <div class="info-card" v-if="viewingRecord.clinical_notes">
+        <h2 class="card-title green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 3v18h18"></path>
+            <path d="M7 12v5"></path>
+            <path d="M12 8v9"></path>
+            <path d="M17 4v13"></path>
+          </svg>
+          Clinical Examination
+        </h2>
+        <div class="clinical-notes-box">{{ viewingRecord.clinical_notes }}</div>
+      </div>
+
+      <!-- Diagnosis -->
+      <div class="info-card diagnosis-card">
+        <h2 class="card-title purple">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          Diagnosis
+        </h2>
+        <p class="content-text diagnosis">{{ viewingRecord.diagnosis || 'Not specified' }}</p>
+      </div>
+
+      <!-- Treatment Plan -->
+      <div class="info-card treatment-card">
+        <h2 class="card-title blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+          Treatment Plan
+        </h2>
+        <p class="content-text">{{ viewingRecord.treatment_plan || 'Not specified' }}</p>
       </div>
 
       <!-- Follow-up -->
-      <div class="view-section" v-if="viewingRecord.follow_up_notes || viewingRecord.next_visit_date">
-        <h3>Follow-up</h3>
-        <div v-if="viewingRecord.next_visit_date">
-          <strong>Next Visit:</strong> {{ formatDate(viewingRecord.next_visit_date) }}
+      <div class="info-card" v-if="viewingRecord.follow_up_notes || viewingRecord.next_visit_date">
+        <h2 class="card-title cyan">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          Follow-up Information
+        </h2>
+        <div class="info-grid-2" v-if="viewingRecord.next_visit_date">
+          <div class="info-item">
+            <span class="label">Next Visit</span>
+            <span class="value next-visit">{{ formatDate(viewingRecord.next_visit_date) }}</span>
+          </div>
         </div>
-        <p v-if="viewingRecord.follow_up_notes">{{ viewingRecord.follow_up_notes }}</p>
+        <p class="content-text" v-if="viewingRecord.follow_up_notes">{{ viewingRecord.follow_up_notes }}</p>
       </div>
 
       <!-- Fee -->
-      <div class="view-section" v-if="viewingRecord.consultation_fee">
-        <h3>Consultation Fee</h3>
-        <p class="fee-amount">₹{{ viewingRecord.consultation_fee }}</p>
+      <div class="info-card fee-card" v-if="viewingRecord.consultation_fee">
+        <h2 class="card-title green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+          Consultation Fee
+        </h2>
+        <div class="fee-amount">₹{{ viewingRecord.consultation_fee }}</div>
       </div>
     </div>
 
-    <div class="modal-actions">
-      <button @click="closeViewModal" class="btn-cancel">Close</button>
+    <!-- Footer Actions -->
+    <div class="record-footer">
+      <button @click="closeViewModal" class="btn-close-record">Close</button>
+      <button @click="printRecord" class="btn-print-record">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 6 2 18 2 18 9"></polyline>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+          <rect x="6" y="14" width="12" height="8"></rect>
+        </svg>
+        Print Record
+      </button>
     </div>
   </div>
 </div>
@@ -814,6 +919,11 @@ Additional Notes: ${form.value.notes || 'None'}
     const closeViewModal = () => {
       viewingRecord.value = null
     }
+
+// Add this function in your MedicalRecordsView.vue script setup
+     const printRecord = () => {
+       window.print();
+    };
 
     onMounted(() => {
       fetchRecords()
@@ -1544,74 +1654,308 @@ Additional Notes: ${form.value.notes || 'None'}
   .btn-cancel, .btn-save {
     flex: 1;
   }
-/* View Modal */
-.view-modal {
+/* Medical Record View Modal Styles */
+.record-view-modal {
   background: white;
   border-radius: 20px;
-  max-width: 800px;
+  max-width: 900px;
   width: 100%;
-  max-height: 90vh;
+  max-height: 95vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: modalSlideIn 0.3s ease-out;
 }
 
-.view-content {
+.record-header {
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+  color: white;
+  padding: 24px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.clinic-info h1 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.clinic-info p {
+  margin: 4px 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.clinic-address {
+  font-size: 13px !important;
+  opacity: 0.8 !important;
+}
+
+.btn-close-modal {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.btn-close-modal:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.record-body {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 32px;
+  padding: 24px;
+  background: #F9FAFB;
 }
 
-.view-section {
-  margin-bottom: 24px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid #E5E7EB;
+.info-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-left: 4px solid #8B5CF6;
 }
 
-.view-section:last-child {
-  border-bottom: none;
-}
+.complaint-card { border-left-color: #EF4444; }
+.diagnosis-card { border-left-color: #8B5CF6; }
+.treatment-card { border-left-color: #3B82F6; }
+.vitals-card { border-left-color: #10B981; }
+.fee-card { border-left-color: #10B981; }
 
-.view-section h3 {
-  margin: 0 0 12px 0;
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 18px;
   font-weight: 700;
   color: #8B5CF6;
+  margin: 0 0 16px 0;
 }
 
-.view-section p {
-  margin: 0;
-  color: #374151;
-  line-height: 1.6;
-}
+.card-title.red { color: #EF4444; }
+.card-title.amber { color: #F59E0B; }
+.card-title.green { color: #10B981; }
+.card-title.purple { color: #8B5CF6; }
+.card-title.blue { color: #3B82F6; }
+.card-title.cyan { color: #06B6D4; }
 
-.info-grid {
+.info-grid-2 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
-.info-grid div {
-  color: #374151;
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.clinical-notes {
-  background: #F9FAFB;
-  padding: 16px;
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.visit-type {
+  background: #EDE9FE;
+  color: #7C3AED;
+  padding: 6px 12px;
   border-radius: 8px;
+  display: inline-block;
+  text-transform: capitalize;
+}
+
+.next-visit {
+  background: #DBEAFE;
+  color: #1E40AF;
+  padding: 6px 12px;
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.content-text {
+  margin: 0;
+  color: #374151;
+  line-height: 1.7;
+  font-size: 15px;
+}
+
+.diagnosis {
+  font-weight: 600;
+  color: #7C3AED;
+  font-size: 16px;
+}
+
+.vitals-grid-view {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.vital-box {
+  background: linear-gradient(135deg, #F0FDF4, #DCFCE7);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 2px solid #10B981;
+}
+
+.vital-icon {
+  font-size: 32px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.vital-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vital-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #065F46;
+  text-transform: uppercase;
+}
+
+.vital-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #047857;
+}
+
+.clinical-notes-box {
+  background: #F9FAFB;
+  border: 2px solid #E5E7EB;
+  border-radius: 10px;
+  padding: 16px;
   white-space: pre-wrap;
   font-family: inherit;
   font-size: 14px;
   color: #374151;
-  line-height: 1.6;
-  border: 1px solid #E5E7EB;
+  line-height: 1.7;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .fee-amount {
-  font-size: 24px;
+  font-size: 36px;
   font-weight: 700;
   color: #10B981;
+  text-align: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #F0FDF4, #DCFCE7);
+  border-radius: 12px;
+  border: 2px solid #10B981;
 }
 
+.record-footer {
+  padding: 20px 24px;
+  border-top: 2px solid #E5E7EB;
+  display: flex;
+  gap: 12px;
+  background: white;
+}
+
+.btn-close-record {
+  flex: 1;
+  background: #F3F4F6;
+  color: #4B5563;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-close-record:hover {
+  background: #E5E7EB;
+}
+
+.btn-print-record {
+  flex: 2;
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  transition: all 0.3s;
+}
+
+.btn-print-record:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+}
+
+@media print {
+  .record-header {
+    background: white !important;
+    color: black !important;
+    border-bottom: 3px solid #8B5CF6;
+  }
+  
+  .btn-close-modal, .record-footer {
+    display: none !important;
+  }
+  
+  .record-body {
+    background: white !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .record-view-modal {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+  
+  .vitals-grid-view {
+    grid-template-columns: 1fr;
+  }
+  
+  .info-grid-2 {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

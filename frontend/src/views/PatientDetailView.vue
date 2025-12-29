@@ -383,7 +383,7 @@ const fetchPatientData = async () => {
       api.get('/medical-records/'),
       api.get('/vaccinations/'),
       api.get('/payments/'),
-      api.get('/passbooks/')
+      api.get('/passbooks/').catch(() => ({ data: [] })) // Handle if passbooks endpoint fails
     ]);
     
     patient.value = patientRes.data;
@@ -391,17 +391,20 @@ const fetchPatientData = async () => {
     
     // Filter records for this patient
     const allRecords = Array.isArray(recordsRes.data) ? recordsRes.data : (recordsRes.data.results || []);
-    medicalRecords.value = allRecords.filter(r => r.patient === parseInt(patientId));
+    medicalRecords.value = allRecords.filter(r => r.patient === patientId || r.patient === parseInt(patientId));
     
     const allVacc = Array.isArray(vaccRes.data) ? vaccRes.data : (vaccRes.data.results || []);
-    vaccinations.value = allVacc.filter(v => v.patient === parseInt(patientId));
+    vaccinations.value = allVacc.filter(v => v.patient === patientId || v.patient === parseInt(patientId));
     
     const allPayments = Array.isArray(paymentsRes.data) ? paymentsRes.data : (paymentsRes.data.results || []);
-    payments.value = allPayments.filter(p => p.patient === parseInt(patientId));
+    payments.value = allPayments.filter(p => p.patient === patientId || p.patient === parseInt(patientId));
     
     // Check if passbook exists
     const allPassbooks = Array.isArray(passbooksRes.data) ? passbooksRes.data : (passbooksRes.data.results || []);
-    hasPassbook.value = allPassbooks.some(pb => pb.patient === parseInt(patientId));
+    hasPassbook.value = allPassbooks.some(pb => {
+      const pbPatient = pb.patient?.id || pb.patient;
+      return pbPatient === patientId || pbPatient === parseInt(patientId);
+    });
     
   } catch (err) {
     console.error('Error fetching patient data:', err);
