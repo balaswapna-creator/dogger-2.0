@@ -1623,37 +1623,6 @@ Additional Notes: ${form.value.notes || 'None'}
   box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
 }
 
-@media (max-width: 768px) {
-  .records-wrapper {
-    padding: 16px;
-  }
-  
-  .header-content {
-    flex-direction: column;
-    gap: 16px;
-    align-items: stretch;
-  }
-  
-  .btn-add {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .vitals-grid, .systems-grid, .medicine-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .form-scroll {
-    padding: 20px;
-  }
-  
-  .form-actions {
-    flex-direction: column;
-  }
-  
-  .btn-cancel, .btn-save {
-    flex: 1;
-  }
 /* Medical Record View Modal Styles */
 .record-view-modal {
   background: white;
@@ -1950,12 +1919,33 @@ Additional Notes: ${form.value.notes || 'None'}
     border-radius: 0;
   }
   
-  .vitals-grid-view {
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .btn-add {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .vitals-grid, .systems-grid, .medicine-grid {
     grid-template-columns: 1fr;
   }
   
-  .info-grid-2 {
-    grid-template-columns: 1fr;
+  .form-scroll {
+    padding: 20px;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .btn-cancel, .btn-save {
+    flex: 1;
   }
 }
 </style>
+
+
