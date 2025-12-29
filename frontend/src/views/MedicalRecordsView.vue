@@ -584,23 +584,22 @@ export default {
         return
       }
 
-      if (!form.value.diagnosis || !form.value.treatment_plan) {
+      if (!form.value.diagnosis || !form.value.treatment_plan || !form.value.chief_complaint) {
         alert('Please fill in required fields: Diagnosis and Treatment Plan')
         return
       }
 
       try {
-        // Prepare data for API
-        const recordData = {
-          patient: selectedPatient.value.id,
-          visit_date: form.value.visit_date,
-          diagnosis: form.value.diagnosis,
-          treatment_plan: form.value.treatment_plan,
-          notes: `
-Chief Complaint: ${form.value.chief_complaint}
-
-History: ${form.value.history}
-
+        // ✅ FIXED: Added required fields that backend expects
+    const recordData = {
+      patient: selectedPatient.value.id,
+      visit_date: form.value.visit_date,
+      visit_type: 'consultation', // ✅ ADDED: Required field (default to consultation)
+      chief_complaint: form.value.chief_complaint, // ✅ ADDED: Required field
+      history: form.value.history || '', // Optional
+      diagnosis: form.value.diagnosis,
+      treatment_plan: form.value.treatment_plan,
+      clinical_notes: `
 Physical Examination:
 - Temperature: ${form.value.physical.temperature}°F
 - Pulse: ${form.value.physical.pulse} bpm
@@ -629,19 +628,23 @@ Next Review: ${form.value.next_review_date}
 Special Instructions: ${form.value.special_instructions}
 
 Additional Notes: ${form.value.notes}
-          `.trim()
-        }
-
-        await api.post('/medical-records/', recordData)
-        
-        alert('Clinical record saved successfully!')
-        closeForm()
-        await fetchRecords()
-      } catch (err) {
-        console.error('Error saving record:', err)
-        alert('Failed to save record: ' + (err.response?.data?.detail || err.message))
-      }
+      `.trim(),
+      // ✅ ADDED: Optional vitals if available
+      temperature: form.value.physical.temperature || null,
+      weight: form.value.physical.weight || null,
+      next_visit_date: form.value.next_review_date || null
     }
+
+    await api.post('/medical-records/', recordData)
+    
+    alert('Clinical record saved successfully!')
+    closeForm()
+    await fetchRecords()
+  } catch (err) {
+    console.error('Error saving record:', err)
+    alert('Failed to save record: ' + (err.response?.data?.detail || err.message))
+  }
+}
 
     const closeForm = () => {
       showForm.value = false
