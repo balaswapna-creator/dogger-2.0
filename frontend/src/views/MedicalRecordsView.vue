@@ -420,7 +420,7 @@
         <!-- Action Buttons -->
         <div class="form-actions">
           <button @click="closeForm" class="btn-cancel">Cancel</button>
-          <button @click="saveRecord" class="btn-save">
+          <button @click="handleSaveRecord" class="btn-save">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
               <polyline points="17 21 17 13 7 13 7 21"></polyline>
@@ -578,7 +578,7 @@ export default {
       }
     }
 
-    const saveRecord = async () => {
+    const handleSaveRecord = async () => {
       if (!selectedPatient.value) {
         alert('Please select a patient')
         return
@@ -590,14 +590,12 @@ export default {
       }
 
       try {
-        // Format medications as a readable string
         const medicationsText = form.value.medications
           .filter(med => med.name)
           .map((med, i) => 
             `${i + 1}. ${med.name}${med.dosage ? ` - ${med.dosage}` : ''}${med.frequency ? `, ${med.frequency}` : ''}${med.duration ? `, ${med.duration}` : ''}${med.route ? `, Route: ${med.route}` : ''}`
-          ).join('\n') || 'No medications prescribed';
+          ).join('\n') || 'No medications prescribed'
 
-        // Prepare clinical notes with all examination details
         const clinicalNotes = `
 PHYSICAL EXAMINATION:
 Vitals: Temp: ${form.value.physical.temperature || 'N/A'}°F, Pulse: ${form.value.physical.pulse || 'N/A'} bpm, Resp: ${form.value.physical.respiration || 'N/A'} rpm, Weight: ${form.value.physical.weight || 'N/A'} kg
