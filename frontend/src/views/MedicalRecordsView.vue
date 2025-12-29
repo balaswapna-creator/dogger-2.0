@@ -13,6 +13,13 @@
           </svg>
           <h1>Medical Records</h1>
         </div>
+        <button @click="openNewRecordForm" class="btn-add">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          New Clinical Exam
+        </button>
       </div>
     </div>
 
@@ -41,7 +48,8 @@
         <polyline points="14 2 14 8 20 8"></polyline>
       </svg>
       <h3>No Medical Records Found</h3>
-      <p>Medical records will appear here when you add them from patient details.</p>
+      <p>Start by creating a new clinical examination record</p>
+      <button @click="openNewRecordForm" class="btn-empty-action">Create First Record</button>
     </div>
 
     <!-- Records Table -->
@@ -96,33 +104,414 @@
         </table>
       </div>
     </div>
+
+    <!-- Patient Selection Modal -->
+    <div v-if="showForm && !selectedPatient" class="modal-overlay" @click.self="closeForm">
+      <div class="modal-container patient-select">
+        <div class="modal-header-select">
+          <h2>Select Patient for Clinical Exam</h2>
+          <button @click="closeForm" class="btn-close-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        
+        <!-- Search Patients -->
+        <div class="search-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          <input 
+            v-model="patientSearch" 
+            type="text" 
+            placeholder="Search patients by name or owner..."
+            class="search-input"
+          />
+        </div>
+
+        <div class="patients-grid-modal">
+          <div 
+            v-for="patient in filteredPatients" 
+            :key="patient.id" 
+            @click="selectPatient(patient)" 
+            class="patient-card-select"
+          >
+            <h3>{{ patient.pet_name }}</h3>
+            <p>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              {{ getPatientOwnerName(patient.owner) }}
+            </p>
+            <div class="badges">
+              <span class="badge species">{{ patient.species }}</span>
+              <span class="badge">{{ patient.breed }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clinical Examination Form -->
+    <div v-if="showForm && selectedPatient" class="modal-overlay" @click.self="closeForm">
+      <div class="form-container">
+        <div class="form-header">
+          <div>
+            <h2>Clinical Examination Record</h2>
+            <p>Patient: <strong>{{ selectedPatient.pet_name }}</strong> | Owner: <strong>{{ getPatientOwnerName(selectedPatient.owner) }}</strong></p>
+          </div>
+          <button @click="closeForm" class="btn-close-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="form-scroll">
+          <!-- Visit Date -->
+          <div class="form-section">
+            <label class="section-label">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              Visit Date *
+            </label>
+            <input v-model="form.visit_date" type="date" class="input-field" />
+          </div>
+
+          <!-- Chief Complaint -->
+          <div class="form-section section-red">
+            <h3 class="section-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              Chief Complaint
+            </h3>
+            <textarea v-model="form.chief_complaint" rows="3" placeholder="What is the primary reason for today's visit? (e.g., vomiting, lethargy, loss of appetite)" class="textarea-field"></textarea>
+          </div>
+
+          <!-- History -->
+          <div class="form-section section-amber">
+            <h3 class="section-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+              History
+            </h3>
+            <textarea v-model="form.history" rows="4" placeholder="Duration of symptoms, previous treatments, diet changes, vaccination history, etc." class="textarea-field"></textarea>
+          </div>
+
+          <!-- Physical Examination -->
+          <div class="form-section section-green">
+            <h3 class="section-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3v18h18"></path>
+                <path d="M7 12v5"></path>
+                <path d="M12 8v9"></path>
+                <path d="M17 4v13"></path>
+              </svg>
+              Physical Examination
+            </h3>
+            
+            <!-- Vitals -->
+            <div class="vitals-grid">
+              <div class="input-group">
+                <label>Temperature (°F)</label>
+                <input v-model="form.physical.temperature" type="text" placeholder="101.5" />
+              </div>
+              <div class="input-group">
+                <label>Pulse (bpm)</label>
+                <input v-model="form.physical.pulse" type="text" placeholder="120" />
+              </div>
+              <div class="input-group">
+                <label>Respiration (rpm)</label>
+                <input v-model="form.physical.respiration" type="text" placeholder="30" />
+              </div>
+              <div class="input-group">
+                <label>Weight (kg)</label>
+                <input v-model="form.physical.weight" type="text" placeholder="25.5" />
+              </div>
+            </div>
+
+            <!-- System Examination -->
+            <div class="systems-grid">
+              <div class="input-group">
+                <label>General Appearance</label>
+                <textarea v-model="form.physical.general_appearance" rows="2" placeholder="Alert, responsive, body condition..."></textarea>
+              </div>
+              <div class="input-group">
+                <label>Skin & Coat</label>
+                <textarea v-model="form.physical.skin_coat" rows="2" placeholder="Condition, lesions, parasites..."></textarea>
+              </div>
+              <div class="input-group">
+                <label>Eyes</label>
+                <textarea v-model="form.physical.eyes" rows="2" placeholder="Discharge, redness, clarity..."></textarea>
+              </div>
+              <div class="input-group">
+                <label>Ears</label>
+                <textarea v-model="form.physical.ears" rows="2" placeholder="Condition, odor, inflammation..."></textarea>
+              </div>
+              <div class="input-group">
+                <label>Mouth & Teeth</label>
+                <textarea v-model="form.physical.mouth" rows="2" placeholder="Dental condition, gum color..."></textarea>
+              </div>
+              <div class="input-group">
+                <label>Cardiovascular</label>
+                <textarea v-model="form.physical.cardiovascular" rows="2" placeholder="Heart sounds, murmurs..."></textarea>
+              </div>
+              <div class="input-group">
+                <label>Respiratory</label>
+                <textarea v-model="form.physical.respiratory" rows="2" placeholder="Lung sounds, breathing effort..."></textarea>
+              </div>
+              <div class="input-group">
+                <label>Abdomen</label>
+                <textarea v-model="form.physical.abdomen" rows="2" placeholder="Palpation findings, pain..."></textarea>
+              </div>
+              <div class="input-group">
+                <label>Musculoskeletal</label>
+                <textarea v-model="form.physical.musculoskeletal" rows="2" placeholder="Gait, lameness, swelling..."></textarea>
+              </div>
+              <div class="input-group">
+                <label>Nervous System</label>
+                <textarea v-model="form.physical.nervous_system" rows="2" placeholder="Reflexes, coordination..."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tentative Diagnosis -->
+          <div class="form-section section-purple">
+            <h3 class="section-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              Tentative Diagnosis *
+            </h3>
+            <textarea v-model="form.diagnosis" rows="2" placeholder="Primary diagnosis based on examination findings" class="textarea-field"></textarea>
+          </div>
+
+          <!-- Differential Diagnosis -->
+          <div class="form-section section-cyan">
+            <h3 class="section-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+              </svg>
+              Differential Diagnosis
+            </h3>
+            <textarea v-model="form.differential_diagnosis" rows="2" placeholder="Other possible diagnoses to consider" class="textarea-field"></textarea>
+          </div>
+
+          <!-- Treatment Plan -->
+          <div class="form-section section-amber">
+            <h3 class="section-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+              Treatment Plan *
+            </h3>
+            <textarea v-model="form.treatment_plan" rows="3" placeholder="Treatment approach, procedures planned, medications, etc." class="textarea-field"></textarea>
+          </div>
+
+          <!-- Medicine Prescription -->
+          <div class="form-section section-pink">
+            <h3 class="section-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+              </svg>
+              Medicine Prescription
+            </h3>
+            
+            <div v-for="(med, index) in form.medications" :key="index" class="medicine-card">
+              <div class="medicine-header">
+                <h4>Medicine {{ index + 1 }}</h4>
+                <button v-if="form.medications.length > 1" @click="removeMedicine(index)" class="btn-remove-med">Remove</button>
+              </div>
+              <div class="medicine-grid">
+                <div class="input-group">
+                  <label>Medicine Name</label>
+                  <input v-model="med.name" type="text" placeholder="e.g., Amoxicillin" />
+                </div>
+                <div class="input-group">
+                  <label>Dosage</label>
+                  <input v-model="med.dosage" type="text" placeholder="e.g., 500mg" />
+                </div>
+                <div class="input-group">
+                  <label>Frequency</label>
+                  <input v-model="med.frequency" type="text" placeholder="e.g., Twice daily" />
+                </div>
+                <div class="input-group">
+                  <label>Duration</label>
+                  <input v-model="med.duration" type="text" placeholder="e.g., 7 days" />
+                </div>
+                <div class="input-group">
+                  <label>Route</label>
+                  <input v-model="med.route" type="text" placeholder="e.g., Oral, IV" />
+                </div>
+              </div>
+            </div>
+            
+            <button @click="addMedicine" class="btn-add-med">+ Add Another Medicine</button>
+          </div>
+
+          <!-- Lab Tests -->
+          <div class="form-section section-cyan">
+            <h3 class="section-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+              </svg>
+              Lab Tests Ordered
+            </h3>
+            <textarea v-model="form.lab_tests" rows="2" placeholder="CBC, biochemistry, X-ray, ultrasound, urinalysis, fecal exam..." class="textarea-field"></textarea>
+          </div>
+
+          <!-- Next Review -->
+          <div class="form-section section-green">
+            <label class="section-label">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              Next Review Date
+            </label>
+            <input v-model="form.next_review_date" type="date" class="input-field" />
+          </div>
+
+          <!-- Special Instructions -->
+          <div class="form-section section-amber">
+            <h3 class="section-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              Special Instructions for Owner
+            </h3>
+            <textarea v-model="form.special_instructions" rows="3" placeholder="Diet restrictions, activity level, warning signs to watch for, follow-up care..." class="textarea-field"></textarea>
+          </div>
+
+          <!-- Notes -->
+          <div class="form-section">
+            <label class="section-label">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+              Additional Notes
+            </label>
+            <textarea v-model="form.notes" rows="3" placeholder="Any additional observations or comments..." class="textarea-field"></textarea>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-actions">
+          <button @click="closeForm" class="btn-cancel">Cancel</button>
+          <button @click="saveRecord" class="btn-save">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            Save Clinical Record
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '../services/api'
 
 export default {
   name: 'MedicalRecordsView',
   setup() {
     const records = ref([])
+    const patients = ref([])
+    const owners = ref([])
     const loading = ref(true)
     const error = ref(null)
+    const showForm = ref(false)
+    const selectedPatient = ref(null)
+    const patientSearch = ref('')
+
+    const form = ref({
+      visit_date: new Date().toISOString().split('T')[0],
+      chief_complaint: '',
+      history: '',
+      physical: {
+        temperature: '',
+        pulse: '',
+        respiration: '',
+        weight: '',
+        general_appearance: '',
+        skin_coat: '',
+        eyes: '',
+        ears: '',
+        mouth: '',
+        cardiovascular: '',
+        respiratory: '',
+        abdomen: '',
+        musculoskeletal: '',
+        nervous_system: ''
+      },
+      diagnosis: '',
+      differential_diagnosis: '',
+      treatment_plan: '',
+      medications: [
+        { name: '', dosage: '', frequency: '', duration: '', route: '' }
+      ],
+      lab_tests: '',
+      next_review_date: '',
+      special_instructions: '',
+      notes: ''
+    })
+
+    const filteredPatients = computed(() => {
+      if (!patientSearch.value) return patients.value
+      const query = patientSearch.value.toLowerCase()
+      return patients.value.filter(p => 
+        p.pet_name?.toLowerCase().includes(query) ||
+        getPatientOwnerName(p.owner).toLowerCase().includes(query)
+      )
+    })
 
     const fetchRecords = async () => {
       loading.value = true
       error.value = null
       try {
-        // ✅ FIXED: Use api service with correct endpoint
-        const response = await api.get('/medical-records/')
+        const [recordsRes, patientsRes, ownersRes] = await Promise.all([
+          api.get('/medical-records/'),
+          api.get('/patients/'),
+          api.get('/owners/')
+        ])
         
-        // ✅ FIXED: Handle both array and paginated responses
-        const data = response.data || []
-        records.value = Array.isArray(data) ? data : (data.results || [])
+        const recordsData = recordsRes.data || []
+        records.value = Array.isArray(recordsData) ? recordsData : (recordsData.results || [])
+        
+        const patientsData = patientsRes.data || []
+        patients.value = Array.isArray(patientsData) ? patientsData : (patientsData.results || [])
+        
+        const ownersData = ownersRes.data || []
+        owners.value = Array.isArray(ownersData) ? ownersData : (ownersData.results || [])
           
       } catch (err) {
-        console.error('Error fetching records:', err)
+        console.error('Error fetching data:', err)
         error.value = 'Failed to load medical records. Please try again.'
         records.value = []
       } finally {
@@ -130,7 +519,6 @@ export default {
       }
     }
 
-    // ✅ FIXED: Safe helper functions to prevent null errors
     const getPatientName = (record) => {
       if (!record) return 'Unknown'
       if (record.patient_name) return record.patient_name
@@ -144,6 +532,11 @@ export default {
       if (record.patient?.owner_name) return record.patient.owner_name
       if (record.patient?.owner?.name) return record.patient.owner.name
       return 'Unknown Owner'
+    }
+
+    const getPatientOwnerName = (ownerId) => {
+      const owner = owners.value.find(o => o.id === ownerId)
+      return owner ? owner.name : 'Unknown Owner'
     }
 
     const formatDate = (dateString) => {
@@ -165,12 +558,124 @@ export default {
       return name.charAt(0).toUpperCase()
     }
 
+    const openNewRecordForm = () => {
+      showForm.value = true
+      selectedPatient.value = null
+    }
+
+    const selectPatient = (patient) => {
+      selectedPatient.value = patient
+      patientSearch.value = ''
+    }
+
+    const addMedicine = () => {
+      form.value.medications.push({ name: '', dosage: '', frequency: '', duration: '', route: '' })
+    }
+
+    const removeMedicine = (index) => {
+      if (form.value.medications.length > 1) {
+        form.value.medications.splice(index, 1)
+      }
+    }
+
+    const saveRecord = async () => {
+      if (!selectedPatient.value) {
+        alert('Please select a patient')
+        return
+      }
+
+      if (!form.value.diagnosis || !form.value.treatment_plan) {
+        alert('Please fill in required fields: Diagnosis and Treatment Plan')
+        return
+      }
+
+      try {
+        // Prepare data for API
+        const recordData = {
+          patient: selectedPatient.value.id,
+          visit_date: form.value.visit_date,
+          diagnosis: form.value.diagnosis,
+          treatment_plan: form.value.treatment_plan,
+          notes: `
+Chief Complaint: ${form.value.chief_complaint}
+
+History: ${form.value.history}
+
+Physical Examination:
+- Temperature: ${form.value.physical.temperature}°F
+- Pulse: ${form.value.physical.pulse} bpm
+- Respiration: ${form.value.physical.respiration} rpm
+- Weight: ${form.value.physical.weight} kg
+- General Appearance: ${form.value.physical.general_appearance}
+- Skin & Coat: ${form.value.physical.skin_coat}
+- Eyes: ${form.value.physical.eyes}
+- Ears: ${form.value.physical.ears}
+- Mouth: ${form.value.physical.mouth}
+- Cardiovascular: ${form.value.physical.cardiovascular}
+- Respiratory: ${form.value.physical.respiratory}
+- Abdomen: ${form.value.physical.abdomen}
+- Musculoskeletal: ${form.value.physical.musculoskeletal}
+- Nervous System: ${form.value.physical.nervous_system}
+
+Differential Diagnosis: ${form.value.differential_diagnosis}
+
+Medications Prescribed:
+${form.value.medications.map((med, i) => 
+  `${i + 1}. ${med.name} - ${med.dosage}, ${med.frequency}, ${med.duration}, Route: ${med.route}`
+).join('\n')}
+
+Lab Tests: ${form.value.lab_tests}
+Next Review: ${form.value.next_review_date}
+Special Instructions: ${form.value.special_instructions}
+
+Additional Notes: ${form.value.notes}
+          `.trim()
+        }
+
+        await api.post('/medical-records/', recordData)
+        
+        alert('Clinical record saved successfully!')
+        closeForm()
+        await fetchRecords()
+      } catch (err) {
+        console.error('Error saving record:', err)
+        alert('Failed to save record: ' + (err.response?.data?.detail || err.message))
+      }
+    }
+
+    const closeForm = () => {
+      showForm.value = false
+      selectedPatient.value = null
+      patientSearch.value = ''
+      
+      // Reset form
+      form.value = {
+        visit_date: new Date().toISOString().split('T')[0],
+        chief_complaint: '',
+        history: '',
+        physical: {
+          temperature: '', pulse: '', respiration: '', weight: '',
+          general_appearance: '', skin_coat: '', eyes: '', ears: '', mouth: '',
+          cardiovascular: '', respiratory: '', abdomen: '', musculoskeletal: '', nervous_system: ''
+        },
+        diagnosis: '',
+        differential_diagnosis: '',
+        treatment_plan: '',
+        medications: [{ name: '', dosage: '', frequency: '', duration: '', route: '' }],
+        lab_tests: '',
+        next_review_date: '',
+        special_instructions: '',
+        notes: ''
+      }
+    }
+
     const viewRecord = (id) => {
       if (!id) {
         console.error('No record ID provided')
         return
       }
-      window.location.href = `/records`
+      // You can navigate to a detail view or open a modal
+      console.log('View record:', id)
     }
 
     onMounted(() => {
@@ -179,12 +684,25 @@ export default {
 
     return {
       records,
+      patients,
       loading,
       error,
+      showForm,
+      selectedPatient,
+      patientSearch,
+      form,
+      filteredPatients,
       getPatientName,
       getOwnerName,
+      getPatientOwnerName,
       formatDate,
       getInitial,
+      openNewRecordForm,
+      selectPatient,
+      addMedicine,
+      removeMedicine,
+      saveRecord,
+      closeForm,
       viewRecord,
       fetchRecords
     }
@@ -228,6 +746,27 @@ export default {
   font-size: 28px;
   font-weight: 700;
   color: #1F2937;
+}
+
+.btn-add {
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  transition: all 0.3s;
+}
+
+.btn-add:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
 }
 
 .loading-state {
@@ -314,9 +853,27 @@ export default {
 
 .empty-state-card p {
   color: #6B7280;
-  margin: 0;
+  margin: 0 0 24px 0;
   max-width: 400px;
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.btn-empty-action {
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-empty-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
 }
 
 .table-card {
@@ -432,9 +989,421 @@ export default {
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.modal-container {
+  background: white;
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header-select {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.modal-header-select h2 {
+  margin: 0;
+  color: #1F2937;
+  font-size: 24px;
+}
+
+.btn-close-icon {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #9CA3AF;
+  padding: 8px;
+  transition: all 0.3s;
+}
+
+.btn-close-icon:hover {
+  color: #4B5563;
+}
+
+.search-box {
+  background: #F9FAFB;
+  border: 2px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.search-box svg {
+  color: #9CA3AF;
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 15px;
+  color: #1F2937;
+}
+
+.patients-grid-modal {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.patient-card-select {
+  background: #F9FAFB;
+  border: 2px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.patient-card-select:hover {
+  border-color: #8B5CF6;
+  background: #F3F4F6;
+  transform: translateY(-2px);
+}
+
+.patient-card-select h3 {
+  margin: 0 0 8px 0;
+  color: #1F2937;
+  font-size: 18px;
+}
+
+.patient-card-select p {
+  margin: 0 0 12px 0;
+  color: #6B7280;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  background: #E0E7FF;
+  color: #4338CA;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.badge.species {
+  background: #EDE9FE;
+  color: #7C3AED;
+}
+
+/* Form Container */
+.form-container {
+  background: white;
+  border-radius: 20px;
+  max-width: 1000px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  padding: 24px 32px;
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.form-header h2 {
+  margin: 0 0 8px 0;
+  color: #1F2937;
+  font-size: 24px;
+}
+
+.form-header p {
+  margin: 0;
+  color: #6B7280;
+  font-size: 15px;
+}
+
+.form-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+}
+
+.form-section {
+  margin-bottom: 32px;
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1F2937;
+  margin: 0 0 16px 0;
+}
+
+.section-red .section-title { color: #EF4444; }
+.section-amber .section-title { color: #F59E0B; }
+.section-green .section-title { color: #10B981; }
+.section-purple .section-title { color: #8B5CF6; }
+.section-cyan .section-title { color: #06B6D4; }
+.section-pink .section-title { color: #EC4899; }
+
+.input-field, .textarea-field {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #E5E7EB;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #1F2937;
+  font-family: inherit;
+  transition: all 0.3s;
+}
+
+.input-field:focus, .textarea-field:focus {
+  outline: none;
+  border-color: #8B5CF6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.textarea-field {
+  resize: vertical;
+}
+
+.vitals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.systems-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.input-group input,
+.input-group textarea {
+  padding: 10px 14px;
+  border: 2px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1F2937;
+  font-family: inherit;
+  transition: all 0.3s;
+}
+
+.input-group input:focus,
+.input-group textarea:focus {
+  outline: none;
+  border-color: #8B5CF6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.medicine-card {
+  background: #F9FAFB;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  border: 2px solid #E5E7EB;
+}
+
+.medicine-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.medicine-header h4 {
+  margin: 0;
+  color: #374151;
+  font-size: 16px;
+}
+
+.btn-remove-med {
+  background: #FEE2E2;
+  color: #DC2626;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-remove-med:hover {
+  background: #FCA5A5;
+}
+
+.medicine-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.btn-add-med {
+  background: #E0E7FF;
+  color: #4338CA;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-add-med:hover {
+  background: #C7D2FE;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  padding: 24px 32px;
+  border-top: 2px solid #E5E7EB;
+}
+
+.btn-cancel {
+  flex: 1;
+  background: #F3F4F6;
+  color: #4B5563;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-cancel:hover {
+  background: #E5E7EB;
+}
+
+.btn-save {
+  flex: 2;
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  transition: all 0.3s;
+}
+
+.btn-save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+}
+
 @media (max-width: 768px) {
   .records-wrapper {
     padding: 16px;
+  }
+  
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .btn-add {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .vitals-grid, .systems-grid, .medicine-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-scroll {
+    padding: 20px;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .btn-cancel, .btn-save {
+    flex: 1;
   }
 }
 </style>
