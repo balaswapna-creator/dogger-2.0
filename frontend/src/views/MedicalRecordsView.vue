@@ -584,67 +584,130 @@ export default {
         return
       }
 
-      if (!form.value.diagnosis || !form.value.treatment_plan || !form.value.chief_complaint) {
+      if (!form.value.diagnosis || !form.value.treatment_plan) {
         alert('Please fill in required fields: Diagnosis and Treatment Plan')
         return
       }
 
       try {
-        // ✅ FIXED: Added required fields that backend expects
-    const recordData = {
-      patient: selectedPatient.value.id,
-      visit_date: form.value.visit_date,
-      visit_type: 'consultation', // ✅ ADDED: Required field (default to consultation)
-      chief_complaint: form.value.chief_complaint, // ✅ ADDED: Required field
-      history: form.value.history || '', // Optional
-      diagnosis: form.value.diagnosis,
-      treatment_plan: form.value.treatment_plan,
-      clinical_notes: `
-Physical Examination:
-- Temperature: ${form.value.physical.temperature}°F
-- Pulse: ${form.value.physical.pulse} bpm
-- Respiration: ${form.value.physical.respiration} rpm
-- Weight: ${form.value.physical.weight} kg
-- General Appearance: ${form.value.physical.general_appearance}
-- Skin & Coat: ${form.value.physical.skin_coat}
-- Eyes: ${form.value.physical.eyes}
-- Ears: ${form.value.physical.ears}
-- Mouth: ${form.value.physical.mouth}
-- Cardiovascular: ${form.value.physical.cardiovascular}
-- Respiratory: ${form.value.physical.respiratory}
-- Abdomen: ${form.value.physical.abdomen}
-- Musculoskeletal: ${form.value.physical.musculoskeletal}
-- Nervous System: ${form.value.physical.nervous_system}
+        // Format medications as a readable string
+        const medicationsText = form.value.medications
+          .filter(med => med.name)
+          .map((med, i) => 
+            `${i + 1}. ${med.name}${med.dosage ? ` - ${med.dosage}` : ''}${med.frequency ? `, ${med.frequency}` : ''}${med.duration ? `, ${med.duration}` : ''}${med.route ? `, Route: ${med.route}` : ''}`
+          ).join('\n') || 'No medications prescribed';
 
-Differential Diagnosis: ${form.value.differential_diagnosis}
+        // Prepare clinical notes with all examination details
+        const clinicalNotes = `
+PHYSICAL EXAMINATION:
+Vitals: Temp: ${form.value.physical.temperature || 'N/A'}°F, Pulse: ${form.value.physical.pulse || 'N/A'} bpm, Resp: ${form.value.physical.respiration || 'N/A'} rpm, Weight: ${form.value.physical.weight || 'N/A'} kg
+General Appearance: ${form.value.physical.general_appearance || 'N/A'}
+Skin & Coat: ${form.value.physical.skin_coat || 'N/A'}
+Eyes: ${form.value.physical.eyes || 'N/A'}
+Ears: ${form.value.physical.ears || 'N/A'}
+Mouth & Teeth: ${form.value.physical.mouth || 'N/A'}
+Cardiovascular: ${form.value.physical.cardiovascular || 'N/A'}
+Respiratory: ${form.value.physical.respiratory || 'N/A'}
+Abdomen: ${form.value.physical.abdomen || 'N/A'}
+Musculoskeletal: ${form.value.physical.musculoskeletal || 'N/A'}
+Nervous System: ${form.value.physical.nervous_system || 'N/A'}
 
-Medications Prescribed:
-${form.value.medications.map((med, i) => 
-  `${i + 1}. ${med.name} - ${med.dosage}, ${med.frequency}, ${med.duration}, Route: ${med.route}`
-).join('\n')}
+DIFFERENTIAL DIAGNOSIS:
+${form.value.differential_diagnosis || 'Not provided'}
 
-Lab Tests: ${form.value.lab_tests}
-Next Review: ${form.value.next_review_date}
-Special Instructions: ${form.value.special_instructions}
+MEDICATIONS PRESCRIBED:
+${medicationsText}
 
-Additional Notes: ${form.value.notes}
-      `.trim(),
-      // ✅ ADDED: Optional vitals if available
-      temperature: form.value.physical.temperature || null,
-      weight: form.value.physical.weight || null,
-      next_visit_date: form.value.next_review_date || null
+LAB TESTS ORDERED:
+${form.value.lab_tests || 'None'}
+
+SPECIAL INSTRUCTIONS FOR OWNER:
+${form.value.special_instructions || 'None'}
+        `.trim();
+
+        // Follow-up notes
+        const followUpNotes = `
+Next Review Date: ${form.value.next_review_date || 'Not scheduled'}
+Additional Notes: ${form.value.notes || 'None'}
+        `.trim();
+
+        // Prepare data matching your backend model exactly
+        const recordData = {
+          patient: selectedPatient.value.id,
+          visit_date: form.value.visit_date,
+          visit_type: 'consultation', // Default to consultation
+          chief_complaint: form.value.chief_complaint || 'Not specified', // Required field
+          history: form.value.history || '', // Optional
+          clinical_notes: clinicalNotes, // All physical exam details
+          diagnosis: form.value.diagnosis, // Required
+          treatment_plan: form.value.treatment_plan, // Required
+          temperature: form.value.physical.temperature ? parseFloat(form.value.physical.temperature) : null,
+          weight: form.value.physical.weight ? parseFloat(form.value.physical.weight) : null,
+          heart_rate: form.value.physical.pulse ? parseInt(form.value.physical.pulse) : null,
+          next_visit_date: form.value.next_review_date || null,
+          follow_up_notes: followUpNotes,
+          consultation_fee: 0 // Default to 0, can be updated in payments
+        };
+
+        console.log('Sending record data:', recordData);
+        
+        const response = await api.post('/medical-records/', recordData)
+        
+        console.log('Record saved successfully:', response.data);
+        alert('Clinical record saved successfully!')
+        closeForm()
+        await fetchRecords()
+      } catch (err) {
+        console.error('Error saving record:', err)
+        console.error('Error response:', err.response?.data)
+        
+        let errorMsg = 'Failed to save record';
+        
+        if (err.response?.data) {
+          const errorData = err.response.data;
+          if (typeof errorData === 'object') {
+            // Format validation errors
+            const errors = Object.entries(errorData)
+              .map(([field, messages]) => {
+                const msgArray = Array.isArray(messages) ? messages : [messages];
+                return `${field}: ${msgArray.join(', ')}`;
+              })
+              .join('\n');
+            errorMsg = errors || errorMsg;
+          } else {
+            errorMsg = errorData;
+          }
+        } else if (err.message) {
+          errorMsg = err.message;
+        }
+        
+        alert(errorMsg)
+      }
     }
-
-    await api.post('/medical-records/', recordData)
-    
-    alert('Clinical record saved successfully!')
-    closeForm()
-    await fetchRecords()
-  } catch (err) {
-    console.error('Error saving record:', err)
-    alert('Failed to save record: ' + (err.response?.data?.detail || err.message))
-  }
-}
+        console.log('Record saved successfully:', response.data);
+        alert('Clinical record saved successfully!')
+        closeForm()
+        await fetchRecords()
+      } catch (err) {
+        console.error('Error saving record:', err)
+        console.error('Error response:', err.response?.data)
+        
+        const errorMsg = err.response?.data?.detail 
+          || err.response?.data?.message
+          || JSON.stringify(err.response?.data)
+          || err.message;
+        
+        alert('Failed to save record: ' + errorMsg)
+      }
+    }
+        alert('Clinical record saved successfully!')
+        closeForm()
+        await fetchRecords()
+      } catch (err) {
+        console.error('Error saving record:', err)
+        alert('Failed to save record: ' + (err.response?.data?.detail || err.message))
+      }
+    }
 
     const closeForm = () => {
       showForm.value = false
@@ -1153,7 +1216,7 @@ Additional Notes: ${form.value.notes}
 .form-header {
   display: flex;
   justify-content: space-between;
-  align-items: start;
+  align-items: flex-start;
   padding: 24px 32px;
   border-bottom: 2px solid #E5E7EB;
 }
