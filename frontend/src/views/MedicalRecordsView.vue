@@ -584,8 +584,8 @@ export default {
         return
       }
 
-      if (!form.value.diagnosis || !form.value.treatment_plan) {
-        alert('Please fill in required fields: Diagnosis and Treatment Plan')
+      if (!form.value.diagnosis || !form.value.treatment_plan || !form.value.chief_complaint) {
+        alert('Please fill in required fields: Chief Complaint, Diagnosis, and Treatment Plan')
         return
       }
 
@@ -621,82 +621,62 @@ ${form.value.lab_tests || 'None'}
 
 SPECIAL INSTRUCTIONS FOR OWNER:
 ${form.value.special_instructions || 'None'}
-        `.trim();
+        `.trim()
 
-        // Follow-up notes
         const followUpNotes = `
 Next Review Date: ${form.value.next_review_date || 'Not scheduled'}
 Additional Notes: ${form.value.notes || 'None'}
-        `.trim();
+        `.trim()
 
-        // Prepare data matching your backend model exactly
         const recordData = {
           patient: selectedPatient.value.id,
           visit_date: form.value.visit_date,
-          visit_type: 'consultation', // Default to consultation
-          chief_complaint: form.value.chief_complaint || 'Not specified', // Required field
-          history: form.value.history || '', // Optional
-          clinical_notes: clinicalNotes, // All physical exam details
-          diagnosis: form.value.diagnosis, // Required
-          treatment_plan: form.value.treatment_plan, // Required
+          visit_type: 'consultation',
+          chief_complaint: form.value.chief_complaint || 'Not specified',
+          history: form.value.history || '',
+          clinical_notes: clinicalNotes,
+          diagnosis: form.value.diagnosis,
+          treatment_plan: form.value.treatment_plan,
           temperature: form.value.physical.temperature ? parseFloat(form.value.physical.temperature) : null,
           weight: form.value.physical.weight ? parseFloat(form.value.physical.weight) : null,
           heart_rate: form.value.physical.pulse ? parseInt(form.value.physical.pulse) : null,
           next_visit_date: form.value.next_review_date || null,
           follow_up_notes: followUpNotes,
-          consultation_fee: 0 // Default to 0, can be updated in payments
-        };
+          consultation_fee: 0
+        }
 
-        console.log('Sending record data:', recordData);
+        console.log('Sending record data:', recordData)
         
-    const response = await api.post('/medical-records/', recordData)
-    
-    console.log('Record saved successfully:', response.data)
-    alert('Clinical record saved successfully!')
-    closeForm()
-    await fetchRecords()
-  } catch (err) {
-    console.error('Error saving record:', err)
-    console.error('Error response:', err.response?.data)
-    
-    let errorMsg = 'Failed to save record'
-    
-    if (err.response?.data) {
-      const errorData = err.response.data
-      if (typeof errorData === 'object') {
-        const errors = Object.entries(errorData)
-          .map(([field, messages]) => {
-            const msgArray = Array.isArray(messages) ? messages : [messages]
-            return `${field}: ${msgArray.join(', ')}`
-          })
-          .join('\n')
-        errorMsg = errors || errorMsg
-      } else {
-        errorMsg = errorData
-      }
-    } else if (err.message) {
-      errorMsg = err.message
-    }
-    
-    alert(errorMsg)
-  }
-}
+        const response = await api.post('/medical-records/', recordData)
         
-        
-        const errorMsg = err.response?.data?.detail 
-          || err.response?.data?.message
-          || JSON.stringify(err.response?.data)
-          || err.message;
-        
-        alert('Failed to save record: ' + errorMsg)
-      }
-    }
+        console.log('Record saved successfully:', response.data)
         alert('Clinical record saved successfully!')
         closeForm()
         await fetchRecords()
       } catch (err) {
         console.error('Error saving record:', err)
-        alert('Failed to save record: ' + (err.response?.data?.detail || err.message))
+        console.error('Error response:', err.response?.data)
+        
+        let errorMsg = 'Failed to save record'
+        
+        if (err.response?.data) {
+          const errorData = err.response.data
+          if (typeof errorData === 'object') {
+            const errors = Object.entries(errorData)
+              .map(([field, messages]) => {
+                const msgArray = Array.isArray(messages) ? messages : [messages]
+                return `${field}: ${msgArray.join(', ')}`
+              })
+              .join('\n')
+            errorMsg = errors || errorMsg
+          } else {
+            errorMsg = errorData
+          }
+        } else if (err.message) {
+          errorMsg = err.message
+        }
+        
+        alert(errorMsg)
       }
     }
 
@@ -705,7 +685,6 @@ Additional Notes: ${form.value.notes || 'None'}
       selectedPatient.value = null
       patientSearch.value = ''
       
-      // Reset form
       form.value = {
         visit_date: new Date().toISOString().split('T')[0],
         chief_complaint: '',
@@ -731,7 +710,6 @@ Additional Notes: ${form.value.notes || 'None'}
         console.error('No record ID provided')
         return
       }
-      // You can navigate to a detail view or open a modal
       console.log('View record:', id)
     }
 
@@ -758,7 +736,7 @@ Additional Notes: ${form.value.notes || 'None'}
       selectPatient,
       addMedicine,
       removeMedicine,
-      saveRecord,
+      handleSaveRecord,
       closeForm,
       viewRecord,
       fetchRecords
