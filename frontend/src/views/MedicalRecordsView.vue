@@ -1988,10 +1988,8 @@ input[type="number"].input-field::-webkit-outer-spin-button {
 }
 
 @media (max-width: 768px) {
-  .record-view-modal {
-    max-width: 100%;
-    max-height: 100vh;
-    border-radius: 0;
+  .records-wrapper {
+    padding: 16px;
   }
   
   .header-content {
@@ -2020,6 +2018,77 @@ input[type="number"].input-field::-webkit-outer-spin-button {
   .btn-cancel, .btn-save {
     flex: 1;
   }
+}
+
+/* View Modal Styles */
+.view-modal {
+  background: white;
+  border-radius: 20px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+.view-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+}
+
+.view-section {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.view-section:last-child {
+  border-bottom: none;
+}
+
+.view-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #8B5CF6;
+}
+
+.view-section p {
+  margin: 0;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.info-grid div {
+  color: #374151;
+}
+
+.clinical-notes {
+  background: #F9FAFB;
+  padding: 16px;
+  border-radius: 8px;
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.6;
+  border: 1px solid #E5E7EB;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.fee-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: #10B981;
 }
 </style>
 
