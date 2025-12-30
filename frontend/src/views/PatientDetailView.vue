@@ -323,6 +323,8 @@ const payments = ref([]);
 const owners = ref([]);
 const isLoading = ref(true);
 const error = ref(null);
+const hasPassbook = ref(false);
+const creatingPassbook = ref(false);
 
 const getPhotoUrl = (patient) => {
   if (!patient.photo) return null;
