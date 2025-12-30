@@ -614,8 +614,8 @@
             </h3>
             <textarea v-model="form.special_instructions" rows="3" placeholder="Diet restrictions, activity level, warning signs to watch for, follow-up care..." class="textarea-field"></textarea>
           </div>
-
-          <!-- Notes -->
+        
+        <!-- Notes -->
           <div class="form-section">
             <label class="section-label">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -626,28 +626,28 @@
             </label>
             <textarea v-model="form.notes" rows="3" placeholder="Any additional observations or comments..." class="textarea-field"></textarea>
           </div>
-        </div>
 
-        <div class="form-section section-green">
-          <label class="section-label">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="1" x2="12" y2="23"></line>
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-            </svg>
-            Consultation Fee (₹)
-          </label>
-          <input 
-            v-model="form.consultation_fee" 
-            type="number" 
-            step="0.01" 
-            min="0"
-            placeholder="Enter consultation fee (e.g., 500)" 
-            class="input-field"
-          />
-          <p class="field-hint">Enter the consultation fee for this visit</p>
-        </div>
-      </div> <!-- End of form-scroll -->
-
+          <!-- Consultation Fee -->
+          <div class="form-section section-green">
+            <label class="section-label">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              Consultation Fee (₹)
+            </label>
+            <input 
+              v-model="form.consultation_fee" 
+              type="number" 
+              step="0.01" 
+              min="0"
+              placeholder="Enter consultation fee (e.g., 500)" 
+              class="input-field"
+            />
+            <p class="field-hint">Enter the consultation fee for this visit</p>
+          </div>
+        </div> <!-- End of form-scroll -->
+          
         <!-- Action Buttons -->
         <div class="form-actions">
           <button @click="closeForm" class="btn-cancel">Cancel</button>
