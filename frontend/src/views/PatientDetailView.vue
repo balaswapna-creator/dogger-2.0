@@ -136,7 +136,7 @@
             <div class="record-details">
               <div class="record-type">{{ record.visit_type || 'Consultation' }}</div>
               <div class="record-complaint">{{ record.chief_complaint }}</div>
-              <div class="record-diagnosis">{{ record.tentative_diagnosis }}</div>
+              <div class="record-diagnosis">{{ record.diagnosis }}</div>
             </div>
             <div class="record-fee">
               ₹{{ record.consultation_fee || '0' }}
@@ -237,7 +237,7 @@ export default {
     const showPassbookModal = ref(false)
     const creatingPassbook = ref(false)
 
-    // Check if patient has passbook
+    // ✅ FIXED: hasPassbook as computed property
     const hasPassbook = computed(() => {
       if (!patient.value || !passbooks.value || passbooks.value.length === 0) {
         return false
@@ -299,35 +299,44 @@ export default {
           api.get('/medical-records/'),
           api.get('/vaccinations/'),
           api.get('/payments/'),
-          api.get('/passbooks/')
+          api.get('/passbooks/').catch(err => {
+            console.log('Passbooks endpoint error:', err)
+            return { data: [] }
+          })
         ])
 
         patient.value = patientRes.data
         console.log('Patient loaded:', patient.value)
 
+        // ✅ FIXED: Handle both array and paginated responses
+        const allRecords = Array.isArray(recordsRes.data) ? recordsRes.data : (recordsRes.data.results || [])
+        const allVaccinations = Array.isArray(vaccinationsRes.data) ? vaccinationsRes.data : (vaccinationsRes.data.results || [])
+        const allPayments = Array.isArray(paymentsRes.data) ? paymentsRes.data : (paymentsRes.data.results || [])
+        const allPassbooks = Array.isArray(passbooksRes.data) ? passbooksRes.data : (passbooksRes.data.results || [])
+
         // Filter records for this patient
-        medicalRecords.value = recordsRes.data.filter(r => {
+        medicalRecords.value = allRecords.filter(r => {
           const recordPatientId = r.patient?.id || r.patient
           return String(recordPatientId) === String(patientId)
         })
 
-        vaccinations.value = vaccinationsRes.data.filter(v => {
+        vaccinations.value = allVaccinations.filter(v => {
           const vaccinationPatientId = v.patient?.id || v.patient
           return String(vaccinationPatientId) === String(patientId)
         })
 
-        payments.value = paymentsRes.data.filter(p => {
+        payments.value = allPayments.filter(p => {
           const paymentPatientId = p.patient?.id || p.patient
           return String(paymentPatientId) === String(patientId)
         })
 
-        passbooks.value = passbooksRes.data.results || passbooksRes.data || []
+        passbooks.value = allPassbooks
         console.log('Passbooks loaded:', passbooks.value)
         console.log('Has passbook:', hasPassbook.value)
 
       } catch (err) {
         console.error('Error fetching patient data:', err)
-        error.value = err.response?.data?.detail || 'Failed to load patient data'
+        error.value = err.response?.data?.detail || err.message || 'Failed to load patient data'
       } finally {
         loading.value = false
       }
@@ -349,14 +358,14 @@ export default {
         
         // Refresh passbooks list
         const passbooksRes = await api.get('/passbooks/')
-        passbooks.value = passbooksRes.data.results || passbooksRes.data || []
+        passbooks.value = Array.isArray(passbooksRes.data) ? passbooksRes.data : (passbooksRes.data.results || [])
         
         showPassbookModal.value = false
         alert('✅ Digital Passbook created successfully!')
         
       } catch (err) {
         console.error('Error creating passbook:', err)
-        const errorMsg = err.response?.data?.error || 'Failed to create passbook'
+        const errorMsg = err.response?.data?.error || err.response?.data?.detail || 'Failed to create passbook'
         alert('❌ ' + errorMsg)
       } finally {
         creatingPassbook.value = false
@@ -365,8 +374,10 @@ export default {
 
     const viewPassbook = () => {
       if (patientPassbook.value) {
-        const token = patientPassbook.value.access_token
-        window.open(`/passbook/${token}`, '_blank')
+        const passbookId = patientPassbook.value.id
+        window.open(`/passbook/${passbookId}`, '_blank')
+      } else {
+        alert('Passbook not found')
       }
     }
 
