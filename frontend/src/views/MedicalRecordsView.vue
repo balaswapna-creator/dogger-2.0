@@ -379,6 +379,25 @@
             <input v-model="form.visit_date" type="date" class="input-field" />
           </div>
 
+          <div class="form-section">
+            <label class="section-label">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 11l3 3L22 4"></path>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+              </svg>
+              Visit Type *
+            </label>
+            <select v-model="form.visit_type" class="input-field">
+              <option value="consultation">General Consultation</option>
+              <option value="vaccination">Vaccination</option>
+              <option value="surgery">Surgery</option>
+              <option value="emergency">Emergency</option>
+              <option value="followup">Follow-up</option>
+              <option value="grooming">Grooming</option>
+              <option value="lab">Lab Test</option>
+            </select>
+          </div>
+
           <!-- Chief Complaint -->
           <div class="form-section section-red">
             <h3 class="section-title">
@@ -609,6 +628,26 @@
           </div>
         </div>
 
+        <div class="form-section section-green">
+          <label class="section-label">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="1" x2="12" y2="23"></line>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+            Consultation Fee (₹)
+          </label>
+          <input 
+            v-model="form.consultation_fee" 
+            type="number" 
+            step="0.01" 
+            min="0"
+            placeholder="Enter consultation fee (e.g., 500)" 
+            class="input-field"
+          />
+          <p class="field-hint">Enter the consultation fee for this visit</p>
+        </div>
+        </div> <!-- End of form-scroll -->
+
         <!-- Action Buttons -->
         <div class="form-actions">
           <button @click="closeForm" class="btn-cancel">Cancel</button>
@@ -644,6 +683,7 @@ export default {
 
     const form = ref({
       visit_date: new Date().toISOString().split('T')[0],
+      visit_type: 'consultation', // ✅ ADD THIS LINE
       chief_complaint: '',
       history: '',
       physical: {
@@ -671,7 +711,8 @@ export default {
       lab_tests: '',
       next_review_date: '',
       special_instructions: '',
-      notes: ''
+      notes: '',
+      consultation_fee: '' // ✅ ADD THIS LINE
     })
 
     const filteredPatients = computed(() => {
@@ -823,7 +864,7 @@ Additional Notes: ${form.value.notes || 'None'}
         const recordData = {
           patient: selectedPatient.value.id,
           visit_date: form.value.visit_date,
-          visit_type: 'consultation',
+          visit_type: form.value.visit_type || 'consultation', // ✅ NOW FROM FORM
           chief_complaint: form.value.chief_complaint || 'Not specified',
           history: form.value.history || '',
           clinical_notes: clinicalNotes,
@@ -834,7 +875,7 @@ Additional Notes: ${form.value.notes || 'None'}
           heart_rate: form.value.physical.pulse ? parseInt(form.value.physical.pulse) : null,
           next_visit_date: form.value.next_review_date || null,
           follow_up_notes: followUpNotes,
-          consultation_fee: 0
+          consultation_fee: form.value.consultation_fee ? parseFloat(form.value.consultation_fee) : 0 // ✅ NOW FROM FORM
         }
 
         console.log('Sending record data:', recordData)
@@ -879,6 +920,7 @@ Additional Notes: ${form.value.notes || 'None'}
       
       form.value = {
         visit_date: new Date().toISOString().split('T')[0],
+        visit_type: 'consultation', // ✅ ADD THIS
         chief_complaint: '',
         history: '',
         physical: {
@@ -893,7 +935,8 @@ Additional Notes: ${form.value.notes || 'None'}
         lab_tests: '',
         next_review_date: '',
         special_instructions: '',
-        notes: ''
+        notes: '',
+        consultation_fee: '' // ✅ ADD THIS
       }
     }
 
@@ -1894,6 +1937,38 @@ Additional Notes: ${form.value.notes || 'None'}
 .btn-print-record:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+}
+
+.field-hint {
+  margin: 8px 0 0 0;
+  font-size: 13px;
+  color: #6B7280;
+  font-style: italic;
+}
+
+select.input-field {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='%236B7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+select.input-field:focus {
+  outline: none;
+  border-color: #8B5CF6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+input[type="number"].input-field {
+  appearance: textfield;
+}
+
+input[type="number"].input-field::-webkit-inner-spin-button,
+input[type="number"].input-field::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 @media print {

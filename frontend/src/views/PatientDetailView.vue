@@ -375,40 +375,58 @@ const fetchPatientData = async () => {
   
   try {
     const patientId = route.params.id;
+    console.log('Fetching patient data for ID:', patientId);
     
-    // Fetch all data in parallel
-    const [patientRes, ownersRes, recordsRes, vaccRes, paymentsRes, passbooksRes] = await Promise.all([
-      api.get(`/patients/${patientId}/`),
+    // Fetch patient first
+    const patientRes = await api.get(`/patients/${patientId}/`);
+    patient.value = patientRes.data;
+    console.log('Patient loaded:', patient.value);
+    
+    // Then fetch related data
+    const [ownersRes, recordsRes, vaccRes, paymentsRes, passbooksRes] = await Promise.all([
       api.get('/owners/'),
       api.get('/medical-records/'),
       api.get('/vaccinations/'),
       api.get('/payments/'),
-      api.get('/passbooks/').catch(() => ({ data: [] })) // Handle if passbooks endpoint fails
+      api.get('/passbooks/').catch(err => {
+        console.log('Passbooks endpoint not available:', err);
+        return { data: [] };
+      })
     ]);
     
-    patient.value = patientRes.data;
     owners.value = Array.isArray(ownersRes.data) ? ownersRes.data : (ownersRes.data.results || []);
     
-    // Filter records for this patient
+    // Filter records for this patient (compare as strings since IDs are UUIDs)
     const allRecords = Array.isArray(recordsRes.data) ? recordsRes.data : (recordsRes.data.results || []);
-    medicalRecords.value = allRecords.filter(r => r.patient === patientId || r.patient === parseInt(patientId));
+    medicalRecords.value = allRecords.filter(r => {
+      const recordPatientId = r.patient?.id || r.patient;
+      return String(recordPatientId) === String(patientId);
+    });
     
     const allVacc = Array.isArray(vaccRes.data) ? vaccRes.data : (vaccRes.data.results || []);
-    vaccinations.value = allVacc.filter(v => v.patient === patientId || v.patient === parseInt(patientId));
+    vaccinations.value = allVacc.filter(v => {
+      const vaccPatientId = v.patient?.id || v.patient;
+      return String(vaccPatientId) === String(patientId);
+    });
     
     const allPayments = Array.isArray(paymentsRes.data) ? paymentsRes.data : (paymentsRes.data.results || []);
-    payments.value = allPayments.filter(p => p.patient === patientId || p.patient === parseInt(patientId));
+    payments.value = allPayments.filter(p => {
+      const paymentPatientId = p.patient?.id || p.patient;
+      return String(paymentPatientId) === String(patientId);
+    });
     
-    // Check if passbook exists
+    // Check if passbook exists for this patient
     const allPassbooks = Array.isArray(passbooksRes.data) ? passbooksRes.data : (passbooksRes.data.results || []);
     hasPassbook.value = allPassbooks.some(pb => {
-      const pbPatient = pb.patient?.id || pb.patient;
-      return pbPatient === patientId || pbPatient === parseInt(patientId);
+      const pbPatientId = pb.patient?.id || pb.patient;
+      return String(pbPatientId) === String(patientId);
     });
+    
+    console.log('Data loaded - Records:', medicalRecords.value.length, 'Vaccinations:', vaccinations.value.length, 'Payments:', payments.value.length, 'Has Passbook:', hasPassbook.value);
     
   } catch (err) {
     console.error('Error fetching patient data:', err);
-    error.value = err.response?.data?.detail || 'Failed to load patient details';
+    error.value = err.response?.data?.detail || err.message || 'Failed to load patient details';
   } finally {
     isLoading.value = false;
   }
