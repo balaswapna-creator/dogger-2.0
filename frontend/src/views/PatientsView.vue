@@ -558,21 +558,7 @@ onBeforeUnmount(() => {
   closeCamera();
 });
 
-export default {
-  setup() {
-    const router = useRouter()
-    
-    const viewPatientDetails = (patientId) => {
-      router.push(`/patients/${patientId}`)
-    }
-    
-    return {
-      viewPatientDetails
-    }
-  }
-}
 </script>
-
 
 <style scoped>
 .patients-wrapper {
