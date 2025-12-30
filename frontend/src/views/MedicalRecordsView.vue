@@ -677,6 +677,9 @@ export default {
     const owners = ref([])
     const loading = ref(true)
     const error = ref(null)
+    const hasPassbook = ref(false);
+    
+const creatingPassbook = ref(false);
     const showForm = ref(false)
     const selectedPatient = ref(null)
     const patientSearch = ref('')
