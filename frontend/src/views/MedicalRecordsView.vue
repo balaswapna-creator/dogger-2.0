@@ -646,7 +646,7 @@
           />
           <p class="field-hint">Enter the consultation fee for this visit</p>
         </div>
-        </div> <!-- End of form-scroll -->
+      </div> <!-- End of form-scroll -->
 
         <!-- Action Buttons -->
         <div class="form-actions">
