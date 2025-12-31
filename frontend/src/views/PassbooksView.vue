@@ -93,7 +93,6 @@
 </template>
 
 <script>
-<script>
 import { ref, onMounted } from 'vue'
 import api from '../services/api'
 
@@ -110,7 +109,6 @@ export default {
         error.value = null
         const response = await api.get('/passbooks/')
         
-        // ✅ Handle array or paginated response
         const data = response.data || []
         passbooks.value = Array.isArray(data) ? data : (data.results || [])
         
@@ -125,7 +123,6 @@ export default {
       }
     }
 
-    // ✅ Safe helper functions
     const getPatientName = (passbook) => {
       if (!passbook) return 'Unknown'
       if (passbook.patient_name) return passbook.patient_name
@@ -153,13 +150,11 @@ export default {
         return
       }
       
-      // Find the passbook to get its access_token
       const passbook = passbooks.value.find(pb => pb.id === passbookId)
       
       if (passbook) {
         const token = passbook.access_token || passbook.id
         console.log('Opening passbook with token:', token)
-        // ✅ FIXED: Use correct public endpoint URL
         window.open(`/passbook/public/${token}`, '_blank')
       } else {
         alert('Passbook not found')
