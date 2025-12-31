@@ -374,8 +374,11 @@ export default {
 
     const viewPassbook = () => {
       if (patientPassbook.value) {
-        const passbookId = patientPassbook.value.id
-        window.open(`/passbook/${passbookId}`, '_blank')
+        // ✅ FIXED: Use correct backend endpoint with access_token
+        const token = patientPassbook.value.access_token || patientPassbook.value.id
+        console.log('Opening passbook with token:', token)
+        // Use the correct public endpoint path
+        window.open(`/passbook/public/${token}`, '_blank')
       } else {
         alert('Passbook not found')
       }

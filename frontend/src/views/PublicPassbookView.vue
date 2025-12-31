@@ -232,11 +232,16 @@ const fetchPassbook = async () => {
   }
   
   try {
-    // Use the api service which already has the correct base URL
-    const response = await api.get(`/passbook/${token}/`);
+    console.log('Fetching passbook with token:', token);
+    
+    // ✅ FIXED: Use correct backend endpoint
+    const response = await api.get(`/passbooks/public/${token}/`);
+    
+    console.log('Passbook response:', response.data);
     
     if (response.data.success) {
       passbook.value = response.data.data;
+      console.log('Passbook loaded:', passbook.value);
     } else {
       error.value = response.data.error || 'Invalid passbook link';
     }

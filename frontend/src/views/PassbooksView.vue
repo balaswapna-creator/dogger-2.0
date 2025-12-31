@@ -93,6 +93,7 @@
 </template>
 
 <script>
+<script>
 import { ref, onMounted } from 'vue'
 import api from '../services/api'
 
@@ -109,9 +110,11 @@ export default {
         error.value = null
         const response = await api.get('/passbooks/')
         
-        // ✅ FIXED: Handle array or paginated response
+        // ✅ Handle array or paginated response
         const data = response.data || []
         passbooks.value = Array.isArray(data) ? data : (data.results || [])
+        
+        console.log('Passbooks loaded:', passbooks.value)
         
       } catch (err) {
         console.error('Error fetching passbooks:', err)
@@ -122,7 +125,7 @@ export default {
       }
     }
 
-    // ✅ FIXED: Safe helper functions to prevent null errors
+    // ✅ Safe helper functions
     const getPatientName = (passbook) => {
       if (!passbook) return 'Unknown'
       if (passbook.patient_name) return passbook.patient_name
@@ -139,18 +142,28 @@ export default {
 
     const getAccessToken = (passbook) => {
       if (!passbook) return 'N/A'
-      if (passbook.qr_code) return passbook.qr_code
       if (passbook.access_token) return String(passbook.access_token).slice(0, 8)
       if (passbook.id) return String(passbook.id).slice(0, 8)
       return 'N/A'
     }
 
-    const viewPassbook = (id) => {
-      if (!id) {
+    const viewPassbook = (passbookId) => {
+      if (!passbookId) {
         console.error('No passbook ID provided')
         return
       }
-      window.open(`/passbook/${id}`, '_blank')
+      
+      // Find the passbook to get its access_token
+      const passbook = passbooks.value.find(pb => pb.id === passbookId)
+      
+      if (passbook) {
+        const token = passbook.access_token || passbook.id
+        console.log('Opening passbook with token:', token)
+        // ✅ FIXED: Use correct public endpoint URL
+        window.open(`/passbook/public/${token}`, '_blank')
+      } else {
+        alert('Passbook not found')
+      }
     }
 
     onMounted(() => {
