@@ -1,15 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
-import DashboardView from '../views/DashboardView.vue'
-import PatientsView from '../views/PatientsView.vue'
-import PatientDetailView from '../views/PatientDetailView.vue'
-import OwnersView from '../views/OwnersView.vue'
-import MedicalRecordsView from '../views/MedicalRecordsView.vue'
-import VaccinationsView from '../views/VaccinationsView.vue'
-import PaymentsView from '../views/PaymentsView.vue'
-import PrescriptionsView from '../views/PrescriptionsView.vue'
-import PassbooksView from '../views/PassbooksView.vue'
-import PublicPassbookView from '../views/PublicPassbookView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -110,22 +100,6 @@ router.beforeEach((to, from, next) => {
     next('/dashboard')
   } else {
     console.log('Navigation allowed')
-    next()
-  }
-})
-
-export default router
-
-// Navigation guard for authentication
-router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token')
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
-
-  if (requiresAuth && !token) {
-    next('/login')
-  } else if (to.path === '/login' && token) {
-    next('/dashboard')
-  } else {
     next()
   }
 })
