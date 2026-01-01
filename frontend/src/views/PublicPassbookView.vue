@@ -31,7 +31,7 @@
         <div class="mt-6 p-4 bg-emerald-50 rounded-lg">
           <p class="text-sm text-emerald-800">
             📞 Contact clinic to renew<br>
-            🏥 Main Road, Cumbum, TN - 625516
+            🏥 No 16,Sriram Nagar, Theni, TN - 625531
           </p>
         </div>
       </div>
@@ -42,8 +42,8 @@
       <!-- Clinic Header -->
       <div class="bg-white rounded-xl shadow-lg p-6 mb-4 text-center border-t-4 border-emerald-600">
         <h1 class="text-2xl font-bold text-emerald-900">🏥 Sri Adithya Pet Clinic</h1>
-        <p class="text-gray-600 text-sm">Dr. A. Balasubramanan, B.V.Sc, MBA</p>
-        <p class="text-gray-500 text-xs">Main Road, Cumbum, Tamil Nadu - 625516</p>
+        <p class="text-gray-600 text-sm">Dr. A. Balasubramanian, B.V.Sc, MBA(H A)</p>
+        <p class="text-gray-500 text-xs">No 16,Sriram Nagar, Theni, Tamil Nadu - 625531</p>
       </div>
 
       <!-- Subscription Status Badge -->
@@ -225,7 +225,13 @@ const formatDate = (dateString) => {
 const fetchPassbook = async () => {
   const token = route.params.token;
   
+  console.log('=== PASSBOOK DEBUG START ===')
+  console.log('Current route path:', route.path)
+  console.log('Token from params:', token)
+  console.log('Full route params:', route.params)
+  
   if (!token) {
+    console.error('No token provided!')
     error.value = 'No passbook token provided';
     loading.value = false;
     return;
@@ -233,23 +239,29 @@ const fetchPassbook = async () => {
   
   try {
     console.log('Fetching passbook with token:', token);
+    const apiUrl = `/passbooks/public/${token}/`
+    console.log('API URL:', apiUrl)
     
-    // ✅ FIXED: Use correct backend endpoint
-    const response = await api.get(`/passbooks/public/${token}/`);
+    const response = await api.get(apiUrl);
     
-    console.log('Passbook response:', response.data);
+    console.log('Response status:', response.status)
+    console.log('Response data:', response.data);
     
     if (response.data.success) {
       passbook.value = response.data.data;
-      console.log('Passbook loaded:', passbook.value);
+      console.log('Passbook loaded successfully:', passbook.value);
     } else {
+      console.error('API returned success=false:', response.data.error)
       error.value = response.data.error || 'Invalid passbook link';
     }
   } catch (err) {
     console.error('Error fetching passbook:', err);
+    console.error('Error response:', err.response?.data);
+    console.error('Error status:', err.response?.status);
     error.value = 'This passbook link is invalid or has expired';
   } finally {
     loading.value = false;
+    console.log('=== PASSBOOK DEBUG END ===')
   }
 };
 

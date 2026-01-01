@@ -677,16 +677,13 @@ export default {
     const owners = ref([])
     const loading = ref(true)
     const error = ref(null)
-    const hasPassbook = ref(false);
-    
-const creatingPassbook = ref(false);
     const showForm = ref(false)
     const selectedPatient = ref(null)
     const patientSearch = ref('')
 
     const form = ref({
       visit_date: new Date().toISOString().split('T')[0],
-      visit_type: 'consultation', // ✅ ADD THIS LINE
+      visit_type: 'consultation',
       chief_complaint: '',
       history: '',
       physical: {
@@ -715,7 +712,7 @@ const creatingPassbook = ref(false);
       next_review_date: '',
       special_instructions: '',
       notes: '',
-      consultation_fee: '' // ✅ ADD THIS LINE
+      consultation_fee: ''
     })
 
     const filteredPatients = computed(() => {
@@ -731,11 +728,17 @@ const creatingPassbook = ref(false);
       loading.value = true
       error.value = null
       try {
+        console.log('Fetching medical records...')
+        
         const [recordsRes, patientsRes, ownersRes] = await Promise.all([
           api.get('/medical-records/'),
           api.get('/patients/'),
           api.get('/owners/')
         ])
+        
+        console.log('Records response:', recordsRes.data)
+        console.log('Patients response:', patientsRes.data)
+        console.log('Owners response:', ownersRes.data)
         
         const recordsData = recordsRes.data || []
         records.value = Array.isArray(recordsData) ? recordsData : (recordsData.results || [])
@@ -745,9 +748,14 @@ const creatingPassbook = ref(false);
         
         const ownersData = ownersRes.data || []
         owners.value = Array.isArray(ownersData) ? ownersData : (ownersData.results || [])
+        
+        console.log('Parsed records:', records.value.length)
+        console.log('Parsed patients:', patients.value.length)
+        console.log('Parsed owners:', owners.value.length)
           
       } catch (err) {
         console.error('Error fetching data:', err)
+        console.error('Error details:', err.response?.data)
         error.value = 'Failed to load medical records. Please try again.'
         records.value = []
       } finally {
@@ -867,7 +875,7 @@ Additional Notes: ${form.value.notes || 'None'}
         const recordData = {
           patient: selectedPatient.value.id,
           visit_date: form.value.visit_date,
-          visit_type: form.value.visit_type || 'consultation', // ✅ NOW FROM FORM
+          visit_type: form.value.visit_type || 'consultation',
           chief_complaint: form.value.chief_complaint || 'Not specified',
           history: form.value.history || '',
           clinical_notes: clinicalNotes,
@@ -878,7 +886,7 @@ Additional Notes: ${form.value.notes || 'None'}
           heart_rate: form.value.physical.pulse ? parseInt(form.value.physical.pulse) : null,
           next_visit_date: form.value.next_review_date || null,
           follow_up_notes: followUpNotes,
-          consultation_fee: form.value.consultation_fee ? parseFloat(form.value.consultation_fee) : 0 // ✅ NOW FROM FORM
+          consultation_fee: form.value.consultation_fee ? parseFloat(form.value.consultation_fee) : 0
         }
 
         console.log('Sending record data:', recordData)
@@ -923,7 +931,7 @@ Additional Notes: ${form.value.notes || 'None'}
       
       form.value = {
         visit_date: new Date().toISOString().split('T')[0],
-        visit_type: 'consultation', // ✅ ADD THIS
+        visit_type: 'consultation',
         chief_complaint: '',
         history: '',
         physical: {
@@ -939,7 +947,7 @@ Additional Notes: ${form.value.notes || 'None'}
         next_review_date: '',
         special_instructions: '',
         notes: '',
-        consultation_fee: '' // ✅ ADD THIS
+        consultation_fee: ''
       }
     }
 
@@ -966,10 +974,9 @@ Additional Notes: ${form.value.notes || 'None'}
       viewingRecord.value = null
     }
 
-// Add this function in your MedicalRecordsView.vue script setup
-     const printRecord = () => {
-       window.print();
-    };
+    const printRecord = () => {
+      window.print();
+    }
 
     onMounted(() => {
       fetchRecords()
@@ -999,7 +1006,8 @@ Additional Notes: ${form.value.notes || 'None'}
       closeForm,
       viewRecord,
       closeViewModal,
-      fetchRecords
+      fetchRecords,
+      printRecord  // ✅ ADDED THIS
     }
   }
 }

@@ -83,10 +83,38 @@ const router = createRouter({
       path: '/passbook/public/:token',
       name: 'PublicPassbook',
       component: () => import('../views/PublicPassbookView.vue'),
-      meta: { requiresAuth: false }  // ✅ Important: no auth needed
+      meta: { requiresAuth: false }
+    },
+    // ✅ 404 Catch-all route
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'NotFound',
+      component: () => import('../views/NotFoundView.vue'),
+      meta: { requiresAuth: false }
     }
   ]
 })
+
+// Navigation guard for authentication
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token')
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+
+  console.log('Router navigation:', { to: to.path, from: from.path, hasToken: !!token, requiresAuth })
+
+  if (requiresAuth && !token) {
+    console.log('No token, redirecting to login')
+    next('/login')
+  } else if (to.path === '/login' && token) {
+    console.log('Already logged in, redirecting to dashboard')
+    next('/dashboard')
+  } else {
+    console.log('Navigation allowed')
+    next()
+  }
+})
+
+export default router
 
 // Navigation guard for authentication
 router.beforeEach((to, from, next) => {
