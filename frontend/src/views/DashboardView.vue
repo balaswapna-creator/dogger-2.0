@@ -1,18 +1,34 @@
 <template>
   <div class="dashboard-wrapper">
-    <!-- Header with Clinic Name -->
+    <!-- Header with Clinic Logo and Name -->
     <header class="clinic-header">
       <div class="header-content">
         <div class="clinic-branding">
+          <!-- Logo Image -->
           <div class="clinic-logo">
-            <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="25" cy="25" r="23" fill="#7C3AED" stroke="#06B6D4" stroke-width="2"/>
-              <path d="M25 10 L25 22 M15 25 L35 25" stroke="white" stroke-width="3" stroke-linecap="round"/>
-              <circle cx="20" cy="35" r="3" fill="white"/>
-              <circle cx="30" cy="35" r="3" fill="white"/>
-              <path d="M18 32 Q25 28 32 32" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <!-- Professional Pet Clinic SVG Logo -->
+            <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Heart background -->
+              <path d="M26 45C26 45 6 34 6 18C6 10 11 6 16 6C20 6 23 8 26 12C29 8 32 6 36 6C41 6 46 10 46 18C46 34 26 45 26 45Z" 
+                    fill="#14B8A6" stroke="#0D9488" stroke-width="2"/>
+    
+              <!-- Dog paw (left) -->
+              <circle cx="20" cy="20" r="3" fill="#FFA500"/>
+              <circle cx="17" cy="24" r="2" fill="#FFA500"/>
+              <circle cx="20" cy="26" r="2" fill="#FFA500"/>
+              <circle cx="23" cy="24" r="2" fill="#FFA500"/>
+    
+              <!-- Cat paw (right) -->
+              <circle cx="32" cy="20" r="3" fill="#FF69B4"/>
+              <circle cx="29" cy="24" r="2" fill="#FF69B4"/>
+              <circle cx="32" cy="26" r="2" fill="#FF69B4"/>
+              <circle cx="35" cy="24" r="2" fill="#FF69B4"/>
+    
+              <!-- Medical cross -->
+              <path d="M26 30 L26 38 M22 34 L30 34" stroke="white" stroke-width="3" stroke-linecap="round"/>
             </svg>
           </div>
+          <!-- Clinic Info -->
           <div class="clinic-info">
             <h1>Sri Adithya Pet Clinic</h1>
             <p>Professional Care for Your Beloved Pets</p>
@@ -224,9 +240,14 @@ export default {
     const recentPatients = ref([])
     const recentActivity = ref([])
 
+    const handleLogoError = (event) => {
+      // Fallback if logo image fails to load
+      console.log('Logo image failed to load, using fallback')
+      event.target.style.display = 'none'
+    }
+
     const fetchDashboardData = async () => {
       try {
-        // ✅ FIXED: Fetch from dashboard API endpoint
         const dashboardRes = await api.get('/dashboard/')
         
         if (dashboardRes.data) {
@@ -238,26 +259,22 @@ export default {
           }
         }
 
-        // Fetch recent patients for table
         const patientsRes = await api.get('/patients/')
         const patientsData = patientsRes.data || []
         const patients = Array.isArray(patientsData) 
           ? patientsData 
           : (patientsData.results || [])
         
-        // ✅ FIXED: Only slice if we have an array
         recentPatients.value = Array.isArray(patients) 
           ? patients.slice(0, 5) 
           : []
 
-        // Fetch owners for recent activity
         const ownersRes = await api.get('/owners/')
         const ownersData = ownersRes.data || []
         const owners = Array.isArray(ownersData) 
           ? ownersData 
           : (ownersData.results || [])
 
-        // ✅ FIXED: Check if owners is array before slicing
         if (Array.isArray(owners) && owners.length > 0) {
           recentActivity.value = owners.slice(0, 3).map(owner => ({
             id: `owner-${owner.id}`,
@@ -269,7 +286,6 @@ export default {
 
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
-        // Set default values on error
         stats.value = {
           totalPatients: 0,
           totalOwners: 0,
@@ -279,7 +295,6 @@ export default {
       }
     }
 
-    // ✅ FIXED: Safe charAt function
     const getFirstChar = (str) => {
       if (!str || typeof str !== 'string') return '?'
       return str.charAt(0).toUpperCase()
@@ -316,7 +331,8 @@ export default {
       getFirstChar,
       formatDate,
       viewPatient,
-      logout
+      logout,
+      handleLogoError
     }
   }
 }
@@ -328,11 +344,11 @@ export default {
   background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
 }
 
-/* Header Styling */
+/* ✅ UPDATED: Header with Logo Styling */
 .clinic-header {
   background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%);
   color: white;
-  padding: 20px 40px;
+  padding: 16px 40px;
   box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
 }
 
@@ -347,29 +363,49 @@ export default {
 .clinic-branding {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
 }
 
+/* ✅ NEW: Logo Container */
 .clinic-logo {
-  animation: float 3s ease-in-out infinite;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 12px;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+.clinic-logo:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
+}
+
+/* ✅ NEW: Logo Image */
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .clinic-info h1 {
   margin: 0;
-  font-size: 32px;
+  font-size: 24px;
   font-weight: 700;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+  line-height: 1.2;
 }
 
 .clinic-info p {
-  margin: 5px 0 0 0;
-  font-size: 14px;
+  margin: 4px 0 0 0;
+  font-size: 13px;
   opacity: 0.9;
+  line-height: 1.2;
 }
 
 .user-info {
@@ -379,7 +415,7 @@ export default {
 }
 
 .welcome-text {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
 }
 
@@ -678,7 +714,39 @@ export default {
   color: #9CA3AF;
 }
 
-@media (max-width: 968px) {
+/* ✅ RESPONSIVE: Mobile Optimization */
+@media (max-width: 768px) {
+  .clinic-header {
+    padding: 12px 20px;
+  }
+  
+  .clinic-branding {
+    gap: 12px;
+  }
+  
+  .clinic-logo {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .clinic-info h1 {
+    font-size: 18px;
+  }
+  
+  .clinic-info p {
+    font-size: 11px;
+  }
+  
+  .user-info {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  
+  .welcome-text {
+    font-size: 13px;
+  }
+  
   .content-grid {
     grid-template-columns: 1fr;
   }
