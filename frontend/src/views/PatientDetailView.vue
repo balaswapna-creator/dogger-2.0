@@ -373,14 +373,23 @@ export default {
     }
 
     const viewPassbook = () => {
+      console.log('=== VIEW PASSBOOK CLICKED ===')
+      console.log('Patient passbook value:', patientPassbook.value)
+      console.log('All passbooks:', passbooks.value)
+      
       if (patientPassbook.value) {
-        // ✅ FIXED: Use correct backend endpoint with access_token
         const token = patientPassbook.value.access_token || patientPassbook.value.id
+        const url = `/passbook/public/${token}`
+        
         console.log('Opening passbook with token:', token)
-        // Use the correct public endpoint path
-        window.open(`/passbook/public/${token}`, '_blank')
+        console.log('Full URL:', url)
+        console.log('Window location:', window.location.href)
+        
+        // Use router.push instead of window.open for SPA navigation
+        router.push(`/passbook/public/${token}`)
       } else {
-        alert('Passbook not found')
+        console.error('No passbook found for this patient')
+        alert('Passbook not found for this patient')
       }
     }
 
