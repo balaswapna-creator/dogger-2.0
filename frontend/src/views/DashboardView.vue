@@ -1,41 +1,34 @@
 <template>
   <div class="dashboard-wrapper">
-    <!-- Header with Clinic Logo and Name -->
+    <!-- Header with Clinic Logo and Name - COMPACT VERSION -->
     <header class="clinic-header">
       <div class="header-content">
         <div class="clinic-branding">
           <!-- Logo Image -->
           <div class="clinic-logo">
-            <!-- Professional Pet Clinic SVG Logo -->
-            <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <!-- Heart background -->
+            <img src="/logo.png" alt="Clinic Logo" class="logo-image" @error="handleLogoError" />
+            <!-- Fallback SVG if image fails -->
+            <svg v-show="logoError" width="40" height="40" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M26 45C26 45 6 34 6 18C6 10 11 6 16 6C20 6 23 8 26 12C29 8 32 6 36 6C41 6 46 10 46 18C46 34 26 45 26 45Z" 
                     fill="#14B8A6" stroke="#0D9488" stroke-width="2"/>
-    
-              <!-- Dog paw (left) -->
               <circle cx="20" cy="20" r="3" fill="#FFA500"/>
               <circle cx="17" cy="24" r="2" fill="#FFA500"/>
               <circle cx="20" cy="26" r="2" fill="#FFA500"/>
               <circle cx="23" cy="24" r="2" fill="#FFA500"/>
-    
-              <!-- Cat paw (right) -->
               <circle cx="32" cy="20" r="3" fill="#FF69B4"/>
               <circle cx="29" cy="24" r="2" fill="#FF69B4"/>
               <circle cx="32" cy="26" r="2" fill="#FF69B4"/>
               <circle cx="35" cy="24" r="2" fill="#FF69B4"/>
-    
-              <!-- Medical cross -->
               <path d="M26 30 L26 38 M22 34 L30 34" stroke="white" stroke-width="3" stroke-linecap="round"/>
             </svg>
           </div>
           <!-- Clinic Info -->
           <div class="clinic-info">
             <h1>Sri Adithya Pet Clinic</h1>
-            <p>Professional Care for Your Beloved Pets</p>
           </div>
         </div>
         <div class="user-info">
-          <span class="welcome-text">Welcome, {{ userName }}</span>
+          <span class="welcome-text">{{ userName }}</span>
           <button @click="logout" class="logout-btn">Logout</button>
         </div>
       </div>
@@ -231,6 +224,7 @@ export default {
   name: 'DashboardView',
   setup() {
     const userName = ref('Admin')
+    const logoError = ref(false)
     const stats = ref({
       totalPatients: 0,
       totalOwners: 0,
@@ -240,10 +234,9 @@ export default {
     const recentPatients = ref([])
     const recentActivity = ref([])
 
-    const handleLogoError = (event) => {
-      // Fallback if logo image fails to load
-      console.log('Logo image failed to load, using fallback')
-      event.target.style.display = 'none'
+    const handleLogoError = () => {
+      logoError.value = true
+      console.log('Logo image failed to load, using SVG fallback')
     }
 
     const fetchDashboardData = async () => {
@@ -311,7 +304,8 @@ export default {
     }
 
     const viewPatient = (id) => {
-      window.location.href = `/patients`
+      // Navigate to patient detail page
+      window.location.href = `/patients/${id}`
     }
 
     const logout = () => {
@@ -328,6 +322,7 @@ export default {
       stats,
       recentPatients,
       recentActivity,
+      logoError,
       getFirstChar,
       formatDate,
       viewPatient,
@@ -344,12 +339,12 @@ export default {
   background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
 }
 
-/* ✅ UPDATED: Header with Logo Styling */
+/* ✅ COMPACT HEADER - Reduced Height */
 .clinic-header {
   background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%);
   color: white;
-  padding: 16px 40px;
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
+  padding: 8px 24px;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.2);
 }
 
 .header-content {
@@ -363,29 +358,29 @@ export default {
 .clinic-branding {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
-/* ✅ NEW: Logo Container */
+/* ✅ COMPACT LOGO - Smaller Size */
 .clinic-logo {
-  width: 60px;
-  height: 60px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: white;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }
 
 .clinic-logo:hover {
   transform: scale(1.05);
-  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
 }
 
-/* ✅ NEW: Logo Image */
+/* ✅ Logo Image Styling */
 .logo-image {
   width: 100%;
   height: 100%;
@@ -395,27 +390,20 @@ export default {
 
 .clinic-info h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 700;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-  line-height: 1.2;
-}
-
-.clinic-info p {
-  margin: 4px 0 0 0;
-  font-size: 13px;
-  opacity: 0.9;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
   line-height: 1.2;
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
 }
 
 .welcome-text {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
 }
 
@@ -423,41 +411,42 @@ export default {
   background: rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
+  padding: 6px 16px;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
+  font-size: 13px;
   transition: all 0.3s;
 }
 
 .logout-btn:hover {
   background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
-/* Dashboard Container */
+/* Dashboard Container - Reduced Padding */
 .dashboard-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 40px 20px;
+  padding: 20px;
 }
 
-/* Stats Grid */
+/* Stats Grid - Compact */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 24px;
-  margin-bottom: 40px;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .stat-card {
   background: white;
-  border-radius: 16px;
-  padding: 24px;
+  border-radius: 12px;
+  padding: 16px;
   display: flex;
   align-items: center;
-  gap: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   transition: all 0.3s;
   position: relative;
   overflow: hidden;
@@ -469,19 +458,19 @@ export default {
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
+  height: 3px;
   background: linear-gradient(90deg, #7C3AED, #06B6D4);
 }
 
 .stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.2);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.15);
 }
 
 .stat-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 12px;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -495,14 +484,14 @@ export default {
 
 .stat-content h3 {
   margin: 0;
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
   color: #1F2937;
 }
 
 .stat-content p {
-  margin: 5px 0 0 0;
-  font-size: 14px;
+  margin: 4px 0 0 0;
+  font-size: 13px;
   color: #6B7280;
   font-weight: 500;
 }
@@ -511,22 +500,22 @@ export default {
 .content-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-bottom: 40px;
+  gap: 20px;
+  margin-bottom: 24px;
 }
 
 /* Card Styling */
 .card {
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   overflow: hidden;
 }
 
 .card-header {
   background: linear-gradient(135deg, #7C3AED, #5B21B6);
   color: white;
-  padding: 20px 24px;
+  padding: 16px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -534,7 +523,7 @@ export default {
 
 .card-header h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
 }
 
@@ -542,10 +531,10 @@ export default {
   background: rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: white;
-  padding: 8px 16px;
+  padding: 6px 14px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   transition: all 0.3s;
 }
@@ -555,35 +544,35 @@ export default {
 }
 
 .card-body {
-  padding: 24px;
+  padding: 20px;
 }
 
 /* Quick Actions */
 .action-buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 12px;
 }
 
 .action-btn {
   background: linear-gradient(135deg, #7C3AED, #5B21B6);
   color: white;
   border: none;
-  padding: 16px;
-  border-radius: 12px;
+  padding: 14px;
+  border-radius: 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 15px;
+  gap: 10px;
+  font-size: 14px;
   font-weight: 600;
   transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+  box-shadow: 0 3px 10px rgba(124, 58, 237, 0.25);
 }
 
 .action-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(124, 58, 237, 0.35);
 }
 
 .action-btn.add-owner { background: linear-gradient(135deg, #06B6D4, #0891B2); }
@@ -594,14 +583,14 @@ export default {
 .activity-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .activity-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
+  padding: 10px;
   border-radius: 8px;
   transition: background 0.2s;
 }
@@ -611,9 +600,9 @@ export default {
 }
 
 .activity-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -634,7 +623,7 @@ export default {
 }
 
 .activity-time {
-  margin: 4px 0 0 0;
+  margin: 3px 0 0 0;
   font-size: 12px;
   color: #9CA3AF;
 }
@@ -655,16 +644,16 @@ export default {
 }
 
 .data-table th {
-  padding: 16px;
+  padding: 14px;
   text-align: left;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .data-table td {
-  padding: 16px;
+  padding: 14px;
   border-bottom: 1px solid #E5E7EB;
-  font-size: 14px;
+  font-size: 13px;
   color: #374151;
 }
 
@@ -675,80 +664,90 @@ export default {
 .patient-name {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .patient-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   background: linear-gradient(135deg, #7C3AED, #5B21B6);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .btn-view {
   background: linear-gradient(135deg, #7C3AED, #5B21B6);
   color: white;
   border: none;
-  padding: 8px 16px;
+  padding: 7px 14px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   transition: all 0.3s;
 }
 
 .btn-view:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(124, 58, 237, 0.25);
 }
 
 .no-data, .no-activity {
   text-align: center;
-  padding: 40px;
+  padding: 30px;
   color: #9CA3AF;
 }
 
-/* ✅ RESPONSIVE: Mobile Optimization */
+/* ✅ RESPONSIVE: Mobile Optimization - Compact */
 @media (max-width: 768px) {
   .clinic-header {
-    padding: 12px 20px;
+    padding: 8px 16px;
   }
   
   .clinic-branding {
-    gap: 12px;
+    gap: 8px;
   }
   
   .clinic-logo {
-    width: 50px;
-    height: 50px;
+    width: 36px;
+    height: 36px;
   }
   
   .clinic-info h1 {
-    font-size: 18px;
-  }
-  
-  .clinic-info p {
-    font-size: 11px;
+    font-size: 15px;
   }
   
   .user-info {
-    flex-direction: column;
     gap: 8px;
-    align-items: flex-end;
   }
   
   .welcome-text {
-    font-size: 13px;
+    font-size: 12px;
+  }
+  
+  .logout-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .dashboard-container {
+    padding: 16px;
+  }
+  
+  .stats-grid {
+    gap: 12px;
+    margin-bottom: 16px;
   }
   
   .content-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
   }
   
   .action-buttons {
