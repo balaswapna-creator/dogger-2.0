@@ -1,40 +1,6 @@
 <template>
   <div class="dashboard-wrapper">
-    <!-- Header with Clinic Logo and Name - COMPACT VERSION -->
-    <header class="clinic-header">
-      <div class="header-content">
-        <div class="clinic-branding">
-          <!-- Logo Image -->
-          <div class="clinic-logo">
-            <img src="/logo.png" alt="Clinic Logo" class="logo-image" @error="handleLogoError" />
-            <!-- Fallback SVG if image fails -->
-            <svg v-show="logoError" width="40" height="40" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M26 45C26 45 6 34 6 18C6 10 11 6 16 6C20 6 23 8 26 12C29 8 32 6 36 6C41 6 46 10 46 18C46 34 26 45 26 45Z" 
-                    fill="#14B8A6" stroke="#0D9488" stroke-width="2"/>
-              <circle cx="20" cy="20" r="3" fill="#FFA500"/>
-              <circle cx="17" cy="24" r="2" fill="#FFA500"/>
-              <circle cx="20" cy="26" r="2" fill="#FFA500"/>
-              <circle cx="23" cy="24" r="2" fill="#FFA500"/>
-              <circle cx="32" cy="20" r="3" fill="#FF69B4"/>
-              <circle cx="29" cy="24" r="2" fill="#FF69B4"/>
-              <circle cx="32" cy="26" r="2" fill="#FF69B4"/>
-              <circle cx="35" cy="24" r="2" fill="#FF69B4"/>
-              <path d="M26 30 L26 38 M22 34 L30 34" stroke="white" stroke-width="3" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <!-- Clinic Info -->
-          <div class="clinic-info">
-            <h1>Sri Adithya Pet Clinic</h1>
-          </div>
-        </div>
-        <div class="user-info">
-          <span class="welcome-text">{{ userName }}</span>
-          <button @click="logout" class="logout-btn">Logout</button>
-        </div>
-      </div>
-    </header>
-
-    <!-- Dashboard Content -->
+    <!-- ✅ NO HEADER - Content starts directly -->
     <div class="dashboard-container">
       <!-- Stats Cards -->
       <div class="stats-grid">
@@ -223,8 +189,6 @@ import api from '../services/api'
 export default {
   name: 'DashboardView',
   setup() {
-    const userName = ref('Admin')
-    const logoError = ref(false)
     const stats = ref({
       totalPatients: 0,
       totalOwners: 0,
@@ -233,11 +197,6 @@ export default {
     })
     const recentPatients = ref([])
     const recentActivity = ref([])
-
-    const handleLogoError = () => {
-      logoError.value = true
-      console.log('Logo image failed to load, using SVG fallback')
-    }
 
     const fetchDashboardData = async () => {
       try {
@@ -304,13 +263,7 @@ export default {
     }
 
     const viewPatient = (id) => {
-      // Navigate to patient detail page
       window.location.href = `/patients/${id}`
-    }
-
-    const logout = () => {
-      localStorage.removeItem('token')
-      window.location.href = '/login'
     }
 
     onMounted(() => {
@@ -318,16 +271,12 @@ export default {
     })
 
     return {
-      userName,
       stats,
       recentPatients,
       recentActivity,
-      logoError,
       getFirstChar,
       formatDate,
-      viewPatient,
-      logout,
-      handleLogoError
+      viewPatient
     }
   }
 }
@@ -339,99 +288,14 @@ export default {
   background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
 }
 
-/* ✅ COMPACT HEADER - Reduced Height */
-.clinic-header {
-  background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%);
-  color: white;
-  padding: 8px 24px;
-  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.2);
-}
-
-.header-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.clinic-branding {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* ✅ COMPACT LOGO - Smaller Size */
-.clinic-logo {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: white;
-  border-radius: 8px;
-  padding: 4px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.clinic-logo:hover {
-  transform: scale(1.05);
-  box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
-}
-
-/* ✅ Logo Image Styling */
-.logo-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-}
-
-.clinic-info h1 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-  line-height: 1.2;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.welcome-text {
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.logout-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  padding: 6px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 13px;
-  transition: all 0.3s;
-}
-
-.logout-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
-}
-
-/* Dashboard Container - Reduced Padding */
+/* Dashboard Container */
 .dashboard-container {
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
 }
 
-/* Stats Grid - Compact */
+/* Stats Grid */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -703,38 +567,8 @@ export default {
   color: #9CA3AF;
 }
 
-/* ✅ RESPONSIVE: Mobile Optimization - Compact */
+/* Responsive */
 @media (max-width: 768px) {
-  .clinic-header {
-    padding: 8px 16px;
-  }
-  
-  .clinic-branding {
-    gap: 8px;
-  }
-  
-  .clinic-logo {
-    width: 36px;
-    height: 36px;
-  }
-  
-  .clinic-info h1 {
-    font-size: 15px;
-  }
-  
-  .user-info {
-    gap: 8px;
-  }
-  
-  .welcome-text {
-    font-size: 12px;
-  }
-  
-  .logout-btn {
-    padding: 6px 12px;
-    font-size: 12px;
-  }
-  
   .dashboard-container {
     padding: 16px;
   }
