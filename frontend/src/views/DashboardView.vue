@@ -263,7 +263,7 @@ export default {
     }
 
     const viewPatient = (id) => {
-      window.location.href = `/patients/${id}`
+      window.location.href = '/patients'
     }
 
     onMounted(() => {

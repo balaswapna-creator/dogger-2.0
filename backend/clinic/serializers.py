@@ -40,22 +40,25 @@ class OwnerSerializer(serializers.ModelSerializer):
 # ============================================================================
 
 class PatientSerializer(serializers.ModelSerializer):
-    owner_name = serializers.SerializerMethodField()
+    owner_name = serializers.CharField(source='owner.name', read_only=True)
+    last_visit = serializers.SerializerMethodField()
     
     class Meta:
         model = Patient
-        fields = [
-            'id', 'pet_name', 'species', 'breed', 'gender', 
-            'date_of_birth', 'color', 'microchip_id', 'photo', 
-            'owner', 'owner_name', 'qr_code', 'allergies', 
-            'chronic_conditions', 'current_medications', 'is_active',
-            'last_visit', 'created_at', 'updated_at', 'created_by'
-        ]
-        read_only_fields = ['created_at', 'updated_at', 'qr_code']
+        fields = ['id', 'pet_name', 'species', 'breed', 'date_of_birth', 
+                  'gender', 'color', 'microchip_number', 'owner', 'owner_name',
+                  'photo', 'qr_code', 'medical_history', 'allergies', 
+                  'current_medications', 'created_at', 'updated_at', 'last_visit']
     
-    def get_owner_name(self, obj):
-        return obj.owner.name if obj.owner else "No Owner"
-
+    def get_last_visit(self, obj):
+        """Get the most recent medical record visit date"""
+        try:
+            latest_record = obj.medicalrecord_set.order_by('-visit_date').first()
+            if latest_record:
+                return latest_record.visit_date.isoformat()
+            return None
+        except Exception:
+            return None
 
 # ============================================================================
 # MEDICAL RECORD SERIALIZER
