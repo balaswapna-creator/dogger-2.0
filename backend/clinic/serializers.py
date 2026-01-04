@@ -45,19 +45,41 @@ class PatientSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Patient
-        fields = ['id', 'pet_name', 'species', 'breed', 'date_of_birth', 
-                  'gender', 'color', 'microchip_number', 'owner', 'owner_name',
-                  'photo', 'qr_code', 'medical_history', 'allergies', 
-                  'current_medications', 'created_at', 'updated_at', 'last_visit']
+        fields = [
+            'id', 
+            'pet_name', 
+            'species', 
+            'breed', 
+            'date_of_birth', 
+            'gender', 
+            'color', 
+            'owner', 
+            'owner_name',
+            'photo', 
+            'qr_code', 
+            'medical_history', 
+            'allergies', 
+            'current_medications', 
+            'created_at', 
+            'updated_at',
+            'last_visit'  # ✅ Added as SerializerMethodField
+        ]
     
     def get_last_visit(self, obj):
-        """Get the most recent medical record visit date"""
+        """Calculate last visit from medical records"""
         try:
-            latest_record = obj.medicalrecord_set.order_by('-visit_date').first()
+            from .models import MedicalRecord
+            latest_record = MedicalRecord.objects.filter(
+                patient=obj
+            ).order_by('-visit_date').first()
+            
             if latest_record:
                 return latest_record.visit_date.isoformat()
-            return None
-        except Exception:
+            
+            # Fallback to created_at if no medical records
+            return obj.created_at.isoformat() if obj.created_at else None
+        except Exception as e:
+            print(f"Error getting last visit: {e}")
             return None
 
 # ============================================================================
