@@ -3,12 +3,10 @@ name: Django Tests
 on:
   push:
     branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
 
 jobs:
   test:
-    name: Run Django Tests
+    name: Run Tests
     runs-on: ubuntu-latest
     
     services:
@@ -18,57 +16,43 @@ jobs:
           POSTGRES_DB: dogger_test
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
         ports:
           - 5432:5432
       
       redis:
         image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
         ports:
           - 6379:6379
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
     
-    - name: Set up Python
+    - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.12'
-        cache: 'pip'
-        cache-dependency-path: 'backend/requirements.txt'
     
-    - name: Install dependencies
+    - name: Install Dependencies
       run: |
         cd backend
-        python -m pip install --upgrade pip
         pip install -r requirements.txt
     
-    - name: Run migrations
+    - name: Run Migrations
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dogger_test
         REDIS_URL: redis://localhost:6379/0
-        SECRET_KEY: test-secret-key-for-ci
-        DEBUG: False
+        SECRET_KEY: test-key
       run: |
         cd backend
-        python manage.py migrate --noinput
+        python manage.py migrate
     
-    - name: Run tests
+    - name: Run Tests
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dogger_test
         REDIS_URL: redis://localhost:6379/0
-        SECRET_KEY: test-secret-key-for-ci
-        DEBUG: False
+        SECRET_KEY: test-key
       run: |
         cd backend
-        python manage.py test --verbosity=2
+        python manage.py test
