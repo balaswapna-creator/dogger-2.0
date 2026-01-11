@@ -1,4 +1,4 @@
-﻿name: Django CI
+name: Django Tests
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
 
 jobs:
   test:
+    name: Run Django Tests
     runs-on: ubuntu-latest
     
     services:
@@ -36,36 +37,37 @@ jobs:
           - 6379:6379
     
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
     
-    - name: Set up Python 3.12
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.12'
         cache: 'pip'
         cache-dependency-path: 'backend/requirements.txt'
     
-    - name: Install Dependencies
+    - name: Install dependencies
       run: |
         cd backend
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
-    - name: Run Migrations
+    - name: Run migrations
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dogger_test
         REDIS_URL: redis://localhost:6379/0
-        SECRET_KEY: test-secret-key-for-github-actions
+        SECRET_KEY: test-secret-key-for-ci
         DEBUG: False
       run: |
         cd backend
         python manage.py migrate --noinput
     
-    - name: Run Tests
+    - name: Run tests
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dogger_test
         REDIS_URL: redis://localhost:6379/0
-        SECRET_KEY: test-secret-key-for-github-actions
+        SECRET_KEY: test-secret-key-for-ci
         DEBUG: False
       run: |
         cd backend
