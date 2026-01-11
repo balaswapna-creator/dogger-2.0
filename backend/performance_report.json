@@ -1,0 +1,86 @@
+{
+  "test_date": "2026-01-10T20:52:58.318794",
+  "base_url": "http://127.0.0.1:8000",
+  "results": {
+    "health_load_test": {
+      "endpoint": "/api/health/",
+      "total_requests": 100,
+      "concurrent_users": 10,
+      "successful_requests": 99,
+      "failed_requests": 1,
+      "total_time": 1.13,
+      "requests_per_second": 88.43,
+      "avg_response_time": 108.62,
+      "min_response_time": 46.87,
+      "max_response_time": 167.55,
+      "median_response_time": 110.7,
+      "std_dev": 19.37,
+      "success_rate": 99.0,
+      "errors": [
+        {
+          "status": 429,
+          "error": ""
+        }
+      ]
+    },
+    "profile_load_test": {
+      "endpoint": "/api/profile/",
+      "error": "All requests failed",
+      "errors": [
+        {
+          "status": 429,
+          "error": ""
+        },
+        {
+          "status": 429,
+          "error": ""
+        },
+        {
+          "status": 429,
+          "error": ""
+        },
+        {
+          "status": 429,
+          "error": ""
+        },
+        {
+          "status": 429,
+          "error": ""
+        },
+        {
+          "status": 429,
+          "error": ""
+        },
+        {
+          "status": 429,
+          "error": ""
+        },
+        {
+          "status": 429,
+          "error": ""
+        },
+        {
+          "status": 429,
+          "error": ""
+        },
+        {
+          "status": 429,
+          "error": ""
+        }
+      ]
+    },
+    "health_stress_test": {
+      "endpoint": "/api/health/",
+      "max_tested_users": 10,
+      "breaking_point": 10,
+      "results": []
+    },
+    "benchmarks": []
+  },
+  "summary": {
+    "total_tests": 4,
+    "passed_tests": 2,
+    "failed_tests": 1,
+    "warnings": []
+  }
+}

@@ -15,7 +15,18 @@
             <p>Total Patients</p>
           </div>
         </div>
-
+        
+        <!-- Add this block somewhere visible in your dashboard -->
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-6">
+          <h3 class="font-semibold text-yellow-800 mb-2">🧪 Testing Tools</h3>
+          <router-link
+            to="/test-forms"
+            class="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center"
+          >
+             <span>→ Test Security Features (Input Sanitization, File Upload)</span>
+           </router-link>
+         </div>
+        
         <div class="stat-card owners-card">
           <div class="stat-icon">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -184,7 +195,8 @@
 
 <script>
 import { ref, onMounted } from 'vue'
-import api from '../services/api'
+import api from '@/services/api' // ✅ Using new secure API client
+import { UserManager } from '@/utils/security' // ✅ Import security utilities
 
 export default {
   name: 'DashboardView',
@@ -200,19 +212,20 @@ export default {
 
     const fetchDashboardData = async () => {
       try {
-        const dashboardRes = await api.get('/dashboard/')
+        // ✅ Using new secure API client with automatic token management
+        const dashboardRes = await api.getDashboardStats()
         
-        if (dashboardRes.data) {
+        if (dashboardRes) {
           stats.value = {
-            totalPatients: dashboardRes.data.total_patients || 0,
-            totalOwners: dashboardRes.data.total_owners || 0,
-            todayAppointments: dashboardRes.data.consultations_this_week || 0,
-            monthlyRevenue: (dashboardRes.data.revenue_this_month || 0).toFixed(2)
+            totalPatients: dashboardRes.total_patients || 0,
+            totalOwners: dashboardRes.total_owners || 0,
+            todayAppointments: dashboardRes.consultations_this_week || 0,
+            monthlyRevenue: (dashboardRes.revenue_this_month || 0).toFixed(2)
           }
         }
 
-        const patientsRes = await api.get('/patients/')
-        const patientsData = patientsRes.data || []
+        // ✅ Using new API methods
+        const patientsData = await api.getPatients()
         const patients = Array.isArray(patientsData) 
           ? patientsData 
           : (patientsData.results || [])
@@ -221,8 +234,7 @@ export default {
           ? patients.slice(0, 5) 
           : []
 
-        const ownersRes = await api.get('/owners/')
-        const ownersData = ownersRes.data || []
+        const ownersData = await api.getOwners()
         const owners = Array.isArray(ownersData) 
           ? ownersData 
           : (ownersData.results || [])
@@ -238,6 +250,12 @@ export default {
 
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
+        
+        // ✅ If unauthorized, token will auto-refresh or redirect to login
+        if (error.response?.status === 401) {
+          console.log('Authentication required - will redirect to login')
+        }
+        
         stats.value = {
           totalPatients: 0,
           totalOwners: 0,
@@ -267,6 +285,14 @@ export default {
     }
 
     onMounted(() => {
+      // ✅ Fetch user data if not available
+      const user = UserManager.getUser()
+      if (!user) {
+        api.getUserProfile()
+          .then(profile => UserManager.setUser(profile))
+          .catch(err => console.error('Failed to fetch user profile:', err))
+      }
+      
       fetchDashboardData()
     })
 

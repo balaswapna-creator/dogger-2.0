@@ -1,0 +1,104 @@
+# alert_rules.yml - Prometheus alerting rules
+groups:
+  - name: dogger_alerts
+    interval: 30s
+    rules:
+      # Application is down
+      - alert: ApplicationDown
+        expr: up{job="django"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Dogger application is down"
+          description: "The Dogger application has been down for more than 2 minutes."
+
+      # High response time
+      - alert: HighResponseTime
+        expr: django_http_requests_latency_seconds_average{job="django"} > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High API response time"
+          description: "Average response time is {{ $value }}s (threshold: 1s)"
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(django_http_responses_total_by_status_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }} errors/sec"
+
+      # Database connection issues
+      - alert: DatabaseConnectionError
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Cannot connect to PostgreSQL"
+          description: "PostgreSQL database is unreachable"
+
+      # High database connections
+      - alert: HighDatabaseConnections
+        expr: pg_stat_database_numbackends > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High number of database connections"
+          description: "Current connections: {{ $value }} (threshold: 80)"
+
+      # Redis down
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is down"
+          description: "Redis has been down for more than 2 minutes"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}% (threshold: 90%)"
+
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}% (threshold: 80%)"
+
+      # Disk space low
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space"
+          description: "Available disk space is {{ $value }}% (threshold: 10%)"
+
+      # SSL certificate expiring
+      - alert: SSLCertificateExpiringSoon
+        expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 30
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "SSL certificate expires in {{ $value }} days"

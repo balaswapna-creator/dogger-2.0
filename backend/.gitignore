@@ -11,6 +11,7 @@ ENV/
 
 # Django
 *.log
+local_settings.py
 db.sqlite3
 db.sqlite3-journal
 /media
@@ -20,6 +21,20 @@ db.sqlite3-journal
 # Environment
 .env
 .env.local
+.env.backup
+.env.production
+secrets.txt
+*.env
+!.env.example
+!.env.development
+!.env.staging
+!.env.production
+
+# Media
+media/
+
+# Static
+staticfiles/
 
 # IDE
 .vscode/
@@ -38,4 +53,8 @@ htmlcov/
 .pytest_cache/
 
 # Migrations (optional - remove if you want to track them)
-# */migrations/0*.py
+# */migrations/0*.pylogs/*.log 
+logs/*.log 
+
+# Backup encryption key
+backups/.backup_key

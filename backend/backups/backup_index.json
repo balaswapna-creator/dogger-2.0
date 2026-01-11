@@ -1,0 +1,66 @@
+{
+  "backups": [
+    {
+      "backup_name": "backup_development_manual_20260110_191658",
+      "backup_type": "manual",
+      "environment": "development",
+      "timestamp": "20260110_191658",
+      "datetime": "2026-01-10T19:16:58.723752",
+      "database_type": "sqlite",
+      "original_size": 401408,
+      "compressed_size": 16440,
+      "checksum": "75c899cfca0c66bc28b8f3a2617d81d1d3d21d04d0eaf373dc6f49898d25da15",
+      "retention_until": "2026-01-17T19:16:58.724749"
+    },
+    {
+      "backup_name": "backup_development_test_20260110_193604",
+      "backup_type": "test",
+      "environment": "development",
+      "timestamp": "20260110_193604",
+      "datetime": "2026-01-10T19:36:04.358576",
+      "database_type": "sqlite",
+      "original_size": 401408,
+      "compressed_size": 16440,
+      "checksum": "d3efc31cd63c8c72d856cb9b3417db362ae49713cad9505b91754558c7762f94",
+      "retention_until": "2026-01-17T19:36:04.358576"
+    },
+    {
+      "backup_name": "backup_development_test-multiple-1_20260110_193604",
+      "backup_type": "test-multiple-1",
+      "environment": "development",
+      "timestamp": "20260110_193604",
+      "datetime": "2026-01-10T19:36:04.554089",
+      "database_type": "sqlite",
+      "original_size": 401408,
+      "compressed_size": 16440,
+      "checksum": "f345c4602db12705b1347a12d92496825e68e409cb93c5402aa1327515373c41",
+      "retention_until": "2026-01-17T19:36:04.555095"
+    },
+    {
+      "backup_name": "backup_development_test-multiple-2_20260110_193604",
+      "backup_type": "test-multiple-2",
+      "environment": "development",
+      "timestamp": "20260110_193604",
+      "datetime": "2026-01-10T19:36:04.583013",
+      "database_type": "sqlite",
+      "original_size": 401408,
+      "compressed_size": 16440,
+      "checksum": "17d65c8f8b17bfa6f73d6dec1dd3bb937dba3f4fe415098274cfec2ce7351575",
+      "retention_until": "2026-01-17T19:36:04.584009"
+    },
+    {
+      "backup_name": "backup_development_test-multiple-3_20260110_193604",
+      "backup_type": "test-multiple-3",
+      "environment": "development",
+      "timestamp": "20260110_193604",
+      "datetime": "2026-01-10T19:36:04.611937",
+      "database_type": "sqlite",
+      "original_size": 401408,
+      "compressed_size": 16440,
+      "checksum": "ffe64af1d1ecac8ca294ca2c5f23250e2f97019697a4e846e14351b0c5547aef",
+      "retention_until": "2026-01-17T19:36:04.612933"
+    }
+  ],
+  "last_updated": "2026-01-10T19:36:04.614954",
+  "total_backups": 5
+}

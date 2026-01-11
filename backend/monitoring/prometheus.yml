@@ -1,0 +1,45 @@
+# prometheus.yml - Prometheus configuration
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'dogger-prod'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "alert_rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'django'
+    static_configs:
+      - targets: ['web:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:9113']
+
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']

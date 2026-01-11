@@ -1,0 +1,12 @@
+{
+  "backup_name": "backup_development_manual_20260110_191658",
+  "backup_type": "manual",
+  "environment": "development",
+  "timestamp": "20260110_191658",
+  "datetime": "2026-01-10T19:16:58.723752",
+  "database_type": "sqlite",
+  "original_size": 401408,
+  "compressed_size": 16440,
+  "checksum": "75c899cfca0c66bc28b8f3a2617d81d1d3d21d04d0eaf373dc6f49898d25da15",
+  "retention_until": "2026-01-17T19:16:58.724749"
+}

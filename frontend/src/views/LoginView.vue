@@ -49,6 +49,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { TokenManager } from '../utils/security'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -57,6 +58,15 @@ const username = ref('admin')
 const password = ref('admin123')
 const errorMessage = ref('')
 const loading = ref(false)
+
+// In your login function:
+const response = await api.post('/token/', {
+  username: username.value,
+  password: password.value
+})
+
+// Use TokenManager to store token
+TokenManager.setToken(response.data.access, response.data.refresh)
 
 async function handleLogin() {
   loading.value = true

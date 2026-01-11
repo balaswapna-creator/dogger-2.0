@@ -1,0 +1,12 @@
+{
+  "backup_name": "backup_development_test_20260110_193604",
+  "backup_type": "test",
+  "environment": "development",
+  "timestamp": "20260110_193604",
+  "datetime": "2026-01-10T19:36:04.358576",
+  "database_type": "sqlite",
+  "original_size": 401408,
+  "compressed_size": 16440,
+  "checksum": "d3efc31cd63c8c72d856cb9b3417db362ae49713cad9505b91754558c7762f94",
+  "retention_until": "2026-01-17T19:36:04.358576"
+}

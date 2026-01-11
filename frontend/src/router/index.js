@@ -1,107 +1,172 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import LoginView from '../views/LoginView.vue'
+// frontend/src/router/index.js
+// Complete corrected router with security guards
+
+import { createRouter, createWebHistory } from 'vue-router';
+import { TokenManager, UserManager, SecurityMonitor } from '@/utils/security';
+import TestSecureForms from '@/views/TestSecureForms.vue';
+
+// Import views
+import Login from '@/views/Login.vue';
+import DashboardView from '@/views/DashboardView.vue';
+import Unauthorized from '@/views/Unauthorized.vue';
+import NotFound from '@/views/NotFound.vue';
+
+const routes = [
+  {
+    path: '/login',
+    name: 'Login',
+    component: Login,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: DashboardView,
+    meta: { 
+      requiresAuth: true,
+      roles: ['admin', 'doctor', 'staff']
+    }
+  },
+  {
+    path: '/unauthorized',
+    name: 'Unauthorized',
+    component: Unauthorized,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/test-forms',
+    name: 'TestForms',
+    component: TestSecureForms,
+    meta: { requiresAuth: false }  // Public for testing
+  },
+  {
+    path: '/404',
+    name: 'NotFound',
+    component: NotFound,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/',
+    redirect: '/dashboard'
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/404'
+  }
+];
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/login',
-      name: 'Login',
-      component: LoginView
-    },
-    {
-      path: '/',
-      redirect: '/dashboard',
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/dashboard',
-      name: 'Dashboard',
-      component: () => import('../views/DashboardView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/patients',
-      name: 'Patients',
-      component: () => import('../views/PatientsView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/patients/:id',
-      name: 'PatientDetail',
-      component: () => import('../views/PatientDetailView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/owners',
-      name: 'Owners',
-      component: () => import('../views/OwnersView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/medical-records',
-      name: 'MedicalRecords',
-      component: () => import('../views/MedicalRecordsView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/vaccinations',
-      name: 'Vaccinations',
-      component: () => import('../views/VaccinationsView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/payments',
-      name: 'Payments',
-      component: () => import('../views/PaymentsView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/prescriptions',
-      name: 'Prescriptions',
-      component: () => import('../views/PrescriptionsView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/passbooks',
-      name: 'Passbooks',
-      component: () => import('../views/PassbooksView.vue'),
-      meta: { requiresAuth: true }
-    },
-    // ✅ PUBLIC PASSBOOK ROUTE (NO AUTH REQUIRED)
-    {
-      path: '/passbook/public/:token',
-      name: 'PublicPassbook',
-      component: () => import('../views/PublicPassbookView.vue'),
-      meta: { requiresAuth: false }
-    },
-    // ✅ 404 Catch-all route
-    {
-      path: '/:pathMatch(.*)*',
-      name: 'NotFound',
-      component: () => import('../views/NotFoundView.vue'),
-      meta: { requiresAuth: false }
-    }
-  ]
-})
+  history: createWebHistory(),
+  routes
+});
 
-// Navigation guard for authentication
+// Navigation guard
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token')
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  const requiredRoles = to.meta.roles || [];
+  const isAuthenticated = TokenManager.isAuthenticated();
+  
+  console.log('🛡️ Router Guard Check:', {
+    path: to.path,
+    requiresAuth,
+    requiredRoles,
+    isAuthenticated
+  });
 
-  console.log('Router navigation:', { to: to.path, from: from.path, hasToken: !!token, requiresAuth })
-
-  if (requiresAuth && !token) {
-    console.log('No token, redirecting to login')
-    next('/login')
-  } else if (to.path === '/login' && token) {
-    console.log('Already logged in, redirecting to dashboard')
-    next('/dashboard')
-  } else {
-    console.log('Navigation allowed')
-    next()
+  // Public routes - allow access
+  if (!requiresAuth) {
+    console.log('✅ Public route, allowing access');
+    SecurityMonitor.logSecurityEvent('route_access', { 
+      path: to.path, 
+      public: true 
+    });
+    next();
+    return;
   }
-})
 
-export default router
+  // Authentication check
+  if (!isAuthenticated) {
+    console.warn('⚠️ Not authenticated, redirecting to login');
+    SecurityMonitor.logSecurityEvent('unauthorized_access_attempt', { 
+      path: to.path,
+      reason: 'not_authenticated'
+    });
+    next({ 
+      name: 'Login', 
+      query: { redirect: to.fullPath } 
+    });
+    return;
+  }
+
+  // Role-based access check
+  if (requiredRoles.length > 0) {
+    const user = UserManager.getUser();
+    
+    console.log('👤 Current User Data:', {
+      username: user?.username,
+      role: user?.role,
+      is_staff: user?.is_staff,
+      is_superuser: user?.is_superuser
+    });
+    
+    console.log('🔐 Required Roles:', requiredRoles);
+
+    if (!user) {
+      console.error('❌ No user data found in storage!');
+      SecurityMonitor.logSecurityEvent('no_user_data', { path: to.path });
+      TokenManager.clearTokens();
+      next({ name: 'Login', query: { redirect: to.fullPath } });
+      return;
+    }
+
+    const userRole = user.role;
+    const hasRequiredRole = userRole && requiredRoles.includes(userRole);
+    const isStaffUser = user.is_staff === true;
+    const isSuperUser = user.is_superuser === true;
+    
+    console.log('🔍 Access Check:', {
+      hasRequiredRole,
+      isStaffUser,
+      isSuperUser
+    });
+    
+    if (hasRequiredRole || isStaffUser || isSuperUser) {
+      console.log('✅ Access granted!');
+      SecurityMonitor.logSecurityEvent('route_access', { 
+        path: to.path, 
+        user: user.username,
+        role: userRole,
+        grantReason: hasRequiredRole ? 'role_match' : 'staff_override'
+      });
+      next();
+      return;
+    }
+    
+    console.warn('❌ Access denied - Insufficient permissions:', {
+      userRole,
+      requiredRoles,
+      isStaff: isStaffUser,
+      isSuperUser
+    });
+    
+    SecurityMonitor.logSecurityEvent('insufficient_permissions', {
+      path: to.path,
+      userRole,
+      requiredRoles,
+      username: user.username
+    });
+    
+    next({ name: 'Unauthorized' });
+    return;
+  }
+
+  // Default - allow access
+  console.log('✅ No special requirements, allowing access');
+  SecurityMonitor.logSecurityEvent('route_access', { 
+    path: to.path, 
+    user: UserManager.getUser()?.username 
+  });
+  next();
+});
+
+export default router;

@@ -187,8 +187,8 @@
           <div class="certificate-border">
             <div class="clinic-header">
               <h1>Sri Adithya Pet Clinic</h1>
-              <p>Dr. A. Balasubramanan, B.V.Sc, MBA</p>
-              <p>Main Road, Cumbum, Tamil Nadu - 625516</p>
+              <p>Dr. A. Balasubramanian, B.V.Sc, MBA(H A)</p>
+              <p>No:16,Sriram Nagar, Theni, Tamil Nadu - 625531</p>
             </div>
 
             <div class="certificate-title">
@@ -209,11 +209,13 @@
             <div class="vaccination-section">
               <h3>Vaccination Details</h3>
               <table class="cert-table">
-                <tr><td>Vaccine Name</td><td>{{ printData.vaccination?.vaccine_name }}</td></tr>
-                <tr><td>Manufacturer</td><td>{{ printData.vaccination?.manufacturer || 'N/A' }}</td></tr>
-                <tr><td>Batch Number</td><td>{{ printData.vaccination?.batch_number || 'N/A' }}</td></tr>
-                <tr><td>Date Administered</td><td>{{ formatDate(printData.vaccination?.date_administered) }}</td></tr>
-                <tr><td>Next Due Date</td><td>{{ formatDate(printData.vaccination?.next_due_date) }}</td></tr>
+                <tbody>
+                  <tr><td>Vaccine Name</td><td>{{ printData.vaccination?.vaccine_name }}</td></tr>
+                  <tr><td>Manufacturer</td><td>{{ printData.vaccination?.manufacturer || 'N/A' }}</td></tr>
+                  <tr><td>Batch Number</td><td>{{ printData.vaccination?.batch_number || 'N/A' }}</td></tr>
+                  <tr><td>Date Administered</td><td>{{ formatDate(printData.vaccination?.date_administered) }}</td></tr>
+                  <tr><td>Next Due Date</td><td>{{ formatDate(printData.vaccination?.next_due_date) }}</td></tr>
+                </tbody>
               </table>
             </div>
 

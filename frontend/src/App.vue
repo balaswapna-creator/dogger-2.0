@@ -17,7 +17,7 @@
         <!-- Right: Navigation & Logout -->
         <div class="header-actions">
           <nav class="nav-menu">
-            <router-link to="/dashboard" class="nav-link">Dashboard</router-link>
+            <router-link to="/" class="nav-link">Dashboard</router-link>
             <router-link to="/patients" class="nav-link">Patients</router-link>
             <router-link to="/owners" class="nav-link">Owners</router-link>
             <router-link to="/medical-records" class="nav-link">Records</router-link>
@@ -25,11 +25,11 @@
             <router-link to="/payments" class="nav-link">Payments</router-link>
             <router-link to="/passbooks" class="nav-link">Passbooks</router-link>
           </nav>
-          <button @click="logout" class="btn-logout">Logout</button>
+          <button @click="handleLogout" class="btn-logout">Logout</button>
         </div>
       </div>
     </header>
-    
+
     <!-- ✅ CONTENT AREA - Pushed down by header height -->
     <main :class="{ 'with-header': isLoggedIn && $route.path !== '/login' }">
       <router-view />
@@ -40,17 +40,31 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { TokenManager, UserManager, SecurityMonitor } from '@/utils/security'
+import api from '@/services/api'
 
 const router = useRouter()
 const route = useRoute()
 
+// ✅ Use TokenManager instead of direct localStorage
 const isLoggedIn = computed(() => {
-  return !!localStorage.getItem('token')
+  return TokenManager.isAuthenticated()
 })
 
-const logout = () => {
-  localStorage.removeItem('token')
-  router.push('/login')
+// ✅ Proper logout with API call and token cleanup
+const handleLogout = async () => {
+  try {
+    // Call logout API
+    await api.logout()
+  } catch (error) {
+    console.error('Logout API error:', error)
+  } finally {
+    // Always clear tokens and redirect
+    TokenManager.clearTokens()
+    UserManager.clearUser()
+    SecurityMonitor.logSecurityEvent('logout', { manual: true })
+    router.push('/login')
+  }
 }
 </script>
 
@@ -189,7 +203,7 @@ main.with-header {
   .nav-menu {
     gap: 2px;
   }
-  
+
   .nav-link {
     padding: 8px 10px;
     font-size: 13px;
@@ -201,18 +215,18 @@ main.with-header {
     height: auto;
     min-height: 64px;
   }
-  
+
   .header-container {
     flex-direction: column;
     padding: 12px 16px;
     gap: 12px;
   }
-  
+
   .nav-menu {
     flex-wrap: wrap;
     justify-content: center;
   }
-  
+
   main.with-header {
     margin-top: 120px; /* Adjust for wrapped mobile header */
   }
