@@ -4,8 +4,10 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+
 env:
   PYTHON_VERSION: '3.12'
+
 jobs:
   # Job 1: Code Quality Checks
   quality-check:
@@ -32,14 +34,15 @@ jobs:
     - name: Run Black (Code Formatting Check)
       run: |
         cd backend
-        black --check . || echo "Code formatting issues found. Run 'black .' to fix."
+        black --check . --extend-exclude='migrations|venv|env' || echo "⚠️ Code formatting issues found"
       continue-on-error: true
     
     - name: Run Flake8 (Linting)
       run: |
         cd backend
-        flake8 . --max-line-length=100 --exclude=migrations,venv,env --statistics
+        flake8 . --max-line-length=100 --exclude=migrations,venv,env,__pycache__ --statistics || echo "⚠️ Linting issues found"
       continue-on-error: true
+
   # Job 2: Automated Testing
   test:
     name: Run Tests
@@ -96,7 +99,8 @@ jobs:
       run: |
         cd backend
         python manage.py migrate --noinput
-- name: Run Tests
+    
+    - name: Run Tests
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dogger_test
         REDIS_URL: redis://localhost:6379/0
@@ -105,8 +109,9 @@ jobs:
       run: |
         cd backend
         python manage.py test --verbosity=2
-- name: Test Summary
+    
+    - name: Test Summary
       if: always()
       run: |
-        echo "✓ All tests completed!"
-        echo "Check the logs above for results."
+        echo "✅ Test suite completed!"
+        echo "Check logs above for detailed results."
