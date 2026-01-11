@@ -44,6 +44,7 @@ jobs:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dogger_test
         REDIS_URL: redis://localhost:6379/0
         SECRET_KEY: test-key
+        DJANGO_SETTINGS_MODULE: dogger.settings.test  # Add this line
       run: |
         cd backend
         python manage.py migrate

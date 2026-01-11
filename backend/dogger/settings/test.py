@@ -9,6 +9,12 @@ from .base import *
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# Disable Cloudinary for tests
+CLOUDINARY_STORAGE = {}
+
+# Simple file storage for tests
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
 
 # Application definition
