@@ -1,0 +1,38 @@
+# This file tells Docker what to ignore when building
+@"
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+
+# Django
+*.log
+*.pot
+*.sqlite3
+db.sqlite3
+media/
+
+# Environment
+.env
+.env.*
+
+# Testing
+.coverage
+.pytest_cache/
+
+# Documentation
+*.md
+
+# CI/CD
+.github/
+"@ | Out-File -FilePath "backend\.dockerignore" -Encoding UTF8
+
+Write-Host "✓ Created backend\.dockerignore" -ForegroundColor Green
