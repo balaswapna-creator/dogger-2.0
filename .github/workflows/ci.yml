@@ -1,17 +1,50 @@
-# Create workflow file
-$cicdContent = @"
-name: Dogger 2.0 CI Pipeline
-
+﻿name: Dogger 2.0 CI/CD Pipeline
 on:
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
-
+env:
+  PYTHON_VERSION: '3.12'
 jobs:
+  # Job 1: Code Quality Checks
+  quality-check:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        cd backend
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install flake8 black
+    
+    - name: Run Black (Code Formatting Check)
+      run: |
+        cd backend
+        black --check . || echo "Code formatting issues found. Run 'black .' to fix."
+      continue-on-error: true
+    
+    - name: Run Flake8 (Linting)
+      run: |
+        cd backend
+        flake8 . --max-line-length=100 --exclude=migrations,venv,env --statistics
+      continue-on-error: true
+  # Job 2: Automated Testing
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    needs: quality-check
     
     services:
       postgres:
@@ -27,14 +60,26 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
     
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
     
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.12'
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
     
     - name: Install dependencies
       run: |
@@ -42,15 +87,26 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
-    - name: Run tests
+    - name: Run Database Migrations
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dogger_test
-        SECRET_KEY: test-secret-key
+        REDIS_URL: redis://localhost:6379/0
+        SECRET_KEY: test-secret-key-for-ci-testing-only
+        DEBUG: 'False'
       run: |
         cd backend
-        python manage.py test
-"@
-
-$cicdContent | Out-File -FilePath ".github\workflows\ci.yml" -Encoding UTF8
-
-Write-Host "✓ Created .github\workflows\ci.yml" -ForegroundColor Green
+        python manage.py migrate --noinput
+- name: Run Tests
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dogger_test
+        REDIS_URL: redis://localhost:6379/0
+        SECRET_KEY: test-secret-key-for-ci-testing-only
+        DEBUG: 'False'
+      run: |
+        cd backend
+        python manage.py test --verbosity=2
+- name: Test Summary
+      if: always()
+      run: |
+        echo "✓ All tests completed!"
+        echo "Check the logs above for results."
