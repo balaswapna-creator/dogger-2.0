@@ -25,7 +25,7 @@ ALLOWED_HOSTS = [
 ]
 
 # Custom User Model
-AUTH_USER_MODEL = 'clinic.User'
+AUTH_USER_MODEL = 'api.User'
 
 # Application definition
 INSTALLED_APPS = [
@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'cloudinary_storage',
     'cloudinary',
-    'clinic',
+    'api',
 ]
 
 # Replace the MIDDLEWARE section in backend/dogger/settings.py with this:
