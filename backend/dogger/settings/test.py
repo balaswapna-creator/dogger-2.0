@@ -1,70 +1,22 @@
 # backend/dogger/settings/test.py
 """
-Django settings for testing environment
+Test settings for Django
+IMPORTANT: This file overrides AUTH_USER_MODEL to use Django's default User
 """
+
+# First, import everything from base
 from .base import *
 
-# Override settings for testing
+# CRITICAL: Override AUTH_USER_MODEL before Django loads
+# This MUST come before any other imports or configurations
+AUTH_USER_MODEL = 'auth.User'
 
-# SECURITY WARNING: don't run with debug turned on in production!
+# Override other settings for testing
+SECRET_KEY = 'django-insecure-test-key-for-ci-cd-only-do-not-use-in-production'
 DEBUG = True
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver', '*']
 
-# Disable Cloudinary for tests
-CLOUDINARY_STORAGE = {}
-
-# Simple file storage for tests
-DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
-
-# Application definition
-INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'corsheaders',
-    # Your apps here
-    # 'dogs',
-    # 'users',
-]
-
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
-
-ROOT_URLCONF = 'dogger.urls'
-
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
-    },
-]
-
-WSGI_APPLICATION = 'dogger.wsgi.application'
-
-# Database
-# Use in-memory SQLite for faster tests
+# Use SQLite in-memory for fast tests
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -72,27 +24,29 @@ DATABASES = {
     }
 }
 
-# Password validation - Disabled for testing
+# Disable password validators for easier testing
 AUTH_PASSWORD_VALIDATORS = []
 
-# Password validation - Disabled for testing
-AUTH_PASSWORD_VALIDATORS = []
-
-# CORS Settings - Allow all in testing
+# CORS - allow everything in tests
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
-# Cache - Use in-memory cache for testing
+# Cache - use in-memory cache
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-test-cache',
+        'LOCATION': 'test-cache',
     }
 }
 
-# Email - Print to console in tests
+# Email - print to console
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-# Logging - Minimal logging for tests
+# Static/Media files
+STATIC_ROOT = BASE_DIR / 'test_static'
+MEDIA_ROOT = BASE_DIR / 'test_media'
+
+# Logging - minimal for tests
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -103,9 +57,19 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console'],
-        'level': 'WARNING',  # Only show warnings and errors in tests
+        'level': 'ERROR',  # Only show errors in tests
     },
 }
 
-# Testing
+# Test runner
 TEST_RUNNER = 'django.test.runner.DiscoverRunner'
+
+# Security settings - relaxed for testing
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+
+# Print confirmation that test settings are loaded
+import sys
+if 'test' in sys.argv or 'pytest' in sys.modules:
+    print("🧪 Using TEST settings with AUTH_USER_MODEL = 'auth.User'")
