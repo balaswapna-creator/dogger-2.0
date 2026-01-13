@@ -40,3 +40,5 @@ gunicorn>=21.2
 python-dotenv
 
 
+
+cryptography
