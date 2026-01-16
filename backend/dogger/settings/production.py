@@ -6,9 +6,9 @@ import os
 
 # Security settings
 DEBUG = False
-ALLOWED_HOSTS = [
+ ALLOWED_HOSTS = [
        'dogger2-backend.onrender.com',
-       '.onrender.com',  # This allows all Render subdomains
+       '.onrender.com',
        'localhost',
        '127.0.0.1',
    ]
