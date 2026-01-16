@@ -5,6 +5,7 @@ CRITICAL FIX: Properly configure ALLOWED_HOSTS for Render deployment
 
 from .base import *
 import os
+import dj_database_url
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
@@ -18,17 +19,26 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
 ]
 
-# Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('PGDATABASE'),
-        'USER': os.environ.get('PGUSER'),
-        'PASSWORD': os.environ.get('PGPASSWORD'),
-        'HOST': os.environ.get('PGHOST'),
-        'PORT': os.environ.get('PGPORT', 5432),
+# Database - Use DATABASE_URL from Render or fallback to SQLite
+import dj_database_url
+
+if os.environ.get('DATABASE_URL'):
+    # Production: Use PostgreSQL from Render
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
+else:
+    # Fallback: Use SQLite (for development/testing)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
+    }
 
 # CORS Settings
 CORS_ALLOWED_ORIGINS = [
