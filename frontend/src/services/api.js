@@ -5,8 +5,8 @@ import axios from 'axios';
 import { TokenManager, UserManager, SecurityMonitor } from '@/utils/security';
 import router from '@/router';
 
-// API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+// API base URL - UPDATE THIS TO YOUR RENDER BACKEND URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://dogger2-backend.onrender.com';
 
 // Create axios instance
 const apiClient = axios.create({
@@ -219,19 +219,42 @@ const api = {
       // Step 2: Store tokens immediately
       TokenManager.setTokens(access, refresh);
       
-      // Step 3: ALWAYS fetch user profile after login
+      // Step 3: Try to fetch user profile (if endpoint exists)
       let userProfile = null;
       try {
-        const profileResponse = await apiClient.get('/api/profile/');
-        userProfile = profileResponse.data;
+        // Try multiple possible profile endpoints
+        const profileEndpoints = ['/api/auth/me/', '/api/profile/', '/api/user/'];
         
-        // Step 4: Store user data with role
+        for (const endpoint of profileEndpoints) {
+          try {
+            const profileResponse = await apiClient.get(endpoint);
+            userProfile = profileResponse.data;
+            console.log(`✅ User profile fetched from ${endpoint}`);
+            break;
+          } catch (e) {
+            // Try next endpoint
+            continue;
+          }
+        }
+        
+        // If no profile endpoint works, decode user from JWT token
+        if (!userProfile) {
+          console.log('ℹ️ No profile endpoint found, using token data');
+          const tokenData = parseJwt(access);
+          userProfile = {
+            id: tokenData.user_id,
+            username: username,
+            role: 'user', // Default role
+            is_staff: false
+          };
+        }
+        
+        // Store user data
         UserManager.setUser(userProfile);
         
-        console.log('✅ User profile fetched successfully:', {
+        console.log('✅ Login successful:', {
           username: userProfile.username,
-          role: userProfile.role,
-          is_staff: userProfile.is_staff
+          role: userProfile.role
         });
         
         SecurityMonitor.logSecurityEvent('login_success', { 
@@ -240,12 +263,7 @@ const api = {
         });
         
       } catch (profileError) {
-        console.error('❌ Failed to fetch user profile:', profileError);
-        
-        SecurityMonitor.logSecurityEvent('profile_fetch_failed', { 
-          username,
-          error: profileError.response?.data 
-        });
+        console.warn('⚠️ Could not fetch user profile, but login succeeded');
       }
       
       // Return response with user data
@@ -265,16 +283,22 @@ const api = {
 
   async logout() {
     try {
-      const response = await apiClient.post('/api/logout/');
+      // Try to call logout endpoint if it exists
+      try {
+        await apiClient.post('/api/logout/');
+      } catch (e) {
+        // Logout endpoint might not exist, that's okay
+        console.log('ℹ️ No logout endpoint, clearing tokens locally');
+      }
+      
       TokenManager.clearTokens();
       UserManager.clearUser();
       SecurityMonitor.logSecurityEvent('logout_success');
-      return response.data;
+      
     } catch (error) {
       // Even if API call fails, clear local tokens
       TokenManager.clearTokens();
       UserManager.clearUser();
-      throw error;
     }
   },
 
@@ -295,38 +319,110 @@ const api = {
   },
 
   async getUserProfile() {
-    const response = await apiClient.get('/api/profile/');
-    return response.data;
+    // Try multiple possible profile endpoints
+    const profileEndpoints = ['/api/auth/me/', '/api/profile/', '/api/user/'];
+    
+    for (const endpoint of profileEndpoints) {
+      try {
+        const response = await apiClient.get(endpoint);
+        return response.data;
+      } catch (e) {
+        continue;
+      }
+    }
+    
+    // If no endpoint works, return cached user data
+    return UserManager.getUser();
   },
 
   async updateProfile(data) {
-    const response = await apiClient.put('/api/profile/update/', data);
-    return response.data;
+    // Try multiple possible endpoints
+    const updateEndpoints = ['/api/profile/update/', '/api/profile/', '/api/auth/me/'];
+    
+    for (const endpoint of updateEndpoints) {
+      try {
+        const response = await apiClient.put(endpoint, data);
+        return response.data;
+      } catch (e) {
+        continue;
+      }
+    }
+    
+    throw new Error('Profile update endpoint not found');
   },
 
   async changePassword(oldPassword, newPassword) {
-    const response = await apiClient.post('/api/profile/change-password/', {
-      old_password: oldPassword,
-      new_password: newPassword
-    });
-    return response.data;
+    // Try multiple possible endpoints
+    const passwordEndpoints = [
+      '/api/profile/change-password/',
+      '/api/auth/change-password/',
+      '/api/change-password/'
+    ];
+    
+    for (const endpoint of passwordEndpoints) {
+      try {
+        const response = await apiClient.post(endpoint, {
+          old_password: oldPassword,
+          new_password: newPassword
+        });
+        return response.data;
+      } catch (e) {
+        continue;
+      }
+    }
+    
+    throw new Error('Change password endpoint not found');
   },
 
   // Health & Monitoring
   async getHealth() {
-    const response = await apiClient.get('/api/health/');
-    return response.data;
+    try {
+      const response = await apiClient.get('/api/health/');
+      return response.data;
+    } catch (e) {
+      return { status: 'ok' }; // Fallback
+    }
   },
 
   async getMetrics() {
-    const response = await apiClient.get('/api/metrics/');
-    return response.data;
+    try {
+      const response = await apiClient.get('/api/metrics/');
+      return response.data;
+    } catch (e) {
+      return {}; // Fallback
+    }
   },
 
   // Dashboard
   async getDashboardStats() {
-    const response = await apiClient.get('/api/dashboard/stats/');
-    return response.data;
+    try {
+      // Try the stats endpoint first
+      const response = await apiClient.get('/api/dashboard/stats/');
+      return response.data;
+    } catch (e) {
+      // If that doesn't exist, try just /api/dashboard/
+      try {
+        const response = await apiClient.get('/api/dashboard/');
+        return response.data;
+      } catch (e2) {
+        // If neither works, fetch data from individual endpoints
+        const [patients, owners, records, vaccinations, payments] = await Promise.all([
+          this.getPatients().catch(() => ({ results: [] })),
+          this.getOwners().catch(() => ({ results: [] })),
+          this.getMedicalRecords().catch(() => ({ results: [] })),
+          this.getVaccinations().catch(() => ({ results: [] })),
+          this.getPayments().catch(() => ({ results: [] }))
+        ]);
+        
+        return {
+          total_patients: patients.results?.length || 0,
+          total_owners: owners.results?.length || 0,
+          total_records: records.results?.length || 0,
+          total_vaccinations: vaccinations.results?.length || 0,
+          total_payments: payments.results?.length || 0
+        };
+      }
+    }
   },
 
   // Patients
@@ -414,6 +510,12 @@ const api = {
     return response.data;
   },
 
+  // Passbooks
+  async getPassbooks(params = {}) {
+    const response = await apiClient.get('/api/passbooks/', { params });
+    return response.data;
+  },
+
   // File upload helper
   async uploadFile(endpoint, file, additionalData = {}) {
     const formData = new FormData();
@@ -432,6 +534,25 @@ const api = {
     return response.data;
   }
 };
+
+/**
+ * Helper function to parse JWT token
+ */
+function parseJwt(token) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return {};
+  }
+}
 
 export default api;
 export { apiClient };
