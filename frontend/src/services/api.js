@@ -219,26 +219,23 @@ const api = {
       // Step 2: Store tokens immediately
       TokenManager.setTokens(access, refresh);
       
-      // Step 3: Fetch user profile - TRY CORRECT ENDPOINTS IN ORDER
+      // Step 3: Fetch user profile - Only try endpoints that exist
       let userProfile = null;
       try {
-        // UPDATED: Try endpoints that actually exist in your backend
-        const profileEndpoints = [
-          '/api/profile/',           // ✅ EXISTS in your backend
-          '/api/current-user/',      // ✅ EXISTS in your backend
-          '/api/auth/me/',           // ❌ Doesn't exist (kept as fallback)
-          '/api/user/'               // ❌ Doesn't exist (kept as fallback)
-        ];
-        
-        for (const endpoint of profileEndpoints) {
+        // Try the endpoints that actually exist in your backend
+        try {
+          const profileResponse = await apiClient.get('/api/profile/');
+          userProfile = profileResponse.data;
+          console.log('✅ User profile fetched from /api/profile/');
+        } catch (profileErr) {
+          // If profile fails, try current-user
           try {
-            const profileResponse = await apiClient.get(endpoint);
-            userProfile = profileResponse.data;
-            console.log(`✅ User profile fetched from ${endpoint}`);
-            break;
-          } catch (e) {
-            console.log(`⚠️ Failed to fetch from ${endpoint}, trying next...`);
-            continue;
+            const userResponse = await apiClient.get('/api/current-user/');
+            userProfile = userResponse.data;
+            console.log('✅ User profile fetched from /api/current-user/');
+          } catch (userErr) {
+            // Both failed, will use token data below
+            console.log('⚠️ Profile endpoints failed, using token data');
           }
         }
         
@@ -325,68 +322,40 @@ const api = {
   },
 
   async getUserProfile() {
-    // UPDATED: Try endpoints that actually exist
-    const profileEndpoints = [
-      '/api/profile/',        // ✅ EXISTS
-      '/api/current-user/',   // ✅ EXISTS
-      '/api/auth/me/',        // Fallback
-      '/api/user/'            // Fallback
-    ];
-    
-    for (const endpoint of profileEndpoints) {
+    // Only try endpoints that exist - no 404 spam
+    try {
+      const response = await apiClient.get('/api/profile/');
+      return response.data;
+    } catch (e) {
       try {
-        const response = await apiClient.get(endpoint);
+        const response = await apiClient.get('/api/current-user/');
         return response.data;
-      } catch (e) {
-        continue;
+      } catch (e2) {
+        // Return cached user data if both fail
+        return UserManager.getUser();
       }
     }
-    
-    // If no endpoint works, return cached user data
-    return UserManager.getUser();
   },
 
   async updateProfile(data) {
-    // UPDATED: Your backend has /api/profile/update/
-    const updateEndpoints = [
-      '/api/profile/update/',  // ✅ EXISTS in your backend
-      '/api/profile/',
-      '/api/auth/me/'
-    ];
-    
-    for (const endpoint of updateEndpoints) {
-      try {
-        const response = await apiClient.put(endpoint, data);
-        return response.data;
-      } catch (e) {
-        continue;
-      }
+    // Your backend has /api/profile/update/
+    try {
+      const response = await apiClient.put('/api/profile/update/', data);
+      return response.data;
+    } catch (e) {
+      // Fallback to /api/profile/ with PATCH
+      const response = await apiClient.patch('/api/profile/', data);
+      return response.data;
     }
-    
-    throw new Error('Profile update endpoint not found');
   },
 
   async changePassword(oldPassword, newPassword) {
-    // UPDATED: Your backend has /api/profile/change-password/
-    const passwordEndpoints = [
-      '/api/profile/change-password/',  // ✅ EXISTS in your backend
-      '/api/auth/change-password/',
-      '/api/change-password/'
-    ];
-    
-    for (const endpoint of passwordEndpoints) {
-      try {
-        const response = await apiClient.post(endpoint, {
-          old_password: oldPassword,
-          new_password: newPassword
-        });
-        return response.data;
-      } catch (e) {
-        continue;
-      }
-    }
-    
-    throw new Error('Change password endpoint not found');
+    // Your backend has /api/profile/change-password/
+    const response = await apiClient.post('/api/profile/change-password/', {
+      old_password: oldPassword,
+      new_password: newPassword
+    });
+    return response.data;
   },
 
   // Health & Monitoring
