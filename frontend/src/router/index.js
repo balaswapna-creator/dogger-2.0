@@ -3,7 +3,6 @@ import LoginView from '../views/LoginView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import PatientsView from '../views/PatientsView.vue'
 import OwnersView from '../views/OwnersView.vue'
-import RecordsView from '../views/RecordsView.vue'
 import VaccinesView from '../views/VaccinesView.vue'
 import PaymentsView from '../views/PaymentsView.vue'
 import PassbooksView from '../views/PassbooksView.vue'
@@ -37,12 +36,6 @@ const router = createRouter({
       path: '/owners',
       name: 'owners',
       component: OwnersView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/records',
-      name: 'records',
-      component: RecordsView,
       meta: { requiresAuth: true }
     },
     {
