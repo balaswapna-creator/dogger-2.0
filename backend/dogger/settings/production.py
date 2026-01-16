@@ -6,7 +6,12 @@ import os
 
 # Security settings
 DEBUG = False
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
+ALLOWED_HOSTS = [
+       'dogger2-backend.onrender.com',
+       '.onrender.com',  # This allows all Render subdomains
+       'localhost',
+       '127.0.0.1',
+   ]
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # Database
