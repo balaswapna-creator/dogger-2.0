@@ -3,9 +3,11 @@ import LoginView from '../views/LoginView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import PatientsView from '../views/PatientsView.vue'
 import OwnersView from '../views/OwnersView.vue'
-import VaccinesView from '../views/VaccinesView.vue'
+import MedicalRecordsView from '../views/MedicalRecordsView.vue'
+import VaccinationsView from '../views/VaccinationsView.vue'
 import PaymentsView from '../views/PaymentsView.vue'
 import PassbooksView from '../views/PassbooksView.vue'
+import PrescriptionsView from '../views/PrescriptionsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -39,15 +41,27 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/vaccines',
-      name: 'vaccines',
-      component: VaccinesView,
+      path: '/medical-records',
+      name: 'medical-records',
+      component: MedicalRecordsView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/vaccinations',
+      name: 'vaccinations',
+      component: VaccinationsView,
       meta: { requiresAuth: true }
     },
     {
       path: '/payments',
       name: 'payments',
       component: PaymentsView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/prescriptions',
+      name: 'prescriptions',
+      component: PrescriptionsView,
       meta: { requiresAuth: true }
     },
     {
@@ -60,6 +74,12 @@ const router = createRouter({
       path: '/unauthorized',
       name: 'unauthorized',
       component: () => import('../views/UnauthorizedView.vue'),
+      meta: { requiresAuth: false }
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('../views/NotFoundView.vue'),
       meta: { requiresAuth: false }
     }
   ]
