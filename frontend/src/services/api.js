@@ -219,11 +219,16 @@ const api = {
       // Step 2: Store tokens immediately
       TokenManager.setTokens(access, refresh);
       
-      // Step 3: Try to fetch user profile (if endpoint exists)
+      // Step 3: Fetch user profile - TRY CORRECT ENDPOINTS IN ORDER
       let userProfile = null;
       try {
-        // Try multiple possible profile endpoints
-        const profileEndpoints = ['/api/auth/me/', '/api/profile/', '/api/user/'];
+        // UPDATED: Try endpoints that actually exist in your backend
+        const profileEndpoints = [
+          '/api/profile/',           // ✅ EXISTS in your backend
+          '/api/current-user/',      // ✅ EXISTS in your backend
+          '/api/auth/me/',           // ❌ Doesn't exist (kept as fallback)
+          '/api/user/'               // ❌ Doesn't exist (kept as fallback)
+        ];
         
         for (const endpoint of profileEndpoints) {
           try {
@@ -232,7 +237,7 @@ const api = {
             console.log(`✅ User profile fetched from ${endpoint}`);
             break;
           } catch (e) {
-            // Try next endpoint
+            console.log(`⚠️ Failed to fetch from ${endpoint}, trying next...`);
             continue;
           }
         }
@@ -254,16 +259,17 @@ const api = {
         
         console.log('✅ Login successful:', {
           username: userProfile.username,
-          role: userProfile.role
+          role: userProfile.role || 'user'
         });
         
         SecurityMonitor.logSecurityEvent('login_success', { 
           username,
-          role: userProfile.role 
+          role: userProfile.role || 'user'
         });
         
       } catch (profileError) {
         console.warn('⚠️ Could not fetch user profile, but login succeeded');
+        console.error(profileError);
       }
       
       // Return response with user data
@@ -319,8 +325,13 @@ const api = {
   },
 
   async getUserProfile() {
-    // Try multiple possible profile endpoints
-    const profileEndpoints = ['/api/auth/me/', '/api/profile/', '/api/user/'];
+    // UPDATED: Try endpoints that actually exist
+    const profileEndpoints = [
+      '/api/profile/',        // ✅ EXISTS
+      '/api/current-user/',   // ✅ EXISTS
+      '/api/auth/me/',        // Fallback
+      '/api/user/'            // Fallback
+    ];
     
     for (const endpoint of profileEndpoints) {
       try {
@@ -336,8 +347,12 @@ const api = {
   },
 
   async updateProfile(data) {
-    // Try multiple possible endpoints
-    const updateEndpoints = ['/api/profile/update/', '/api/profile/', '/api/auth/me/'];
+    // UPDATED: Your backend has /api/profile/update/
+    const updateEndpoints = [
+      '/api/profile/update/',  // ✅ EXISTS in your backend
+      '/api/profile/',
+      '/api/auth/me/'
+    ];
     
     for (const endpoint of updateEndpoints) {
       try {
@@ -352,9 +367,9 @@ const api = {
   },
 
   async changePassword(oldPassword, newPassword) {
-    // Try multiple possible endpoints
+    // UPDATED: Your backend has /api/profile/change-password/
     const passwordEndpoints = [
-      '/api/profile/change-password/',
+      '/api/profile/change-password/',  // ✅ EXISTS in your backend
       '/api/auth/change-password/',
       '/api/change-password/'
     ];
@@ -393,33 +408,39 @@ const api = {
     }
   },
 
-  // Dashboard
+  // Dashboard - UPDATED to use correct endpoint
   async getDashboardStats() {
     try {
-      // Try the stats endpoint first
+      // Your backend has /api/dashboard/stats/ (not just /api/dashboard/)
       const response = await apiClient.get('/api/dashboard/stats/');
       return response.data;
     } catch (e) {
-      // If that doesn't exist, try just /api/dashboard/
+      console.warn('Dashboard stats endpoint failed, fetching from individual endpoints');
+      // Fallback: fetch data from individual endpoints
       try {
-        const response = await apiClient.get('/api/dashboard/');
-        return response.data;
-      } catch (e2) {
-        // If neither works, fetch data from individual endpoints
         const [patients, owners, records, vaccinations, payments] = await Promise.all([
-          this.getPatients().catch(() => ({ results: [] })),
-          this.getOwners().catch(() => ({ results: [] })),
-          this.getMedicalRecords().catch(() => ({ results: [] })),
-          this.getVaccinations().catch(() => ({ results: [] })),
-          this.getPayments().catch(() => ({ results: [] }))
+          this.getPatients().catch(() => []),
+          this.getOwners().catch(() => []),
+          this.getMedicalRecords().catch(() => []),
+          this.getVaccinations().catch(() => []),
+          this.getPayments().catch(() => [])
         ]);
         
         return {
-          total_patients: patients.results?.length || 0,
-          total_owners: owners.results?.length || 0,
-          total_records: records.results?.length || 0,
-          total_vaccinations: vaccinations.results?.length || 0,
-          total_payments: payments.results?.length || 0
+          total_patients: patients.length || 0,
+          total_owners: owners.length || 0,
+          total_records: records.length || 0,
+          total_vaccinations: vaccinations.length || 0,
+          total_payments: payments.length || 0
+        };
+      } catch (fallbackError) {
+        console.error('Failed to fetch dashboard data:', fallbackError);
+        return {
+          total_patients: 0,
+          total_owners: 0,
+          total_records: 0,
+          total_vaccinations: 0,
+          total_payments: 0
         };
       }
     }
