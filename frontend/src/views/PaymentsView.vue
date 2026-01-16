@@ -30,7 +30,7 @@
         </div>
         <div class="stat-content">
           <p class="stat-label">Total Paid</p>
-          <h3>₹{{ stats.totalPaid }}</h3>
+          <h3>₹{{ formatAmount(stats.totalPaid) }}</h3>
         </div>
       </div>
 
@@ -43,7 +43,7 @@
         </div>
         <div class="stat-content">
           <p class="stat-label">Pending</p>
-          <h3>₹{{ stats.pending }}</h3>
+          <h3>₹{{ formatAmount(stats.pending) }}</h3>
         </div>
       </div>
 
@@ -57,7 +57,7 @@
         </div>
         <div class="stat-content">
           <p class="stat-label">Failed</p>
-          <h3>₹{{ stats.failed }}</h3>
+          <h3>₹{{ formatAmount(stats.failed) }}</h3>
         </div>
       </div>
 
@@ -70,7 +70,7 @@
         </div>
         <div class="stat-content">
           <p class="stat-label">Total</p>
-          <h3>₹{{ stats.total }}</h3>
+          <h3>₹{{ formatAmount(stats.total) }}</h3>
         </div>
       </div>
     </div>
@@ -99,7 +99,7 @@
                 </div>
               </td>
               <td>
-                <span class="amount">₹{{ payment.amount }}</span>
+                <span class="amount">₹{{ formatAmount(payment.amount) }}</span>
               </td>
               <td>
                 <span class="method-badge" :class="'method-' + payment.payment_method">
@@ -178,33 +178,33 @@
 
             <div class="form-group">
               <label>Consultation Fee (₹)</label>
-              <input v-model.number="form.consultation_fee" type="number" placeholder="0"/>
+              <input v-model.number="form.consultation_fee" type="number" placeholder="0" step="0.01"/>
             </div>
 
             <div class="form-group">
               <label>Medication Cost (₹)</label>
-              <input v-model.number="form.medication_cost" type="number" placeholder="0"/>
+              <input v-model.number="form.medication_cost" type="number" placeholder="0" step="0.01"/>
             </div>
 
             <div class="form-group">
               <label>Lab Cost (₹)</label>
-              <input v-model.number="form.lab_cost" type="number" placeholder="0"/>
+              <input v-model.number="form.lab_cost" type="number" placeholder="0" step="0.01"/>
             </div>
 
             <div class="form-group">
               <label>Other Charges (₹)</label>
-              <input v-model.number="form.other_charges" type="number" placeholder="0"/>
+              <input v-model.number="form.other_charges" type="number" placeholder="0" step="0.01"/>
             </div>
 
             <div class="form-group">
               <label>Discount (₹)</label>
-              <input v-model.number="form.discount" type="number" placeholder="0"/>
+              <input v-model.number="form.discount" type="number" placeholder="0" step="0.01"/>
             </div>
 
             <div class="form-group full-width">
               <div class="total-display">
                 <span>Total Amount:</span>
-                <h3>₹{{ calculateTotal() }}</h3>
+                <h3>₹{{ formatAmount(calculateTotal()) }}</h3>
               </div>
             </div>
 
@@ -292,29 +292,29 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="printData.payment?.consultation_fee > 0">
+              <tr v-if="parseFloat(printData.payment?.consultation_fee || 0) > 0">
                 <td>Consultation Fee</td>
-                <td>₹{{ printData.payment.consultation_fee }}</td>
+                <td>₹{{ formatAmount(printData.payment.consultation_fee) }}</td>
               </tr>
-              <tr v-if="printData.payment?.medication_cost > 0">
+              <tr v-if="parseFloat(printData.payment?.medication_cost || 0) > 0">
                 <td>Medication</td>
-                <td>₹{{ printData.payment.medication_cost }}</td>
+                <td>₹{{ formatAmount(printData.payment.medication_cost) }}</td>
               </tr>
-              <tr v-if="printData.payment?.lab_cost > 0">
+              <tr v-if="parseFloat(printData.payment?.lab_cost || 0) > 0">
                 <td>Lab Tests</td>
-                <td>₹{{ printData.payment.lab_cost }}</td>
+                <td>₹{{ formatAmount(printData.payment.lab_cost) }}</td>
               </tr>
-              <tr v-if="printData.payment?.other_charges > 0">
+              <tr v-if="parseFloat(printData.payment?.other_charges || 0) > 0">
                 <td>Other Charges</td>
-                <td>₹{{ printData.payment.other_charges }}</td>
+                <td>₹{{ formatAmount(printData.payment.other_charges) }}</td>
               </tr>
-              <tr v-if="printData.payment?.discount > 0" class="discount-row">
+              <tr v-if="parseFloat(printData.payment?.discount || 0) > 0" class="discount-row">
                 <td>Discount</td>
-                <td>-₹{{ printData.payment.discount }}</td>
+                <td>-₹{{ formatAmount(printData.payment.discount) }}</td>
               </tr>
               <tr class="total-row">
                 <td><strong>TOTAL</strong></td>
-                <td><strong>₹{{ printData.payment?.amount }}</strong></td>
+                <td><strong>₹{{ formatAmount(printData.payment?.amount) }}</strong></td>
               </tr>
             </tbody>
           </table>
@@ -360,12 +360,41 @@ const form = ref({
   transaction_id: ''
 });
 
+// Helper function to safely convert to number
+const toNumber = (value) => {
+  const num = parseFloat(value);
+  return isNaN(num) ? 0 : num;
+};
+
+// Format amount with 2 decimal places
+const formatAmount = (amount) => {
+  return toNumber(amount).toFixed(2);
+};
+
 const stats = computed(() => {
-  const totalPaid = payments.value.filter(p => p.payment_status === 'completed').reduce((sum, p) => sum + (p.amount || 0), 0);
-  const pending = payments.value.filter(p => p.payment_status === 'pending').reduce((sum, p) => sum + (p.amount || 0), 0);
-  const failed = payments.value.filter(p => p.payment_status === 'failed').reduce((sum, p) => sum + (p.amount || 0), 0);
-  const total = payments.value.reduce((sum, p) => sum + (p.amount || 0), 0);
-  return { totalPaid, pending, failed, total };
+  // Convert to numbers explicitly using parseFloat
+  const totalPaid = payments.value
+    .filter(p => p.payment_status === 'completed')
+    .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+  
+  const pending = payments.value
+    .filter(p => p.payment_status === 'pending')
+    .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+  
+  const failed = payments.value
+    .filter(p => p.payment_status === 'failed')
+    .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+  
+  const total = payments.value
+    .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+  
+  // Format with 2 decimal places for display
+  return {
+    totalPaid: totalPaid.toFixed(2),
+    pending: pending.toFixed(2),
+    failed: failed.toFixed(2),
+    total: total.toFixed(2)
+  };
 });
 
 const getPatientName = (id) => patients.value.find(p => p.id === id)?.pet_name || 'Unknown';
@@ -386,8 +415,13 @@ const formatStatus = (status) => {
 };
 
 const calculateTotal = () => {
-  return Math.max(0, (form.value.consultation_fee || 0) + (form.value.medication_cost || 0) + 
-    (form.value.lab_cost || 0) + (form.value.other_charges || 0) - (form.value.discount || 0));
+  const consultation = toNumber(form.value.consultation_fee);
+  const medication = toNumber(form.value.medication_cost);
+  const lab = toNumber(form.value.lab_cost);
+  const other = toNumber(form.value.other_charges);
+  const discount = toNumber(form.value.discount);
+  
+  return Math.max(0, consultation + medication + lab + other - discount);
 };
 
 const fetchData = async () => {
@@ -422,11 +456,11 @@ const openEditModal = (payment) => {
   editingPaymentId.value = payment.id;
   form.value = {
     patient: payment.patient,
-    consultation_fee: payment.consultation_fee || 0,
-    medication_cost: payment.medication_cost || 0,
-    lab_cost: payment.lab_cost || 0,
-    other_charges: payment.other_charges || 0,
-    discount: payment.discount || 0,
+    consultation_fee: parseFloat(payment.consultation_fee) || 0,
+    medication_cost: parseFloat(payment.medication_cost) || 0,
+    lab_cost: parseFloat(payment.lab_cost) || 0,
+    other_charges: parseFloat(payment.other_charges) || 0,
+    discount: parseFloat(payment.discount) || 0,
     payment_method: payment.payment_method,
     payment_status: payment.payment_status,
     transaction_id: payment.transaction_id || ''
@@ -447,8 +481,19 @@ const savePayment = async () => {
   }
   
   try {
-    const amount = calculateTotal();
-    const data = { ...form.value, amount };
+    // Ensure amount is a number
+    const amount = parseFloat(calculateTotal());
+    
+    const data = { 
+      ...form.value, 
+      amount,
+      // Ensure all numeric fields are sent as numbers
+      consultation_fee: parseFloat(form.value.consultation_fee) || 0,
+      medication_cost: parseFloat(form.value.medication_cost) || 0,
+      lab_cost: parseFloat(form.value.lab_cost) || 0,
+      other_charges: parseFloat(form.value.other_charges) || 0,
+      discount: parseFloat(form.value.discount) || 0
+    };
     
     if (isEditing.value) {
       await api.put(`/payments/${editingPaymentId.value}/`, data);
