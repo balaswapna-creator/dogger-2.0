@@ -48,38 +48,55 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { TokenManager } from '../utils/security'
+import api from '@/services/api'
+import { TokenManager, UserManager } from '@/utils/security'
 
 const router = useRouter()
-const authStore = useAuthStore()
 
 const username = ref('admin')
 const password = ref('admin123')
 const errorMessage = ref('')
 const loading = ref(false)
 
-// In your login function:
-const response = await api.post('/token/', {
-  username: username.value,
-  password: password.value
-})
-
-// Use TokenManager to store token
-TokenManager.setToken(response.data.access, response.data.refresh)
-
 async function handleLogin() {
   loading.value = true
   errorMessage.value = ''
 
-  const result = await authStore.login(username.value, password.value)
-
-  if (result.success) {
-    router.push('/')
-  } else {
-    errorMessage.value = result.error
+  try {
+    // Call the login API
+    const response = await api.login(username.value, password.value)
+    
+    console.log('✅ Login successful:', response)
+    
+    // Tokens are already stored by the api.login() method
+    // Redirect to dashboard
+    router.push('/dashboard')
+    
+  } catch (error) {
+    console.error('❌ Login failed:', error)
+    
+    // Show user-friendly error message
+    if (error.response) {
+      if (error.response.status === 401) {
+        errorMessage.value = 'Invalid username or password'
+      } else if (error.response.status === 500) {
+        errorMessage.value = 'Server error. Please try again later.'
+      } else if (error.response.data?.detail) {
+        errorMessage.value = error.response.data.detail
+      } else {
+        errorMessage.value = 'Login failed. Please try again.'
+      }
+    } else if (error.request) {
+      errorMessage.value = 'Cannot connect to server. Please check your internet connection.'
+    } else {
+      errorMessage.value = 'An unexpected error occurred. Please try again.'
+    }
+  } finally {
+    loading.value = false
   }
-
-  loading.value = false
 }
 </script>
+
+<style scoped>
+/* Tailwind classes are used, no additional styles needed */
+</style>
