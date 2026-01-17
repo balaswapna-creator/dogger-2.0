@@ -47,11 +47,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import api from '@/services/api'
-import { TokenManager, UserManager } from '@/utils/security'
-
-const router = useRouter()
 
 const username = ref('admin')
 const password = ref('admin123')
@@ -69,8 +65,8 @@ async function handleLogin() {
     console.log('✅ Login successful:', response)
     
     // Tokens are already stored by the api.login() method
-    // Redirect to dashboard
-    router.push('/dashboard')
+    // Use window.location for a hard redirect (avoids router issues)
+    window.location.href = '/dashboard'
     
   } catch (error) {
     console.error('❌ Login failed:', error)
