@@ -57,7 +57,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
     # Custom security middleware (Week 1 & 2)
-    'clinic.security.RateLimitMiddleware',
     'clinic.security.JWTAuthenticationMiddleware',
     'clinic.security.XSSProtectionMiddleware',
     'clinic.security.ContentSecurityPolicyMiddleware',
