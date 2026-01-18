@@ -3,9 +3,10 @@ Enhanced authentication views with security features
 """
 
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import authenticate
@@ -28,13 +29,15 @@ def get_client_ip(request):
 
 
 # ============================================================================
-# SECURE LOGIN VIEW
+# SECURE LOGIN VIEW - NO THROTTLING FOR NOW
 # ============================================================================
 
 class SecureTokenObtainPairView(TokenObtainPairView):
     """
     Enhanced login view with security logging
+    TEMPORARILY DISABLED THROTTLING for testing
     """
+    throttle_classes = []  # Disable throttling temporarily
     
     def post(self, request, *args, **kwargs):
         username = request.data.get('username')
