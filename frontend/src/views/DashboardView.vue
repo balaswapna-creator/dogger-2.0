@@ -1,7 +1,3 @@
-// ============================================================================
-// FILE 1: frontend/src/views/DashboardView.vue
-// ============================================================================
-
 <template>
   <div class="dashboard-wrapper">
     <div class="dashboard-container">
@@ -45,7 +41,7 @@
           </div>
           <div class="stat-content">
             <h3>{{ stats.todayAppointments }}</h3>
-            <p>Today's Appointments</p>
+            <p>This Week's Consultations</p>
           </div>
         </div>
 
@@ -72,7 +68,7 @@
           </div>
           <div class="card-body">
             <div class="action-buttons">
-              <button @click="$router.push('/patients')" class="action-btn add-patient">
+              <button @click="navigateTo('/patients')" class="action-btn add-patient">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -80,7 +76,7 @@
                 <span>Add New Patient</span>
               </button>
               
-              <button @click="$router.push('/owners')" class="action-btn add-owner">
+              <button @click="navigateTo('/owners')" class="action-btn add-owner">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                   <circle cx="8.5" cy="7" r="4"></circle>
@@ -90,7 +86,7 @@
                 <span>Add Owner</span>
               </button>
               
-              <button @click="$router.push('/vaccinations')" class="action-btn vaccination">
+              <button @click="navigateTo('/vaccinations')" class="action-btn vaccination">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path>
                   <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path>
@@ -98,7 +94,7 @@
                 <span>Record Vaccination</span>
               </button>
               
-              <button @click="$router.push('/payments')" class="action-btn payment">
+              <button @click="navigateTo('/payments')" class="action-btn payment">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
                   <line x1="1" y1="10" x2="23" y2="10"></line>
@@ -115,7 +111,10 @@
             <h2>Recent Activity</h2>
           </div>
           <div class="card-body">
-            <div v-if="recentActivity.length === 0" class="no-activity">
+            <div v-if="loading" class="activity-loading">
+              <p>Loading activity...</p>
+            </div>
+            <div v-else-if="recentActivity.length === 0" class="no-activity">
               <p>No recent activity</p>
             </div>
             <div v-else class="activity-list">
@@ -139,11 +138,15 @@
       <div class="card recent-patients-card">
         <div class="card-header">
           <h2>Recent Patients</h2>
-          <button @click="$router.push('/patients')" class="view-all-btn">View All</button>
+          <button @click="navigateTo('/patients')" class="view-all-btn">View All</button>
         </div>
         <div class="card-body">
-          <div v-if="recentPatients.length === 0" class="no-data">
+          <div v-if="loading" class="table-loading">
+            <p>Loading patients...</p>
+          </div>
+          <div v-else-if="recentPatients.length === 0" class="no-data">
             <p>No patients yet. Add your first patient!</p>
+            <button @click="navigateTo('/patients')" class="btn-add-first">Add Patient</button>
           </div>
           <div v-else class="table-wrapper">
             <table class="data-table">
@@ -152,7 +155,7 @@
                   <th>Patient Name</th>
                   <th>Species</th>
                   <th>Owner</th>
-                  <th>Last Visit</th>
+                  <th>Phone</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -166,9 +169,9 @@
                   </td>
                   <td>{{ patient.species }}</td>
                   <td>{{ patient.owner_name || 'N/A' }}</td>
-                  <td>{{ formatDate(patient.last_visit) }}</td>
+                  <td>{{ patient.owner_phone || 'N/A' }}</td>
                   <td>
-                    <button @click="viewPatient(patient.id)" class="btn-view">View</button>
+                    <button @click="navigateTo('/patients')" class="btn-view">View</button>
                   </td>
                 </tr>
               </tbody>
@@ -180,177 +183,455 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, onMounted } from 'vue'
-import api from '@/services/api'
+import { useRouter } from 'vue-router'
+import api from '../services/api'
 
-export default {
-  name: 'DashboardView',
-  setup() {
-    const stats = ref({
-      totalPatients: 0,
-      totalOwners: 0,
-      todayAppointments: 0,
-      monthlyRevenue: '0'
-    })
-    const recentPatients = ref([])
-    const recentActivity = ref([])
+const router = useRouter()
 
-    const fetchDashboardData = async () => {
-      try {
-        // ✅ FIXED: Await the response properly
-        const dashboardResponse = await api.getDashboardStats()
-        const dashboardData = dashboardResponse.data
-        
-        if (dashboardData) {
-          stats.value = {
-            totalPatients: dashboardData.total_patients || 0,
-            totalOwners: dashboardData.total_owners || 0,
-            todayAppointments: dashboardData.consultations_this_week || 0,
-            monthlyRevenue: (dashboardData.revenue_this_month || 0).toFixed(2)
-          }
-        }
+const stats = ref({
+  totalPatients: 0,
+  totalOwners: 0,
+  todayAppointments: 0,
+  monthlyRevenue: '0.00'
+})
 
-        // ✅ FIXED: Handle response.data properly
-        const patientsResponse = await api.getPatients()
-        const patientsData = patientsResponse.data
-        const patients = Array.isArray(patientsData) 
-          ? patientsData 
-          : (patientsData.results || [])
-        
-        recentPatients.value = Array.isArray(patients) 
-          ? patients.slice(0, 5) 
-          : []
+const recentPatients = ref([])
+const recentActivity = ref([])
+const loading = ref(true)
 
-        const ownersResponse = await api.getOwners()
-        const ownersData = ownersResponse.data
-        const owners = Array.isArray(ownersData) 
-          ? ownersData 
-          : (ownersData.results || [])
+const fetchDashboardData = async () => {
+  try {
+    loading.value = true
+    console.log('Fetching dashboard data...')
 
-        if (Array.isArray(owners) && owners.length > 0) {
-          recentActivity.value = owners.slice(0, 3).map(owner => ({
-            id: `owner-${owner.id}`,
-            type: 'owner',
-            title: `${owner.name} - ${owner.phone}`,
-            time: 'Recently added'
-          }))
-        }
-
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error)
-        
-        if (error.response?.status === 401) {
-          console.log('Authentication required - redirecting to login')
-          localStorage.clear()
-          window.location.href = '/login'
-        }
-        
-        stats.value = {
-          totalPatients: 0,
-          totalOwners: 0,
-          todayAppointments: 0,
-          monthlyRevenue: '0'
-        }
-      }
-    }
-
-    const getFirstChar = (str) => {
-      if (!str || typeof str !== 'string') return '?'
-      return str.charAt(0).toUpperCase()
-    }
-
-    const formatDate = (dateString) => {
-      if (!dateString) return 'Never'
-      try {
-        const date = new Date(dateString)
-        return date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
-      } catch (e) {
-        return 'Invalid'
-      }
-    }
-
-    const viewPatient = (id) => {
-      window.location.href = '/patients'
-    }
-
-    onMounted(() => {
-      // ✅ FIXED: No more .then() on getUserProfile
-      // Just get user from localStorage directly
-      const user = api.getUserProfile()
-      console.log('Current user:', user)
+    // Fetch dashboard stats
+    try {
+      const dashboardResponse = await api.getDashboardStats()
+      console.log('Dashboard stats response:', dashboardResponse.data)
       
-      fetchDashboardData()
-    })
-
-    return {
-      stats,
-      recentPatients,
-      recentActivity,
-      getFirstChar,
-      formatDate,
-      viewPatient
+      if (dashboardResponse.data) {
+        stats.value = {
+          totalPatients: dashboardResponse.data.total_patients || 0,
+          totalOwners: dashboardResponse.data.total_owners || 0,
+          todayAppointments: dashboardResponse.data.consultations_this_week || 0,
+          monthlyRevenue: (dashboardResponse.data.revenue_this_month || 0).toFixed(2)
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching dashboard stats:', err)
     }
+
+    // Fetch recent patients
+    try {
+      const patientsResponse = await api.getPatients()
+      console.log('Patients response:', patientsResponse.data)
+      
+      let patientsData = []
+      if (Array.isArray(patientsResponse.data)) {
+        patientsData = patientsResponse.data
+      } else if (patientsResponse.data?.results) {
+        patientsData = patientsResponse.data.results
+      }
+      
+      recentPatients.value = patientsData.slice(0, 5)
+      console.log(`Loaded ${recentPatients.value.length} recent patients`)
+    } catch (err) {
+      console.error('Error fetching patients:', err)
+    }
+
+    // Fetch owners for activity
+    try {
+      const ownersResponse = await api.getOwners()
+      console.log('Owners response:', ownersResponse.data)
+      
+      let ownersData = []
+      if (Array.isArray(ownersResponse.data)) {
+        ownersData = ownersResponse.data
+      } else if (ownersResponse.data?.results) {
+        ownersData = ownersResponse.data.results
+      }
+
+      if (ownersData.length > 0) {
+        recentActivity.value = ownersData.slice(0, 3).map((owner, index) => ({
+          id: `owner-${owner.id || index}`,
+          type: 'owner',
+          title: `${owner.name || 'Unknown'} - ${owner.phone || 'No phone'}`,
+          time: 'Recently added'
+        }))
+      }
+      console.log(`Loaded ${recentActivity.value.length} activity items`)
+    } catch (err) {
+      console.error('Error fetching owners:', err)
+    }
+
+  } catch (error) {
+    console.error('Error in fetchDashboardData:', error)
+    
+    if (error.response?.status === 401) {
+      console.log('Authentication required - redirecting to login')
+      localStorage.clear()
+      router.push('/login')
+    }
+  } finally {
+    loading.value = false
   }
 }
+
+const getFirstChar = (str) => {
+  if (!str || typeof str !== 'string') return '?'
+  return str.charAt(0).toUpperCase()
+}
+
+const navigateTo = (path) => {
+  router.push(path)
+}
+
+onMounted(() => {
+  const user = api.getUserProfile()
+  console.log('Current user:', user)
+  
+  fetchDashboardData()
+})
 </script>
 
 <style scoped>
-/* ... (keeping all the original styles - too long to include) ... */
-.dashboard-wrapper { min-height: 100vh; background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%); }
-.dashboard-container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 24px; }
-.stat-card { background: white; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: all 0.3s; position: relative; overflow: hidden; }
-.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #7C3AED, #06B6D4); }
-.stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(124, 58, 237, 0.15); }
-.stat-icon { width: 56px; height: 56px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; }
-.patients-card .stat-icon { background: linear-gradient(135deg, #7C3AED, #5B21B6); }
-.owners-card .stat-icon { background: linear-gradient(135deg, #06B6D4, #0891B2); }
-.appointments-card .stat-icon { background: linear-gradient(135deg, #8B5CF6, #7C3AED); }
-.revenue-card .stat-icon { background: linear-gradient(135deg, #14B8A6, #0D9488); }
-.stat-content h3 { margin: 0; font-size: 28px; font-weight: 700; color: #1F2937; }
-.stat-content p { margin: 4px 0 0 0; font-size: 13px; color: #6B7280; font-weight: 500; }
-.content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
-.card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; }
-.card-header { background: linear-gradient(135deg, #7C3AED, #5B21B6); color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
-.card-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
-.view-all-btn { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: white; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.3s; }
-.view-all-btn:hover { background: rgba(255, 255, 255, 0.3); }
-.card-body { padding: 20px; }
-.action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.action-btn { background: linear-gradient(135deg, #7C3AED, #5B21B6); color: white; border: none; padding: 14px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; transition: all 0.3s; box-shadow: 0 3px 10px rgba(124, 58, 237, 0.25); }
-.action-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(124, 58, 237, 0.35); }
-.action-btn.add-owner { background: linear-gradient(135deg, #06B6D4, #0891B2); }
-.action-btn.vaccination { background: linear-gradient(135deg, #8B5CF6, #7C3AED); }
-.action-btn.payment { background: linear-gradient(135deg, #14B8A6, #0D9488); }
-.activity-list { display: flex; flex-direction: column; gap: 14px; }
-.activity-item { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 8px; transition: background 0.2s; }
-.activity-item:hover { background: #F9FAFB; }
-.activity-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: white; }
-.activity-icon.owner { background: linear-gradient(135deg, #06B6D4, #0891B2); }
-.activity-content { flex: 1; }
-.activity-title { margin: 0; font-size: 14px; font-weight: 600; color: #1F2937; }
-.activity-time { margin: 3px 0 0 0; font-size: 12px; color: #9CA3AF; }
-.table-wrapper { overflow-x: auto; }
-.data-table { width: 100%; border-collapse: collapse; }
-.data-table thead { background: linear-gradient(135deg, #7C3AED, #5B21B6); color: white; }
-.data-table th { padding: 14px; text-align: left; font-weight: 600; font-size: 13px; }
-.data-table td { padding: 14px; border-bottom: 1px solid #E5E7EB; font-size: 13px; color: #374151; }
-.data-table tbody tr:hover { background: #F9FAFB; }
-.patient-name { display: flex; align-items: center; gap: 10px; }
-.patient-avatar { width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(135deg, #7C3AED, #5B21B6); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; }
-.btn-view { background: linear-gradient(135deg, #7C3AED, #5B21B6); color: white; border: none; padding: 7px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.3s; }
-.btn-view:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(124, 58, 237, 0.25); }
-.no-data, .no-activity { text-align: center; padding: 30px; color: #9CA3AF; }
+.dashboard-wrapper {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+  padding: 20px;
+}
+
+.dashboard-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #7C3AED, #06B6D4);
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.2);
+}
+
+.stat-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.patients-card .stat-icon {
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+}
+
+.owners-card .stat-icon {
+  background: linear-gradient(135deg, #06B6D4, #0891B2);
+}
+
+.appointments-card .stat-icon {
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+}
+
+.revenue-card .stat-icon {
+  background: linear-gradient(135deg, #14B8A6, #0D9488);
+}
+
+.stat-content h3 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.stat-content p {
+  margin: 6px 0 0 0;
+  font-size: 14px;
+  color: #6B7280;
+  font-weight: 500;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.card-header {
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.view-all-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.view-all-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.card-body {
+  padding: 24px;
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.action-btn {
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+}
+
+.action-btn.add-owner {
+  background: linear-gradient(135deg, #06B6D4, #0891B2);
+}
+
+.action-btn.vaccination {
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+}
+
+.action-btn.payment {
+  background: linear-gradient(135deg, #14B8A6, #0D9488);
+}
+
+.activity-loading,
+.table-loading {
+  text-align: center;
+  padding: 20px;
+  color: #9CA3AF;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border-radius: 12px;
+  transition: background 0.3s;
+}
+
+.activity-item:hover {
+  background: #F9FAFB;
+}
+
+.activity-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.activity-icon.owner {
+  background: linear-gradient(135deg, #06B6D4, #0891B2);
+}
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.activity-time {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: #9CA3AF;
+}
+
+.no-activity,
+.no-data {
+  text-align: center;
+  padding: 40px 20px;
+  color: #9CA3AF;
+}
+
+.btn-add-first {
+  margin-top: 16px;
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table thead {
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+}
+
+.data-table th {
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.data-table td {
+  padding: 16px;
+  border-bottom: 1px solid #E5E7EB;
+  font-size: 14px;
+  color: #374151;
+}
+
+.data-table tbody tr:hover {
+  background: #F9FAFB;
+}
+
+.patient-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.patient-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.btn-view {
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.btn-view:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
 @media (max-width: 768px) {
-  .dashboard-container { padding: 16px; }
-  .stats-grid { gap: 12px; margin-bottom: 16px; }
-  .content-grid { grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px; }
-  .action-buttons { grid-template-columns: 1fr; }
+  .dashboard-wrapper {
+    padding: 16px;
+  }
+  
+  .stats-grid {
+    gap: 16px;
+  }
+  
+  .content-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .action-buttons {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
-
-
-// ============================================================================
-// API.JS AND ROUTER INDEX.JS ARE ALREADY CORRECT - NO CHANGES NEEDED
-// ============================================================================
