@@ -1,6 +1,9 @@
+// ============================================================================
+// FILE 1: frontend/src/views/DashboardView.vue
+// ============================================================================
+
 <template>
   <div class="dashboard-wrapper">
-    <!-- ✅ NO HEADER - Content starts directly -->
     <div class="dashboard-container">
       <!-- Stats Cards -->
       <div class="stats-grid">
@@ -15,17 +18,6 @@
             <p>Total Patients</p>
           </div>
         </div>
-        
-        <!-- Add this block somewhere visible in your dashboard -->
-        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-6">
-          <h3 class="font-semibold text-yellow-800 mb-2">🧪 Testing Tools</h3>
-          <router-link
-            to="/test-forms"
-            class="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center"
-          >
-             <span>→ Test Security Features (Input Sanitization, File Upload)</span>
-           </router-link>
-         </div>
         
         <div class="stat-card owners-card">
           <div class="stat-icon">
@@ -102,8 +94,6 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path>
                   <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path>
-                  <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"></path>
-                  <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path>
                 </svg>
                 <span>Record Vaccination</span>
               </button>
@@ -131,11 +121,8 @@
             <div v-else class="activity-list">
               <div v-for="activity in recentActivity" :key="activity.id" class="activity-item">
                 <div class="activity-icon" :class="activity.type">
-                  <svg v-if="activity.type === 'owner'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                  </svg>
-                  <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="12" cy="12" r="10"/>
                   </svg>
                 </div>
                 <div class="activity-content">
@@ -195,8 +182,7 @@
 
 <script>
 import { ref, onMounted } from 'vue'
-import api from '@/services/api' // ✅ Using new secure API client
-import { UserManager } from '@/utils/security' // ✅ Import security utilities
+import api from '@/services/api'
 
 export default {
   name: 'DashboardView',
@@ -212,20 +198,22 @@ export default {
 
     const fetchDashboardData = async () => {
       try {
-        // ✅ Using new secure API client with automatic token management
-        const dashboardRes = await api.getDashboardStats()
+        // ✅ FIXED: Await the response properly
+        const dashboardResponse = await api.getDashboardStats()
+        const dashboardData = dashboardResponse.data
         
-        if (dashboardRes) {
+        if (dashboardData) {
           stats.value = {
-            totalPatients: dashboardRes.total_patients || 0,
-            totalOwners: dashboardRes.total_owners || 0,
-            todayAppointments: dashboardRes.consultations_this_week || 0,
-            monthlyRevenue: (dashboardRes.revenue_this_month || 0).toFixed(2)
+            totalPatients: dashboardData.total_patients || 0,
+            totalOwners: dashboardData.total_owners || 0,
+            todayAppointments: dashboardData.consultations_this_week || 0,
+            monthlyRevenue: (dashboardData.revenue_this_month || 0).toFixed(2)
           }
         }
 
-        // ✅ Using new API methods
-        const patientsData = await api.getPatients()
+        // ✅ FIXED: Handle response.data properly
+        const patientsResponse = await api.getPatients()
+        const patientsData = patientsResponse.data
         const patients = Array.isArray(patientsData) 
           ? patientsData 
           : (patientsData.results || [])
@@ -234,7 +222,8 @@ export default {
           ? patients.slice(0, 5) 
           : []
 
-        const ownersData = await api.getOwners()
+        const ownersResponse = await api.getOwners()
+        const ownersData = ownersResponse.data
         const owners = Array.isArray(ownersData) 
           ? ownersData 
           : (ownersData.results || [])
@@ -251,9 +240,10 @@ export default {
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
         
-        // ✅ If unauthorized, token will auto-refresh or redirect to login
         if (error.response?.status === 401) {
-          console.log('Authentication required - will redirect to login')
+          console.log('Authentication required - redirecting to login')
+          localStorage.clear()
+          window.location.href = '/login'
         }
         
         stats.value = {
@@ -285,13 +275,10 @@ export default {
     }
 
     onMounted(() => {
-      // ✅ Fetch user data if not available
-      const user = UserManager.getUser()
-      if (!user) {
-        api.getUserProfile()
-          .then(profile => UserManager.setUser(profile))
-          .catch(err => console.error('Failed to fetch user profile:', err))
-      }
+      // ✅ FIXED: No more .then() on getUserProfile
+      // Just get user from localStorage directly
+      const user = api.getUserProfile()
+      console.log('Current user:', user)
       
       fetchDashboardData()
     })
@@ -309,309 +296,61 @@ export default {
 </script>
 
 <style scoped>
-.dashboard-wrapper {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
-}
-
-/* Dashboard Container */
-.dashboard-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-/* Stats Grid */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 16px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  transition: all 0.3s;
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #7C3AED, #06B6D4);
-}
-
-.stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.15);
-}
-
-.stat-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
+/* ... (keeping all the original styles - too long to include) ... */
+.dashboard-wrapper { min-height: 100vh; background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%); }
+.dashboard-container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card { background: white; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: all 0.3s; position: relative; overflow: hidden; }
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #7C3AED, #06B6D4); }
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(124, 58, 237, 0.15); }
+.stat-icon { width: 56px; height: 56px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; }
 .patients-card .stat-icon { background: linear-gradient(135deg, #7C3AED, #5B21B6); }
 .owners-card .stat-icon { background: linear-gradient(135deg, #06B6D4, #0891B2); }
 .appointments-card .stat-icon { background: linear-gradient(135deg, #8B5CF6, #7C3AED); }
 .revenue-card .stat-icon { background: linear-gradient(135deg, #14B8A6, #0D9488); }
-
-.stat-content h3 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 700;
-  color: #1F2937;
-}
-
-.stat-content p {
-  margin: 4px 0 0 0;
-  font-size: 13px;
-  color: #6B7280;
-  font-weight: 500;
-}
-
-/* Content Grid */
-.content-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  margin-bottom: 24px;
-}
-
-/* Card Styling */
-.card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  overflow: hidden;
-}
-
-.card-header {
-  background: linear-gradient(135deg, #7C3AED, #5B21B6);
-  color: white;
-  padding: 16px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-header h2 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.view-all-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  padding: 6px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.3s;
-}
-
-.view-all-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.card-body {
-  padding: 20px;
-}
-
-/* Quick Actions */
-.action-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.action-btn {
-  background: linear-gradient(135deg, #7C3AED, #5B21B6);
-  color: white;
-  border: none;
-  padding: 14px;
-  border-radius: 10px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.3s;
-  box-shadow: 0 3px 10px rgba(124, 58, 237, 0.25);
-}
-
-.action-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(124, 58, 237, 0.35);
-}
-
+.stat-content h3 { margin: 0; font-size: 28px; font-weight: 700; color: #1F2937; }
+.stat-content p { margin: 4px 0 0 0; font-size: 13px; color: #6B7280; font-weight: 500; }
+.content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+.card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; }
+.card-header { background: linear-gradient(135deg, #7C3AED, #5B21B6); color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+.card-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.view-all-btn { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: white; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.3s; }
+.view-all-btn:hover { background: rgba(255, 255, 255, 0.3); }
+.card-body { padding: 20px; }
+.action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.action-btn { background: linear-gradient(135deg, #7C3AED, #5B21B6); color: white; border: none; padding: 14px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; transition: all 0.3s; box-shadow: 0 3px 10px rgba(124, 58, 237, 0.25); }
+.action-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(124, 58, 237, 0.35); }
 .action-btn.add-owner { background: linear-gradient(135deg, #06B6D4, #0891B2); }
 .action-btn.vaccination { background: linear-gradient(135deg, #8B5CF6, #7C3AED); }
 .action-btn.payment { background: linear-gradient(135deg, #14B8A6, #0D9488); }
-
-/* Recent Activity */
-.activity-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.activity-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px;
-  border-radius: 8px;
-  transition: background 0.2s;
-}
-
-.activity-item:hover {
-  background: #F9FAFB;
-}
-
-.activity-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
+.activity-list { display: flex; flex-direction: column; gap: 14px; }
+.activity-item { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 8px; transition: background 0.2s; }
+.activity-item:hover { background: #F9FAFB; }
+.activity-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: white; }
 .activity-icon.owner { background: linear-gradient(135deg, #06B6D4, #0891B2); }
-
-.activity-content {
-  flex: 1;
-}
-
-.activity-title {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1F2937;
-}
-
-.activity-time {
-  margin: 3px 0 0 0;
-  font-size: 12px;
-  color: #9CA3AF;
-}
-
-/* Table Styling */
-.table-wrapper {
-  overflow-x: auto;
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.data-table thead {
-  background: linear-gradient(135deg, #7C3AED, #5B21B6);
-  color: white;
-}
-
-.data-table th {
-  padding: 14px;
-  text-align: left;
-  font-weight: 600;
-  font-size: 13px;
-}
-
-.data-table td {
-  padding: 14px;
-  border-bottom: 1px solid #E5E7EB;
-  font-size: 13px;
-  color: #374151;
-}
-
-.data-table tbody tr:hover {
-  background: #F9FAFB;
-}
-
-.patient-name {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.patient-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #7C3AED, #5B21B6);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 16px;
-}
-
-.btn-view {
-  background: linear-gradient(135deg, #7C3AED, #5B21B6);
-  color: white;
-  border: none;
-  padding: 7px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  transition: all 0.3s;
-}
-
-.btn-view:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 3px 10px rgba(124, 58, 237, 0.25);
-}
-
-.no-data, .no-activity {
-  text-align: center;
-  padding: 30px;
-  color: #9CA3AF;
-}
-
-/* Responsive */
+.activity-content { flex: 1; }
+.activity-title { margin: 0; font-size: 14px; font-weight: 600; color: #1F2937; }
+.activity-time { margin: 3px 0 0 0; font-size: 12px; color: #9CA3AF; }
+.table-wrapper { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table thead { background: linear-gradient(135deg, #7C3AED, #5B21B6); color: white; }
+.data-table th { padding: 14px; text-align: left; font-weight: 600; font-size: 13px; }
+.data-table td { padding: 14px; border-bottom: 1px solid #E5E7EB; font-size: 13px; color: #374151; }
+.data-table tbody tr:hover { background: #F9FAFB; }
+.patient-name { display: flex; align-items: center; gap: 10px; }
+.patient-avatar { width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(135deg, #7C3AED, #5B21B6); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; }
+.btn-view { background: linear-gradient(135deg, #7C3AED, #5B21B6); color: white; border: none; padding: 7px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.3s; }
+.btn-view:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(124, 58, 237, 0.25); }
+.no-data, .no-activity { text-align: center; padding: 30px; color: #9CA3AF; }
 @media (max-width: 768px) {
-  .dashboard-container {
-    padding: 16px;
-  }
-  
-  .stats-grid {
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-  
-  .content-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
-  }
-  
-  .action-buttons {
-    grid-template-columns: 1fr;
-  }
+  .dashboard-container { padding: 16px; }
+  .stats-grid { gap: 12px; margin-bottom: 16px; }
+  .content-grid { grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px; }
+  .action-buttons { grid-template-columns: 1fr; }
 }
 </style>
+
+
+// ============================================================================
+// API.JS AND ROUTER INDEX.JS ARE ALREADY CORRECT - NO CHANGES NEEDED
+// ============================================================================
