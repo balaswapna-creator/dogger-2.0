@@ -1,530 +1,351 @@
-// frontend/src/services/api.js
-// Secure API client with automatic token refresh and error handling
+import axios from 'axios'
+import { TokenManager, UserManager } from '../utils/security'
 
-import axios from 'axios';
-import { TokenManager, UserManager, SecurityMonitor } from '@/utils/security';
-import router from '@/router';
-
-// API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://dogger2-backend.onrender.com';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://dogger2-backend.onrender.com'
 
 // Create axios instance
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 30000,
+const axiosInstance = axios.create({
+  baseURL: `${API_BASE_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
-});
+})
 
-// Track if we're currently refreshing token
-let isRefreshing = false;
-let failedQueue = [];
-
-/**
- * Process failed request queue after token refresh
- */
-const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  
-  failedQueue = [];
-};
-
-/**
- * Request interceptor - Add auth token to requests
- */
-apiClient.interceptors.request.use(
+// Request interceptor to add auth token
+axiosInstance.interceptors.request.use(
   (config) => {
-    const token = TokenManager.getAccessToken();
-    
+    const token = TokenManager.getAccessToken()
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`
     }
-    
-    // Add CSRF token for non-GET requests
-    if (config.method !== 'get') {
-      const csrfToken = getCSRFToken();
-      if (csrfToken) {
-        config.headers['X-CSRFToken'] = csrfToken;
-      }
-    }
-    
-    return config;
+    return config
   },
   (error) => {
-    return Promise.reject(error);
+    return Promise.reject(error)
   }
-);
+)
 
-/**
- * Response interceptor - Handle token refresh
- */
-apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+// Response interceptor to handle token refresh
+axiosInstance.interceptors.response.use(
+  (response) => response,
   async (error) => {
-    const originalRequest = error.config;
-    
+    const originalRequest = error.config
+
     // If error is 401 and we haven't tried to refresh yet
     if (error.response?.status === 401 && !originalRequest._retry) {
-      
-      // Check if the error is specifically about token expiration
-      const errorCode = error.response?.data?.code;
-      
-      if (errorCode === 'token_not_valid' || errorCode === 'token_expired') {
-        
-        if (isRefreshing) {
-          // If already refreshing, queue this request
-          return new Promise((resolve, reject) => {
-            failedQueue.push({ resolve, reject });
-          })
-            .then(token => {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
-              return apiClient(originalRequest);
-            })
-            .catch(err => {
-              return Promise.reject(err);
-            });
-        }
-        
-        originalRequest._retry = true;
-        isRefreshing = true;
-        
-        const refreshToken = TokenManager.getRefreshToken();
+      originalRequest._retry = true
+
+      try {
+        const refreshToken = TokenManager.getRefreshToken()
         
         if (!refreshToken) {
-          // No refresh token, logout
-          handleLogout('No refresh token available');
-          return Promise.reject(error);
+          // No refresh token, redirect to login
+          TokenManager.clearTokens()
+          UserManager.clearUser()
+          window.location.href = '/login'
+          return Promise.reject(error)
         }
-        
-        try {
-          // Try to refresh token
-          const response = await axios.post(
-            `${API_BASE_URL}/api/token/refresh/`,
-            { refresh: refreshToken }
-          );
-          
-          const { access } = response.data;
-          
-          // Store new access token
-          TokenManager.setAccessToken(access);
-          
-          // Update authorization header
-          apiClient.defaults.headers.common['Authorization'] = `Bearer ${access}`;
-          originalRequest.headers.Authorization = `Bearer ${access}`;
-          
-          // Process queued requests
-          processQueue(null, access);
-          
-          isRefreshing = false;
-          
-          // Retry original request
-          return apiClient(originalRequest);
-          
-        } catch (refreshError) {
-          // Refresh failed, logout
-          processQueue(refreshError, null);
-          isRefreshing = false;
-          
-          handleLogout('Token refresh failed');
-          
-          return Promise.reject(refreshError);
-        }
-      } else {
-        // Other 401 errors (invalid credentials, etc.)
-        if (originalRequest.url.includes('/api/token/')) {
-          // Login failed, don't logout
-          return Promise.reject(error);
-        }
-        
-        handleLogout('Unauthorized access');
-        return Promise.reject(error);
+
+        // Try to refresh the token
+        const response = await axios.post(
+          `${API_BASE_URL}/api/token/refresh/`,
+          { refresh: refreshToken }
+        )
+
+        const { access } = response.data
+        TokenManager.setAccessToken(access)
+
+        // Retry the original request with new token
+        originalRequest.headers.Authorization = `Bearer ${access}`
+        return axiosInstance(originalRequest)
+      } catch (refreshError) {
+        // Refresh failed, clear everything and redirect to login
+        TokenManager.clearTokens()
+        UserManager.clearUser()
+        window.location.href = '/login'
+        return Promise.reject(refreshError)
       }
     }
-    
-    // Handle other error codes
-    if (error.response?.status === 403) {
-      SecurityMonitor.logSecurityEvent('forbidden_access', {
-        url: originalRequest.url,
-        method: originalRequest.method
-      });
-    }
-    
-    if (error.response?.status === 429) {
-      SecurityMonitor.logSecurityEvent('rate_limit_exceeded', {
-        url: originalRequest.url
-      });
-    }
-    
-    return Promise.reject(error);
-  }
-);
 
-/**
- * Get CSRF token from cookie
- */
-function getCSRFToken() {
-  const name = 'csrftoken';
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length + 1) === (name + '=')) {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
-    }
+    return Promise.reject(error)
   }
-  return cookieValue;
-}
+)
 
-/**
- * Handle logout
- */
-function handleLogout(reason) {
-  SecurityMonitor.logSecurityEvent('auto_logout', { reason });
-  
-  TokenManager.clearTokens();
-  UserManager.clearUser();
-  
-  // Redirect to login
-  if (router.currentRoute.value.path !== '/login') {
-    router.push({
-      path: '/login',
-      query: { redirect: router.currentRoute.value.fullPath }
-    });
-  }
-}
-
-/**
- * Helper function to parse JWT token
- */
-function parseJwt(token) {
+// Helper function to decode JWT and extract user info
+const decodeJWT = (token) => {
   try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    // JWT structure: header.payload.signature
+    const parts = token.split('.')
+    if (parts.length !== 3) {
+      console.error('Invalid JWT format')
+      return null
+    }
+
+    // Decode the payload (second part)
+    const payload = parts[1]
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
     const jsonPayload = decodeURIComponent(
       atob(base64)
         .split('')
         .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
         .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch (e) {
-    return {};
+    )
+
+    return JSON.parse(jsonPayload)
+  } catch (error) {
+    console.error('Error decoding JWT:', error)
+    return null
   }
 }
 
-/**
- * API Methods
- */
+// API methods
 const api = {
   // Authentication
   async login(username, password) {
     try {
-      // Get tokens from Django JWT endpoint
-      const response = await apiClient.post('/api/token/', { username, password });
-      const { access, refresh } = response.data;
+      console.log('API: Sending login request...')
       
-      // Store tokens immediately
-      TokenManager.setTokens(access, refresh);
-      
-      // Create user profile from JWT token (don't call non-existent endpoints)
-      const tokenData = parseJwt(access);
-      const userProfile = {
-        id: tokenData.user_id,
-        username: username,
-        role: 'user',
-        is_staff: false
-      };
-      
-      // Store user data
-      UserManager.setUser(userProfile);
-      
-      console.log('✅ Login successful:', {
-        username: userProfile.username,
-        role: userProfile.role
-      });
-      
-      SecurityMonitor.logSecurityEvent('login_success', { 
+      const response = await axiosInstance.post('/token/', {
         username,
-        role: userProfile.role
-      });
-      
-      // Return response with user data
-      return {
-        ...response.data,
-        user: userProfile
-      };
-      
+        password,
+      })
+
+      console.log('API: Login response received:', response.data)
+
+      const { access, refresh } = response.data
+
+      if (!access || !refresh) {
+        throw new Error('Invalid response: missing tokens')
+      }
+
+      // Store tokens
+      TokenManager.setAccessToken(access)
+      TokenManager.setRefreshToken(refresh)
+
+      // Decode token to get user info
+      const payload = decodeJWT(access)
+      console.log('API: Decoded JWT payload:', payload)
+
+      if (payload) {
+        // Extract user info from JWT payload
+        const userInfo = {
+          id: payload.user_id,
+          username: payload.username || username,
+          email: payload.email || '',
+          // Add any other fields that exist in your JWT payload
+        }
+
+        // Store user info
+        UserManager.setUser(userInfo)
+        console.log('API: User info stored:', userInfo)
+      } else {
+        console.warn('API: Could not decode JWT payload')
+      }
+
+      return response.data
     } catch (error) {
-      SecurityMonitor.logSecurityEvent('login_failed', { 
-        username,
-        error: error.response?.data 
-      });
-      throw error;
+      console.error('API: Login error:', error)
+      throw error
     }
   },
 
-  async logout() {
-    TokenManager.clearTokens();
-    UserManager.clearUser();
-    SecurityMonitor.logSecurityEvent('logout_success');
+  logout() {
+    TokenManager.clearTokens()
+    UserManager.clearUser()
   },
 
-  async refreshToken() {
-    const refreshToken = TokenManager.getRefreshToken();
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-    
-    const response = await apiClient.post('/api/token/refresh/', {
-      refresh: refreshToken
-    });
-    
-    const { access } = response.data;
-    TokenManager.setAccessToken(access);
-    
-    return response.data;
+  // Get current user info from stored data
+  getUserProfile() {
+    return UserManager.getUser()
   },
 
-  async getUserProfile() {
-    // Return cached user data (don't call non-existent endpoints)
-    return UserManager.getUser();
-  },
-
-  // Dashboard - Calculate stats from actual data
+  // Dashboard
   async getDashboardStats() {
-    try {
-      // Fetch all data in parallel
-      const [patientsRes, ownersRes, recordsRes, vaccinationsRes, paymentsRes] = await Promise.all([
-        this.getPatients().catch(() => ({ results: [] })),
-        this.getOwners().catch(() => ({ results: [] })),
-        this.getMedicalRecords().catch(() => ({ results: [] })),
-        this.getVaccinations().catch(() => ({ results: [] })),
-        this.getPayments().catch(() => ({ results: [] }))
-      ]);
-      
-      // Extract arrays from results (handle both array and paginated responses)
-      const patients = Array.isArray(patientsRes) ? patientsRes : (patientsRes.results || []);
-      const owners = Array.isArray(ownersRes) ? ownersRes : (ownersRes.results || []);
-      const records = Array.isArray(recordsRes) ? recordsRes : (recordsRes.results || []);
-      const vaccinations = Array.isArray(vaccinationsRes) ? vaccinationsRes : (vaccinationsRes.results || []);
-      const payments = Array.isArray(paymentsRes) ? paymentsRes : (paymentsRes.results || []);
-      
-      // Calculate today's appointments
-      const today = new Date().toISOString().split('T')[0];
-      const todayAppointments = records.filter(r => {
-        const recordDate = r.visit_date || r.date || '';
-        return recordDate.startsWith(today);
-      }).length;
-      
-      // Calculate monthly revenue
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      const monthlyRevenue = payments
-        .filter(p => {
-          if (!p.payment_date && !p.date) return false;
-          const paymentDate = new Date(p.payment_date || p.date);
-          return paymentDate.getMonth() === currentMonth && 
-                 paymentDate.getFullYear() === currentYear &&
-                 p.payment_status === 'completed';
-        })
-        .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
-      
-      return {
-        total_patients: patients.length,
-        total_owners: owners.length,
-        total_records: records.length,
-        total_vaccinations: vaccinations.length,
-        total_payments: payments.length,
-        today_appointments: todayAppointments,
-        monthly_revenue: monthlyRevenue.toFixed(2),
-        recent_patients: patients.slice(0, 5)
-      };
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-      return {
-        total_patients: 0,
-        total_owners: 0,
-        total_records: 0,
-        total_vaccinations: 0,
-        total_payments: 0,
-        today_appointments: 0,
-        monthly_revenue: '0.00',
-        recent_patients: []
-      };
-    }
+    const response = await axiosInstance.get('/dashboard/stats/')
+    return response.data
   },
 
   // Patients
-  async getPatients(params = {}) {
-    const response = await apiClient.get('/api/patients/', { params });
-    return response.data;
+  async getPatients() {
+    const response = await axiosInstance.get('/patients/')
+    return response.data
   },
 
   async getPatient(id) {
-    const response = await apiClient.get(`/api/patients/${id}/`);
-    return response.data;
+    const response = await axiosInstance.get(`/patients/${id}/`)
+    return response.data
   },
 
   async createPatient(data) {
-    const response = await apiClient.post('/api/patients/', data);
-    return response.data;
+    const response = await axiosInstance.post('/patients/', data)
+    return response.data
   },
 
   async updatePatient(id, data) {
-    const response = await apiClient.put(`/api/patients/${id}/`, data);
-    return response.data;
+    const response = await axiosInstance.put(`/patients/${id}/`, data)
+    return response.data
   },
 
   async deletePatient(id) {
-    const response = await apiClient.delete(`/api/patients/${id}/`);
-    return response.data;
+    const response = await axiosInstance.delete(`/patients/${id}/`)
+    return response.data
   },
 
   // Owners
-  async getOwners(params = {}) {
-    const response = await apiClient.get('/api/owners/', { params });
-    return response.data;
+  async getOwners() {
+    const response = await axiosInstance.get('/owners/')
+    return response.data
   },
 
   async getOwner(id) {
-    const response = await apiClient.get(`/api/owners/${id}/`);
-    return response.data;
+    const response = await axiosInstance.get(`/owners/${id}/`)
+    return response.data
   },
 
   async createOwner(data) {
-    const response = await apiClient.post('/api/owners/', data);
-    return response.data;
+    const response = await axiosInstance.post('/owners/', data)
+    return response.data
   },
 
   async updateOwner(id, data) {
-    const response = await apiClient.put(`/api/owners/${id}/`, data);
-    return response.data;
+    const response = await axiosInstance.put(`/owners/${id}/`, data)
+    return response.data
   },
 
   async deleteOwner(id) {
-    const response = await apiClient.delete(`/api/owners/${id}/`);
-    return response.data;
+    const response = await axiosInstance.delete(`/owners/${id}/`)
+    return response.data
   },
 
   // Medical Records
-  async getMedicalRecords(params = {}) {
-    const response = await apiClient.get('/api/medical-records/', { params });
-    return response.data;
+  async getMedicalRecords() {
+    const response = await axiosInstance.get('/medical-records/')
+    return response.data
   },
 
   async getMedicalRecord(id) {
-    const response = await apiClient.get(`/api/medical-records/${id}/`);
-    return response.data;
+    const response = await axiosInstance.get(`/medical-records/${id}/`)
+    return response.data
   },
 
   async createMedicalRecord(data) {
-    const response = await apiClient.post('/api/medical-records/', data);
-    return response.data;
+    const response = await axiosInstance.post('/medical-records/', data)
+    return response.data
   },
 
   async updateMedicalRecord(id, data) {
-    const response = await apiClient.put(`/api/medical-records/${id}/`, data);
-    return response.data;
+    const response = await axiosInstance.put(`/medical-records/${id}/`, data)
+    return response.data
   },
 
   async deleteMedicalRecord(id) {
-    const response = await apiClient.delete(`/api/medical-records/${id}/`);
-    return response.data;
+    const response = await axiosInstance.delete(`/medical-records/${id}/`)
+    return response.data
   },
 
   // Vaccinations
-  async getVaccinations(params = {}) {
-    const response = await apiClient.get('/api/vaccinations/', { params });
-    return response.data;
+  async getVaccinations() {
+    const response = await axiosInstance.get('/vaccinations/')
+    return response.data
   },
 
   async getVaccination(id) {
-    const response = await apiClient.get(`/api/vaccinations/${id}/`);
-    return response.data;
+    const response = await axiosInstance.get(`/vaccinations/${id}/`)
+    return response.data
   },
 
   async createVaccination(data) {
-    const response = await apiClient.post('/api/vaccinations/', data);
-    return response.data;
+    const response = await axiosInstance.post('/vaccinations/', data)
+    return response.data
   },
 
   async updateVaccination(id, data) {
-    const response = await apiClient.put(`/api/vaccinations/${id}/`, data);
-    return response.data;
+    const response = await axiosInstance.put(`/vaccinations/${id}/`, data)
+    return response.data
   },
 
   async deleteVaccination(id) {
-    const response = await apiClient.delete(`/api/vaccinations/${id}/`);
-    return response.data;
+    const response = await axiosInstance.delete(`/vaccinations/${id}/`)
+    return response.data
   },
 
   // Payments
-  async getPayments(params = {}) {
-    const response = await apiClient.get('/api/payments/', { params });
-    return response.data;
+  async getPayments() {
+    const response = await axiosInstance.get('/payments/')
+    return response.data
   },
 
   async getPayment(id) {
-    const response = await apiClient.get(`/api/payments/${id}/`);
-    return response.data;
+    const response = await axiosInstance.get(`/payments/${id}/`)
+    return response.data
   },
 
   async createPayment(data) {
-    const response = await apiClient.post('/api/payments/', data);
-    return response.data;
+    const response = await axiosInstance.post('/payments/', data)
+    return response.data
   },
 
   async updatePayment(id, data) {
-    const response = await apiClient.put(`/api/payments/${id}/`, data);
-    return response.data;
+    const response = await axiosInstance.put(`/payments/${id}/`, data)
+    return response.data
   },
 
   async deletePayment(id) {
-    const response = await apiClient.delete(`/api/payments/${id}/`);
-    return response.data;
+    const response = await axiosInstance.delete(`/payments/${id}/`)
+    return response.data
   },
 
   // Passbooks
-  async getPassbooks(params = {}) {
-    const response = await apiClient.get('/api/passbooks/', { params });
-    return response.data;
+  async getPassbooks() {
+    const response = await axiosInstance.get('/passbooks/')
+    return response.data
   },
 
   async getPassbook(id) {
-    const response = await apiClient.get(`/api/passbooks/${id}/`);
-    return response.data;
+    const response = await axiosInstance.get(`/passbooks/${id}/`)
+    return response.data
   },
 
-  // File upload helper
-  async uploadFile(endpoint, file, additionalData = {}) {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    Object.keys(additionalData).forEach(key => {
-      formData.append(key, additionalData[key]);
-    });
-    
-    const response = await apiClient.post(endpoint, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    
-    return response.data;
-  }
-};
+  async createPassbook(data) {
+    const response = await axiosInstance.post('/passbooks/', data)
+    return response.data
+  },
 
-export default api;
-export { apiClient };
+  async updatePassbook(id, data) {
+    const response = await axiosInstance.put(`/passbooks/${id}/`, data)
+    return response.data
+  },
+
+  async deletePassbook(id) {
+    const response = await axiosInstance.delete(`/passbooks/${id}/`)
+    return response.data
+  },
+
+  // Prescriptions
+  async getPrescriptions() {
+    const response = await axiosInstance.get('/prescriptions/')
+    return response.data
+  },
+
+  async getPrescription(id) {
+    const response = await axiosInstance.get(`/prescriptions/${id}/`)
+    return response.data
+  },
+
+  async createPrescription(data) {
+    const response = await axiosInstance.post('/prescriptions/', data)
+    return response.data
+  },
+
+  async updatePrescription(id, data) {
+    const response = await axiosInstance.put(`/prescriptions/${id}/`, data)
+    return response.data
+  },
+
+  async deletePrescription(id) {
+    const response = await axiosInstance.delete(`/prescriptions/${id}/`)
+    return response.data
+  },
+}
+
+export default api
