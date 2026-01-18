@@ -1,262 +1,217 @@
 <template>
-  <div class="patients-wrapper">
-    <!-- Header Card -->
-    <div class="header-card">
-      <div class="header-content">
-        <div class="header-title">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <circle cx="12" cy="10" r="3"></circle>
-            <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"></path>
+  <div class="patients-container">
+    <div class="patients-header">
+      <div class="header-left">
+        <div class="header-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
           </svg>
-          <h1>Patients (Pets)</h1>
         </div>
-        <button @click="openAddModal" class="btn-add">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          <span>Add New Pet</span>
-        </button>
+        <div>
+          <h1>Patients (Pets)</h1>
+          <p class="subtitle">Manage all your pet patients</p>
+        </div>
       </div>
+      <button @click="showAddModal = true" class="btn-add">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Add New Pet
+      </button>
     </div>
 
-    <!-- Search Card -->
-    <div class="search-card">
-      <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <!-- Search Bar -->
+    <div class="search-bar">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="11" cy="11" r="8"></circle>
         <path d="m21 21-4.35-4.35"></path>
       </svg>
-      <input 
+      <input
         v-model="searchQuery"
-        type="text" 
-        placeholder="Search pets by name, species, breed, or owner..."
+        type="text"
+        placeholder="Search pets by name, species, or owner..."
         class="search-input"
       />
     </div>
 
     <!-- Loading State -->
-    <div v-if="isLoading" class="loading-state">
+    <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
       <p>Loading patients...</p>
     </div>
 
-    <!-- Patients Grid -->
-    <div v-else-if="filteredPatients.length > 0" class="patients-grid">
-      <div v-for="patient in filteredPatients" :key="patient.id" class="patient-card">
-        <div class="patient-photo">
-          <img 
-            v-if="getPhotoUrl(patient)" 
-            :src="getPhotoUrl(patient)" 
-            :alt="patient.pet_name"
-            @error="handleImageError"
-          />
-          <div v-else class="photo-placeholder">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
-            </svg>
-          </div>
-        </div>
-        
-        <div class="patient-info">
-          <h3>{{ patient.pet_name }}</h3>
-          <div class="patient-details">
-            <span class="detail-badge species">{{ patient.species }}</span>
-            <span class="detail-badge">{{ patient.breed }}</span>
-          </div>
-          <p class="owner-name">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-            {{ getOwnerName(patient.owner) }}
-          </p>
-        </div>
-        
-        <div class="patient-actions">
-          <!-- ✅ NEW: View Details Button -->
-          <button @click="viewPatientDetails(patient.id)" class="btn-view" title="View full patient details">
-            <span class="icon">👁️</span>
-             <span class="text">View Details</span>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-          </button>
-          <button @click="editPatient(patient)" class="btn-edit" title="Edit">
-           <span class="icon">✏️</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-            </svg>
-          </button>
-          <button @click="deletePatient(patient.id)" class="btn-delete" title="Delete">
-           <span class="icon">🗑️</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
+    <!-- Error State -->
+    <div v-else-if="error" class="error-state">
+      <div class="error-icon">⚠️</div>
+      <h2>Error Loading Patients</h2>
+      <p>{{ error }}</p>
+      <button @click="fetchPatients" class="btn-retry">Retry</button>
+    </div>
+
+    <!-- Patients Table -->
+    <div v-else-if="filteredPatients.length > 0" class="table-container">
+      <table class="patients-table">
+        <thead>
+          <tr>
+            <th>Photo</th>
+            <th>Pet Name</th>
+            <th>Species</th>
+            <th>Breed</th>
+            <th>Age</th>
+            <th>Owner</th>
+            <th>Phone</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="patient in filteredPatients" :key="patient.id">
+            <td>
+              <div class="patient-photo">
+                <img v-if="patient.photo" :src="getPhotoUrl(patient.photo)" :alt="patient.pet_name" />
+                <div v-else class="no-photo">{{ getFirstChar(patient.pet_name) }}</div>
+              </div>
+            </td>
+            <td>
+              <div class="patient-name">
+                <strong>{{ patient.pet_name }}</strong>
+              </div>
+            </td>
+            <td>{{ patient.species }}</td>
+            <td>{{ patient.breed || 'N/A' }}</td>
+            <td>{{ patient.age }} years</td>
+            <td>{{ patient.owner_name || 'N/A' }}</td>
+            <td>{{ patient.owner_phone || 'N/A' }}</td>
+            <td>
+              <div class="action-buttons">
+                <button @click="viewPatient(patient)" class="btn-icon btn-view" title="View">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+                <button @click="editPatient(patient)" class="btn-icon btn-edit" title="Edit">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </button>
+                <button @click="confirmDelete(patient)" class="btn-icon btn-delete" title="Delete">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Empty State -->
     <div v-else class="empty-state">
-      <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <circle cx="12" cy="12" r="10"></circle>
-        <circle cx="12" cy="10" r="3"></circle>
-        <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"></path>
-      </svg>
-      <h3>No Patients Found</h3>
-      <p>Add your first patient to get started</p>
-      <button @click="openAddModal" class="btn-empty-action">Add First Pet</button>
+      <div class="empty-icon">🐕</div>
+      <h2>No Patients Found</h2>
+      <p v-if="searchQuery">Try a different search term</p>
+      <p v-else>Add your first patient to get started!</p>
+      <button v-if="!searchQuery" @click="showAddModal = true" class="btn-add-large">
+        Add Your First Patient
+      </button>
     </div>
 
     <!-- Add/Edit Modal -->
-    <div v-if="showAddModal || editingPatient" class="modal-overlay" @click.self="closeModal">
-      <div class="modal-container">
+    <div v-if="showAddModal || showEditModal" class="modal-overlay" @click="closeModal">
+      <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h2>{{ editingPatient ? 'Edit Pet' : 'Add New Pet' }}</h2>
-          <button @click="closeModal" class="btn-close">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+          <h2>{{ showEditModal ? 'Edit Patient' : 'Add New Patient' }}</h2>
+          <button @click="closeModal" class="btn-close">✕</button>
         </div>
-        
-        <div class="modal-body">
-          <!-- Photo Upload -->
-          <div class="photo-upload-section">
-            <div v-if="photoPreview" class="photo-preview">
-              <img :src="photoPreview" alt="Preview" />
-              <button @click="removePhoto" class="btn-remove-photo">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-            <div v-else class="photo-buttons">
-              <button @click="openCamera" class="btn-camera">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                  <circle cx="12" cy="13" r="4"></circle>
-                </svg>
-                Take Photo
-              </button>
-              <label class="btn-file">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="17 8 12 3 7 8"></polyline>
-                  <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-                Choose File
-                <input type="file" @change="handleFileSelect" accept="image/*" ref="fileInput" class="file-input"/>
-              </label>
-            </div>
-          </div>
 
-          <!-- Form Fields -->
+        <form @submit.prevent="savePatient" class="modal-body">
           <div class="form-grid">
-            <div class="form-group full-width">
-              <label>Owner *</label>
-              <select v-model="form.owner">
-                <option value="">Select Owner</option>
-                <option v-for="owner in owners" :key="owner.id" :value="owner.id">
-                  {{ owner.name }}
-                </option>
-              </select>
-            </div>
-
-            <div class="form-group full-width">
+            <div class="form-group">
               <label>Pet Name *</label>
-              <input v-model="form.pet_name" type="text" placeholder="e.g., Max, Bella"/>
+              <input v-model="formData.pet_name" type="text" required class="form-input" />
             </div>
 
             <div class="form-group">
               <label>Species *</label>
-              <select v-model="form.species">
+              <select v-model="formData.species" required class="form-input">
                 <option value="">Select Species</option>
-                <option value="dog">Dog</option>
-                <option value="cat">Cat</option>
-                <option value="bird">Bird</option>
-                <option value="rabbit">Rabbit</option>
-                <option value="other">Other</option>
+                <option value="Dog">Dog</option>
+                <option value="Cat">Cat</option>
+                <option value="Bird">Bird</option>
+                <option value="Rabbit">Rabbit</option>
+                <option value="Other">Other</option>
               </select>
             </div>
 
             <div class="form-group">
-              <label>Breed *</label>
-              <input v-model="form.breed" type="text" placeholder="e.g., Labrador"/>
+              <label>Breed</label>
+              <input v-model="formData.breed" type="text" class="form-input" />
+            </div>
+
+            <div class="form-group">
+              <label>Age (years) *</label>
+              <input v-model.number="formData.age" type="number" min="0" step="0.1" required class="form-input" />
             </div>
 
             <div class="form-group">
               <label>Gender *</label>
-              <select v-model="form.gender">
+              <select v-model="formData.gender" required class="form-input">
                 <option value="">Select Gender</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
               </select>
             </div>
 
             <div class="form-group">
-              <label>Date of Birth</label>
-              <input v-model="form.date_of_birth" type="date"/>
-            </div>
-
-            <div class="form-group">
               <label>Color</label>
-              <input v-model="form.color" type="text" placeholder="e.g., Brown, Black"/>
+              <input v-model="formData.color" type="text" class="form-input" />
             </div>
 
             <div class="form-group">
-              <label>Weight (kg)</label>
-              <input v-model="form.weight" type="number" step="0.1" placeholder="0.0"/>
+              <label>Owner *</label>
+              <select v-model="formData.owner" required class="form-input">
+                <option value="">Select Owner</option>
+                <option v-for="owner in owners" :key="owner.id" :value="owner.id">
+                  {{ owner.name }} - {{ owner.phone }}
+                </option>
+              </select>
             </div>
 
-            <div class="form-group full-width">
-              <label>Medical History</label>
-              <textarea v-model="form.medical_history" rows="3" placeholder="Optional medical notes..."></textarea>
+            <div class="form-group">
+              <label>Microchip Number</label>
+              <input v-model="formData.microchip_number" type="text" class="form-input" />
             </div>
           </div>
 
-          <div class="modal-actions">
-            <button @click="closeModal" class="btn-cancel">Cancel</button>
-            <button @click="savePatient" class="btn-save">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                <polyline points="7 3 7 8 15 8"></polyline>
-              </svg>
-              Save Pet
+          <div class="modal-footer">
+            <button type="button" @click="closeModal" class="btn-cancel">Cancel</button>
+            <button type="submit" :disabled="saving" class="btn-save">
+              {{ saving ? 'Saving...' : (showEditModal ? 'Update' : 'Add Patient') }}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
 
-    <!-- Camera Modal -->
-    <div v-if="showCamera" class="modal-overlay">
-      <div class="camera-modal">
-        <div class="camera-header">
-          <h3>Take Photo</h3>
-          <button @click="closeCamera" class="btn-close">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteModal" class="modal-overlay" @click="showDeleteModal = false">
+      <div class="modal-content small" @click.stop>
+        <div class="modal-header">
+          <h2>Confirm Delete</h2>
+          <button @click="showDeleteModal = false" class="btn-close">✕</button>
         </div>
-        <video ref="videoElement" autoplay playsinline class="camera-video"></video>
-        <canvas ref="canvasElement" class="camera-canvas"></canvas>
-        <div class="camera-actions">
-          <button @click="capturePhoto" class="btn-capture">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="12" cy="12" r="10"></circle>
-            </svg>
-            Capture
+        <div class="modal-body">
+          <p>Are you sure you want to delete <strong>{{ patientToDelete?.pet_name }}</strong>?</p>
+          <p class="warning-text">This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+          <button @click="showDeleteModal = false" class="btn-cancel">Cancel</button>
+          <button @click="deletePatient" :disabled="deleting" class="btn-delete-confirm">
+            {{ deleting ? 'Deleting...' : 'Delete' }}
           </button>
         </div>
       </div>
@@ -265,338 +220,225 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
-import { useRouter } from 'vue-router';
-import api from '../services/api';
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import api from '../services/api'
 
-const router = useRouter();
+const router = useRouter()
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-const BACKEND_URL = API_BASE_URL.replace('/api', '');
-const MEDIA_URL = `${BACKEND_URL}/media/`;
+const patients = ref([])
+const owners = ref([])
+const loading = ref(true)
+const error = ref(null)
+const searchQuery = ref('')
+const showAddModal = ref(false)
+const showEditModal = ref(false)
+const showDeleteModal = ref(false)
+const saving = ref(false)
+const deleting = ref(false)
+const patientToDelete = ref(null)
 
-const patients = ref([]);
-const owners = ref([]);
-const searchQuery = ref('');
-const showAddModal = ref(false);
-const editingPatient = ref(null);
-const showCamera = ref(false);
-const photoPreview = ref('');
-const photoFile = ref(null);
-const videoElement = ref(null);
-const canvasElement = ref(null);
-const fileInput = ref(null);
-const isLoading = ref(true);
-let videoStream = null;
-
-const form = ref({
-  owner: '',
+const formData = ref({
   pet_name: '',
   species: '',
   breed: '',
+  age: '',
   gender: '',
-  date_of_birth: '',
   color: '',
-  weight: '',
-  medical_history: ''
-});
+  owner: '',
+  microchip_number: ''
+})
 
 const filteredPatients = computed(() => {
-  if (!Array.isArray(patients.value) || patients.value.length === 0) {
-    return [];
-  }
+  if (!searchQuery.value) return patients.value
   
-  if (!searchQuery.value) return patients.value;
-  
-  const query = searchQuery.value.toLowerCase();
+  const query = searchQuery.value.toLowerCase()
   return patients.value.filter(p => 
     p.pet_name?.toLowerCase().includes(query) ||
     p.species?.toLowerCase().includes(query) ||
     p.breed?.toLowerCase().includes(query) ||
-    getOwnerName(p.owner).toLowerCase().includes(query)
-  );
-});
+    p.owner_name?.toLowerCase().includes(query) ||
+    p.owner_phone?.includes(query)
+  )
+})
 
-const getPhotoUrl = (patient) => {
-  if (!patient.photo) return null;
-  if (patient.photo.startsWith('http')) return patient.photo;
-  const photoPath = patient.photo.replace(/^\/+/, '').replace('media/', '');
-  return `${MEDIA_URL}${photoPath}`;
-};
-
-const handleImageError = (event) => {
-  event.target.style.display = 'none';
-};
-
-const getOwnerName = (ownerId) => {
-  if (!Array.isArray(owners.value)) return 'Unknown';
-  const owner = owners.value.find(o => o.id === ownerId);
-  return owner ? owner.name : 'Unknown';
-};
-
-// ✅ NEW: View Patient Details Function
-const viewPatientDetails = (patientId) => {
-  router.push(`/patients/${patientId}`);
-};
-
-const fetchData = async () => {
-  isLoading.value = true;
+const fetchPatients = async () => {
   try {
-    const [patientsData, ownersData] = await Promise.all([
-      api.get('/patients/'),
-      api.get('/owners/')
-    ]);
+    loading.value = true
+    error.value = null
     
-    patients.value = Array.isArray(patientsData.data) 
-      ? patientsData.data 
-      : (patientsData.data.results || []);
-      
-    owners.value = Array.isArray(ownersData.data) 
-      ? ownersData.data 
-      : (ownersData.data.results || []);
-  } catch (error) {
-    console.error('Error fetching data:', error);
-    patients.value = [];
-    owners.value = [];
+    console.log('Fetching patients...')
+    const response = await api.getPatients()
+    console.log('Patients response:', response.data)
+    
+    // Handle both array and paginated responses
+    if (Array.isArray(response.data)) {
+      patients.value = response.data
+    } else if (response.data.results) {
+      patients.value = response.data.results
+    } else {
+      patients.value = []
+    }
+    
+    console.log(`Loaded ${patients.value.length} patients`)
+  } catch (err) {
+    console.error('Error fetching patients:', err)
+    error.value = err.response?.data?.detail || err.message || 'Failed to load patients'
+    
+    if (err.response?.status === 401) {
+      localStorage.clear()
+      router.push('/login')
+    }
   } finally {
-    isLoading.value = false;
+    loading.value = false
   }
-};
+}
 
-const handleFileSelect = (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File too large! Maximum size is 5MB');
-      return;
-    }
-    
-    photoFile.value = file;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      photoPreview.value = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-};
-
-const openCamera = async () => {
+const fetchOwners = async () => {
   try {
-    showCamera.value = true;
-    await new Promise(resolve => setTimeout(resolve, 100));
+    console.log('Fetching owners...')
+    const response = await api.getOwners()
+    console.log('Owners response:', response.data)
     
-    videoStream = await navigator.mediaDevices.getUserMedia({ 
-      video: { 
-        facingMode: 'environment',
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
-      } 
-    });
-    
-    if (videoElement.value) {
-      videoElement.value.srcObject = videoStream;
+    // Handle both array and paginated responses
+    if (Array.isArray(response.data)) {
+      owners.value = response.data
+    } else if (response.data.results) {
+      owners.value = response.data.results
+    } else {
+      owners.value = []
     }
-  } catch (error) {
-    console.error('Camera error:', error);
-    alert('Could not access camera. Please use file upload instead.');
-    showCamera.value = false;
-  }
-};
-
-const capturePhoto = () => {
-  const video = videoElement.value;
-  const canvas = canvasElement.value;
-  
-  if (video && canvas) {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
     
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0);
-    
-    canvas.toBlob((blob) => {
-      const timestamp = new Date().getTime();
-      photoFile.value = new File([blob], `pet_photo_${timestamp}.jpg`, { type: 'image/jpeg' });
-      photoPreview.value = canvas.toDataURL('image/jpeg');
-      closeCamera();
-    }, 'image/jpeg', 0.85);
+    console.log(`Loaded ${owners.value.length} owners`)
+  } catch (err) {
+    console.error('Error fetching owners:', err)
   }
-};
-
-const closeCamera = () => {
-  if (videoStream) {
-    videoStream.getTracks().forEach(track => track.stop());
-    videoStream = null;
-  }
-  showCamera.value = false;
-};
-
-const removePhoto = () => {
-  photoPreview.value = '';
-  photoFile.value = null;
-  if (fileInput.value) {
-    fileInput.value.value = '';
-  }
-};
-
-const openAddModal = () => {
-  showAddModal.value = true;
-  editingPatient.value = null;
-  form.value = {
-    owner: '',
-    pet_name: '',
-    species: '',
-    breed: '',
-    gender: '',
-    date_of_birth: '',
-    color: '',
-    weight: '',
-    medical_history: ''
-  };
-  photoPreview.value = '';
-  photoFile.value = null;
-};
+}
 
 const savePatient = async () => {
-  if (!form.value.pet_name || !form.value.species || !form.value.owner) {
-    alert('Please fill in all required fields (Pet Name, Species, Owner)')
-    return
-  }
-  
   try {
-    const formData = new FormData()
-    formData.append('pet_name', form.value.pet_name)
-    formData.append('species', form.value.species)
-    formData.append('breed', form.value.breed || '')
-    formData.append('gender', form.value.gender)
-    formData.append('owner', form.value.owner)
+    saving.value = true
     
-    if (form.value.date_of_birth) formData.append('date_of_birth', form.value.date_of_birth)
-    if (form.value.color) formData.append('color', form.value.color)
-    if (form.value.weight) formData.append('weight', form.value.weight)
-    if (form.value.medical_history) formData.append('medical_history', form.value.medical_history)
-    if (photoFile.value) formData.append('photo', photoFile.value)
-    
-    let response
-    if (editingPatient.value) {
-      response = await api.put(`/patients/${editingPatient.value}/`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
+    if (showEditModal.value) {
+      await api.updatePatient(formData.value.id, formData.value)
+      console.log('Patient updated successfully')
     } else {
-      response = await api.post('/patients/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
+      await api.createPatient(formData.value)
+      console.log('Patient created successfully')
     }
     
-    alert(editingPatient.value ? 'Pet updated successfully!' : 'Pet saved successfully!')
     closeModal()
-    await fetchData()
-  } catch (error) {
-    console.error('Error saving patient:', error)
-    alert('Failed to save pet: ' + (error.response?.data?.detail || error.message))
+    await fetchPatients()
+  } catch (err) {
+    console.error('Error saving patient:', err)
+    alert(err.response?.data?.detail || 'Failed to save patient')
+  } finally {
+    saving.value = false
   }
 }
 
 const editPatient = (patient) => {
-  editingPatient.value = patient.id;
-  form.value = {
-    owner: patient.owner,
-    pet_name: patient.pet_name,
-    species: patient.species,
-    breed: patient.breed,
-    gender: patient.gender,
-    date_of_birth: patient.date_of_birth || '',
-    color: patient.color || '',
-    weight: patient.weight || '',
-    medical_history: patient.medical_history || ''
-  };
-  
-  if (patient.photo) {
-    photoPreview.value = getPhotoUrl(patient);
-  }
-  showAddModal.value = true;
-};
+  formData.value = { ...patient }
+  showEditModal.value = true
+}
 
-const deletePatient = async (id) => {
-  if (!confirm('Are you sure you want to delete this pet?')) return;
-  
+const viewPatient = (patient) => {
+  router.push(`/patients/${patient.id}`)
+}
+
+const confirmDelete = (patient) => {
+  patientToDelete.value = patient
+  showDeleteModal.value = true
+}
+
+const deletePatient = async () => {
   try {
-    await api.delete(`/patients/${id}/`);
-    alert('Pet deleted successfully!');
-    fetchData();
-  } catch (error) {
-    console.error('Error deleting patient:', error);
-    alert('Failed to delete pet.');
+    deleting.value = true
+    await api.deletePatient(patientToDelete.value.id)
+    console.log('Patient deleted successfully')
+    showDeleteModal.value = false
+    await fetchPatients()
+  } catch (err) {
+    console.error('Error deleting patient:', err)
+    alert(err.response?.data?.detail || 'Failed to delete patient')
+  } finally {
+    deleting.value = false
   }
-};
+}
 
 const closeModal = () => {
-  showAddModal.value = false;
-  editingPatient.value = null;
-  photoPreview.value = '';
-  photoFile.value = null;
-  form.value = {
-    owner: '',
+  showAddModal.value = false
+  showEditModal.value = false
+  formData.value = {
     pet_name: '',
     species: '',
     breed: '',
+    age: '',
     gender: '',
-    date_of_birth: '',
     color: '',
-    weight: '',
-    medical_history: ''
-  };
-  closeCamera();
-  if (fileInput.value) fileInput.value.value = '';
-};
+    owner: '',
+    microchip_number: ''
+  }
+}
+
+const getPhotoUrl = (photo) => {
+  if (!photo) return ''
+  if (photo.startsWith('http')) return photo
+  return `https://dogger2-backend.onrender.com${photo}`
+}
+
+const getFirstChar = (str) => {
+  if (!str || typeof str !== 'string') return '?'
+  return str.charAt(0).toUpperCase()
+}
 
 onMounted(() => {
-  fetchData();
-});
-
-onBeforeUnmount(() => {
-  closeCamera();
-});
-
+  fetchPatients()
+  fetchOwners()
+})
 </script>
 
 <style scoped>
-.patients-wrapper {
-  padding: 24px;
+.patients-container {
   max-width: 1400px;
   margin: 0 auto;
+  padding: 20px;
 }
 
-/* Header Card */
-.header-card {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-
-.header-content {
+.patients-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 24px;
 }
 
-.header-title {
+.header-left {
   display: flex;
   align-items: center;
   gap: 16px;
 }
 
-.header-title svg {
-  color: #7C3AED;
+.header-icon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
 }
 
-.header-title h1 {
+.patients-header h1 {
   margin: 0;
   font-size: 28px;
-  font-weight: 700;
-  color: #1F2937;
+  color: #1a1a1a;
+}
+
+.subtitle {
+  margin: 4px 0 0 0;
+  color: #6b7280;
+  font-size: 14px;
 }
 
 .btn-add {
@@ -605,9 +447,9 @@ onBeforeUnmount(() => {
   border: none;
   padding: 12px 24px;
   border-radius: 12px;
+  cursor: pointer;
   font-size: 15px;
   font-weight: 600;
-  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -620,21 +462,19 @@ onBeforeUnmount(() => {
   box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
 }
 
-/* Search Card */
-.search-card {
+.search-bar {
   background: white;
-  border-radius: 16px;
-  padding: 16px 20px;
-  margin-bottom: 24px;
+  border-radius: 12px;
+  padding: 12px 20px;
   display: flex;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
-.search-icon {
-  color: #9CA3AF;
-  flex-shrink: 0;
+.search-bar svg {
+  color: #9ca3af;
 }
 
 .search-input {
@@ -642,61 +482,93 @@ onBeforeUnmount(() => {
   border: none;
   outline: none;
   font-size: 15px;
-  color: #1F2937;
+  color: #1a1a1a;
 }
 
 .search-input::placeholder {
-  color: #9CA3AF;
+  color: #9ca3af;
 }
 
-/* Loading State */
-.loading-state {
+.loading-state, .error-state, .empty-state {
   text-align: center;
   padding: 60px 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 .spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid #E5E7EB;
-  border-top-color: #7C3AED;
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #7C3AED;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: 0 auto 16px;
+  margin: 0 auto 20px;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* Patients Grid */
-.patients-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 24px;
+.error-icon, .empty-icon {
+  font-size: 60px;
+  margin-bottom: 20px;
 }
 
-.patient-card {
+.btn-retry {
+  margin-top: 20px;
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.table-container {
   background: white;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  transition: all 0.3s;
-  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
-.patient-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.15);
+.patients-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.patients-table thead {
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+}
+
+.patients-table th {
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.patients-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+  color: #374151;
+}
+
+.patients-table tbody tr:hover {
+  background: #f9fafb;
 }
 
 .patient-photo {
-  width: 100%;
-  height: 200px;
-  background: linear-gradient(135deg, #7C3AED, #06B6D4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
   overflow: hidden;
 }
 
@@ -706,171 +578,110 @@ onBeforeUnmount(() => {
   object-fit: cover;
 }
 
-.photo-placeholder {
-  color: white;
-}
-
-.patient-info {
-  padding: 20px;
-}
-
-.patient-info h3 {
-  margin: 0 0 12px 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: #1F2937;
-}
-
-.patient-details {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-
-.detail-badge {
-  background: #F3F4F6;
-  color: #4B5563;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.detail-badge.species {
+.no-photo {
+  width: 48px;
+  height: 48px;
   background: linear-gradient(135deg, #7C3AED, #5B21B6);
   color: white;
-}
-
-.owner-name {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #6B7280;
-  font-size: 14px;
-  margin: 0;
-}
-
-.owner-name svg {
-  color: #06B6D4;
-}
-
-/* ✅ Updated Patient Actions - 3 Buttons */
-.patient-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
-  padding: 12px 20px;
-  border-top: 1px solid #E5E7EB;
-}
-
-.btn-view, .btn-edit, .btn-delete {
-  background: #F3F4F6;
-  border: none;
-  padding: 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.btn-view {
-  color: #06B6D4;
-}
-
-.btn-view:hover {
-  background: #CFFAFE;
-}
-
-.btn-edit {
-  color: #7C3AED;
-}
-
-.btn-edit:hover {
-  background: #EDE9FE;
-}
-
-.btn-delete {  
-  color: #EF4444;
-}
-
-.btn-delete:hover {
-  background: #FEE2E2;
-}
-
-/* Empty State */
-.empty-state {
-  text-align: center;
-  padding: 80px 20px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-
-.empty-state svg {
-  color: #D1D5DB;
-  margin-bottom: 20px;
-}
-
-.empty-state h3 {
-  margin: 0 0 8px 0;
+  font-weight: 700;
   font-size: 20px;
-  color: #1F2937;
+  border-radius: 10px;
 }
 
-.empty-state p {
-  color: #6B7280;
-  margin: 0 0 24px 0;
-}
-
-.btn-empty-action {
-  background: linear-gradient(135deg, #7C3AED, #5B21B6);
-  color: white;
-  border: none;
-  padding: 12px 32px;
-  border-radius: 12px;
-  font-size: 15px;
+.patient-name strong {
+  color: #1a1a1a;
   font-weight: 600;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.3s;
 }
 
-.btn-empty-action:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+.btn-view {
+  background: #e0f2fe;
+  color: #0369a1;
 }
 
-/* Modal Overlay */
+.btn-view:hover {
+  background: #0ea5e9;
+  color: white;
+}
+
+.btn-edit {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.btn-edit:hover {
+  background: #f59e0b;
+  color: white;
+}
+
+.btn-delete {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-delete:hover {
+  background: #ef4444;
+  color: white;
+}
+
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 20px;
-  overflow-y: auto;
+  animation: fadeIn 0.3s;
 }
 
-.modal-container {
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
   background: white;
-  border-radius: 20px;
-  max-width: 800px;
-  width: 100%;
+  border-radius: 16px;
+  max-width: 700px;
+  width: 90%;
   max-height: 90vh;
-  display: flex;
-  flex-direction: column;
+  overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: modalSlideIn 0.3s ease-out;
+  animation: slideUp 0.3s;
 }
 
-@keyframes modalSlideIn {
+.modal-content.small {
+  max-width: 450px;
+}
+
+@keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -879,386 +690,167 @@ onBeforeUnmount(() => {
 }
 
 .modal-header {
-  background: linear-gradient(135deg, #7C3AED, #5B21B6);
-  color: white;
-  padding: 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-radius: 20px 20px 0 0;
+  padding: 24px;
+  border-bottom: 2px solid #f3f4f6;
 }
 
 .modal-header h2 {
   margin: 0;
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 20px;
+  color: #1a1a1a;
 }
 
 .btn-close {
-  background: rgba(255, 255, 255, 0.2);
+  background: none;
   border: none;
-  color: white;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  font-size: 24px;
+  color: #9ca3af;
   cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 8px;
   transition: all 0.3s;
 }
 
 .btn-close:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: #f3f4f6;
+  color: #1a1a1a;
 }
 
 .modal-body {
   padding: 24px;
-  overflow-y: auto;
-  flex: 1;
 }
 
-/* Photo Upload Section */
-.photo-upload-section {
-  margin-bottom: 24px;
-  padding: 24px;
-  border: 2px dashed #D1D5DB;
-  border-radius: 12px;
-  background: #F9FAFB;
-}
-
-.photo-preview {
-  text-align: center;
-  position: relative;
-}
-
-.photo-preview img {
-  width: 200px;
-  height: 200px;
-  border-radius: 12px;
-  object-fit: cover;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.btn-remove-photo {
-  position: absolute;
-  top: -8px;
-  right: calc(50% - 108px);
-  background: #EF4444;
-  color: white;
-  border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
-  transition: all 0.3s;
-}
-
-.btn-remove-photo:hover {
-  transform: scale(1.1);
-}
-
-.photo-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.btn-camera, .btn-file {
-  background: linear-gradient(135deg, #06B6D4, #0891B2);
-  color: white;
-  border: none;
-  padding: 14px 20px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.3s;
-}
-
-.btn-camera:hover, .btn-file:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.3);
-}
-
-.file-input {
-  display: none;
-}
-
-/* Form Grid */
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-}
-
-.form-group.full-width {
-  grid-column: 1 / -1;
+  gap: 8px;
 }
 
 .form-group label {
-  font-size: 14px;
   font-weight: 600;
+  font-size: 14px;
   color: #374151;
-  margin-bottom: 8px;
 }
 
-.form-group input,
-.form-group select,
-.form-group textarea {
-  padding: 12px 16px;
-  border: 2px solid #E5E7EB;
+.form-input {
+  padding: 12px;
+  border: 2px solid #e5e7eb;
   border-radius: 10px;
-  font-size: 15px;
-  color: #1F2937;
+  font-size: 14px;
   transition: all 0.3s;
-  font-family: inherit;
 }
 
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
+.form-input:focus {
   outline: none;
   border-color: #7C3AED;
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
 
-.form-group textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-/* Modal Actions */
-.modal-actions {
+.modal-footer {
   display: flex;
   gap: 12px;
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid #E5E7EB;
+  justify-content: flex-end;
+  padding: 24px;
+  border-top: 2px solid #f3f4f6;
 }
 
 .btn-cancel {
-  flex: 1;
-  background: #F3F4F6;
-  color: #4B5563;
+  background: #f3f4f6;
+  color: #374151;
   border: none;
-  padding: 14px 24px;
+  padding: 12px 24px;
   border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
   cursor: pointer;
+  font-weight: 600;
   transition: all 0.3s;
 }
 
 .btn-cancel:hover {
-  background: #E5E7EB;
+  background: #e5e7eb;
 }
 
 .btn-save {
-  flex: 2;
   background: linear-gradient(135deg, #7C3AED, #5B21B6);
   color: white;
   border: none;
-  padding: 14px 24px;
+  padding: 12px 24px;
   border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  font-weight: 600;
   transition: all 0.3s;
   box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
 }
 
-.btn-save:hover {
+.btn-save:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
 }
 
-/* Camera Modal */
-.camera-modal {
-  background: white;
-  border-radius: 20px;
-  max-width: 600px;
-  width: 100%;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+.btn-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.camera-header {
-  background: linear-gradient(135deg, #06B6D4, #0891B2);
-  color: white;
-  padding: 20px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.camera-header h3 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.camera-video {
-  width: 100%;
-  height: 400px;
-  object-fit: cover;
-  background: #000;
-}
-
-.camera-canvas {
-  display: none;
-}
-
-.camera-actions {
-  padding: 20px;
-  background: #F9FAFB;
-  display: flex;
-  justify-content: center;
-}
-
-.btn-capture {
-  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+.btn-delete-confirm {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;
   border: none;
-  padding: 14px 32px;
+  padding: 12px 24px;
   border-radius: 12px;
-  font-size: 16px;
+  cursor: pointer;
   font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
-}
-
-.btn-capture:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
-}
-
-.patient-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.btn-view-details {
-  flex: 1;
-  background: linear-gradient(135deg, #06B6D4, #0891B2);
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
-}
-
-.btn-view-details:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
-}
-
-.btn-edit {
-  background: linear-gradient(135deg, #F59E0B, #D97706);
-  color: white;
-  border: none;
-  padding: 10px 14px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-}
-
-.btn-edit:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
-}
-
-.btn-delete {
-  background: linear-gradient(135deg, #EF4444, #DC2626);
-  color: white;
-  border: none;
-  padding: 10px 14px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 16px;
   transition: all 0.3s;
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
-.btn-delete:hover {
+.btn-delete-confirm:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
 }
 
-.icon {
-  font-size: 18px;
+.warning-text {
+  color: #dc2626;
+  font-weight: 600;
+  margin-top: 8px;
 }
 
-/* Responsive Design */
+.btn-add-large {
+  margin-top: 24px;
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
 @media (max-width: 768px) {
-  .patients-wrapper {
-    padding: 16px;
-  }
-  
-  .patients-grid {
-    grid-template-columns: 1fr;
-  }
-  
   .form-grid {
     grid-template-columns: 1fr;
   }
   
-  .form-group {
-    grid-column: 1 / -1;
-  }
-  
-  .photo-buttons {
-    grid-template-columns: 1fr;
-  }
-  
-  .header-content {
+  .patients-header {
     flex-direction: column;
+    align-items: flex-start;
     gap: 16px;
-    align-items: stretch;
-  }
-  
-  .btn-add {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .patient-actions {
-    grid-template-columns: 1fr 1fr 1fr;
   }
 }
 </style>
- 
