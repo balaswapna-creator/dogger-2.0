@@ -20,8 +20,6 @@ ALLOWED_HOSTS = [
 ]
 
 # Database - Use DATABASE_URL from Render or fallback to SQLite
-import dj_database_url
-
 if os.environ.get('DATABASE_URL'):
     # Production: Use PostgreSQL from Render
     DATABASES = {
@@ -46,6 +44,20 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# REST Framework - DISABLE rate limiting temporarily for testing
+REST_FRAMEWORK = {
+    **REST_FRAMEWORK,  # Keep existing settings from base.py
+    'DEFAULT_THROTTLE_CLASSES': [],  # Disable all throttling
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': None,      # No limit
+        'user': None,      # No limit
+        'login': None,     # No limit
+    }
+}
+
+# Disable rate limiting middleware temporarily
+MIDDLEWARE = [item for item in MIDDLEWARE if 'RateLimitMiddleware' not in item]
 
 # Security Settings
 SECURE_SSL_REDIRECT = False  # Render handles SSL
@@ -113,3 +125,4 @@ LOGGING = {
 
 print(f"[PRODUCTION] ALLOWED_HOSTS = {ALLOWED_HOSTS}")
 print(f"[PRODUCTION] DEBUG = {DEBUG}")
+print(f"[PRODUCTION] Rate limiting: DISABLED")
