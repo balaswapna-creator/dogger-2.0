@@ -5,7 +5,7 @@ import axios from 'axios';
 import { TokenManager, UserManager, SecurityMonitor } from '@/utils/security';
 import router from '@/router';
 
-// API base URL - UPDATE THIS TO YOUR RENDER BACKEND URL
+// API base URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://dogger2-backend.onrender.com';
 
 // Create axios instance
@@ -206,68 +206,59 @@ function handleLogout(reason) {
 }
 
 /**
+ * Helper function to parse JWT token
+ */
+function parseJwt(token) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return {};
+  }
+}
+
+/**
  * API Methods
  */
 const api = {
   // Authentication
   async login(username, password) {
     try {
-      // Step 1: Get tokens from Django JWT endpoint
+      // Get tokens from Django JWT endpoint
       const response = await apiClient.post('/api/token/', { username, password });
       const { access, refresh } = response.data;
       
-      // Step 2: Store tokens immediately
+      // Store tokens immediately
       TokenManager.setTokens(access, refresh);
       
-      // Step 3: Fetch user profile - Only try endpoints that exist
-      let userProfile = null;
-      try {
-        // Try the endpoints that actually exist in your backend
-        try {
-          const profileResponse = await apiClient.get('/api/profile/');
-          userProfile = profileResponse.data;
-          console.log('✅ User profile fetched from /api/profile/');
-        } catch (profileErr) {
-          // If profile fails, try current-user
-          try {
-            const userResponse = await apiClient.get('/api/current-user/');
-            userProfile = userResponse.data;
-            console.log('✅ User profile fetched from /api/current-user/');
-          } catch (userErr) {
-            // Both failed, will use token data below
-            console.log('⚠️ Profile endpoints failed, using token data');
-          }
-        }
-        
-        // If no profile endpoint works, decode user from JWT token
-        if (!userProfile) {
-          console.log('ℹ️ No profile endpoint found, using token data');
-          const tokenData = parseJwt(access);
-          userProfile = {
-            id: tokenData.user_id,
-            username: username,
-            role: 'user', // Default role
-            is_staff: false
-          };
-        }
-        
-        // Store user data
-        UserManager.setUser(userProfile);
-        
-        console.log('✅ Login successful:', {
-          username: userProfile.username,
-          role: userProfile.role || 'user'
-        });
-        
-        SecurityMonitor.logSecurityEvent('login_success', { 
-          username,
-          role: userProfile.role || 'user'
-        });
-        
-      } catch (profileError) {
-        console.warn('⚠️ Could not fetch user profile, but login succeeded');
-        console.error(profileError);
-      }
+      // Create user profile from JWT token (don't call non-existent endpoints)
+      const tokenData = parseJwt(access);
+      const userProfile = {
+        id: tokenData.user_id,
+        username: username,
+        role: 'user',
+        is_staff: false
+      };
+      
+      // Store user data
+      UserManager.setUser(userProfile);
+      
+      console.log('✅ Login successful:', {
+        username: userProfile.username,
+        role: userProfile.role
+      });
+      
+      SecurityMonitor.logSecurityEvent('login_success', { 
+        username,
+        role: userProfile.role
+      });
       
       // Return response with user data
       return {
@@ -285,24 +276,9 @@ const api = {
   },
 
   async logout() {
-    try {
-      // Try to call logout endpoint if it exists
-      try {
-        await apiClient.post('/api/logout/');
-      } catch (e) {
-        // Logout endpoint might not exist, that's okay
-        console.log('ℹ️ No logout endpoint, clearing tokens locally');
-      }
-      
-      TokenManager.clearTokens();
-      UserManager.clearUser();
-      SecurityMonitor.logSecurityEvent('logout_success');
-      
-    } catch (error) {
-      // Even if API call fails, clear local tokens
-      TokenManager.clearTokens();
-      UserManager.clearUser();
-    }
+    TokenManager.clearTokens();
+    UserManager.clearUser();
+    SecurityMonitor.logSecurityEvent('logout_success');
   },
 
   async refreshToken() {
@@ -322,96 +298,71 @@ const api = {
   },
 
   async getUserProfile() {
-    // Only try endpoints that exist - no 404 spam
-    try {
-      const response = await apiClient.get('/api/profile/');
-      return response.data;
-    } catch (e) {
-      try {
-        const response = await apiClient.get('/api/current-user/');
-        return response.data;
-      } catch (e2) {
-        // Return cached user data if both fail
-        return UserManager.getUser();
-      }
-    }
+    // Return cached user data (don't call non-existent endpoints)
+    return UserManager.getUser();
   },
 
-  async updateProfile(data) {
-    // Your backend has /api/profile/update/
-    try {
-      const response = await apiClient.put('/api/profile/update/', data);
-      return response.data;
-    } catch (e) {
-      // Fallback to /api/profile/ with PATCH
-      const response = await apiClient.patch('/api/profile/', data);
-      return response.data;
-    }
-  },
-
-  async changePassword(oldPassword, newPassword) {
-    // Your backend has /api/profile/change-password/
-    const response = await apiClient.post('/api/profile/change-password/', {
-      old_password: oldPassword,
-      new_password: newPassword
-    });
-    return response.data;
-  },
-
-  // Health & Monitoring
-  async getHealth() {
-    try {
-      const response = await apiClient.get('/api/health/');
-      return response.data;
-    } catch (e) {
-      return { status: 'ok' }; // Fallback
-    }
-  },
-
-  async getMetrics() {
-    try {
-      const response = await apiClient.get('/api/metrics/');
-      return response.data;
-    } catch (e) {
-      return {}; // Fallback
-    }
-  },
-
-  // Dashboard - UPDATED to use correct endpoint
+  // Dashboard - Calculate stats from actual data
   async getDashboardStats() {
     try {
-      // Your backend has /api/dashboard/stats/ (not just /api/dashboard/)
-      const response = await apiClient.get('/api/dashboard/stats/');
-      return response.data;
-    } catch (e) {
-      console.warn('Dashboard stats endpoint failed, fetching from individual endpoints');
-      // Fallback: fetch data from individual endpoints
-      try {
-        const [patients, owners, records, vaccinations, payments] = await Promise.all([
-          this.getPatients().catch(() => []),
-          this.getOwners().catch(() => []),
-          this.getMedicalRecords().catch(() => []),
-          this.getVaccinations().catch(() => []),
-          this.getPayments().catch(() => [])
-        ]);
-        
-        return {
-          total_patients: patients.length || 0,
-          total_owners: owners.length || 0,
-          total_records: records.length || 0,
-          total_vaccinations: vaccinations.length || 0,
-          total_payments: payments.length || 0
-        };
-      } catch (fallbackError) {
-        console.error('Failed to fetch dashboard data:', fallbackError);
-        return {
-          total_patients: 0,
-          total_owners: 0,
-          total_records: 0,
-          total_vaccinations: 0,
-          total_payments: 0
-        };
-      }
+      // Fetch all data in parallel
+      const [patientsRes, ownersRes, recordsRes, vaccinationsRes, paymentsRes] = await Promise.all([
+        this.getPatients().catch(() => ({ results: [] })),
+        this.getOwners().catch(() => ({ results: [] })),
+        this.getMedicalRecords().catch(() => ({ results: [] })),
+        this.getVaccinations().catch(() => ({ results: [] })),
+        this.getPayments().catch(() => ({ results: [] }))
+      ]);
+      
+      // Extract arrays from results (handle both array and paginated responses)
+      const patients = Array.isArray(patientsRes) ? patientsRes : (patientsRes.results || []);
+      const owners = Array.isArray(ownersRes) ? ownersRes : (ownersRes.results || []);
+      const records = Array.isArray(recordsRes) ? recordsRes : (recordsRes.results || []);
+      const vaccinations = Array.isArray(vaccinationsRes) ? vaccinationsRes : (vaccinationsRes.results || []);
+      const payments = Array.isArray(paymentsRes) ? paymentsRes : (paymentsRes.results || []);
+      
+      // Calculate today's appointments
+      const today = new Date().toISOString().split('T')[0];
+      const todayAppointments = records.filter(r => {
+        const recordDate = r.visit_date || r.date || '';
+        return recordDate.startsWith(today);
+      }).length;
+      
+      // Calculate monthly revenue
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      const monthlyRevenue = payments
+        .filter(p => {
+          if (!p.payment_date && !p.date) return false;
+          const paymentDate = new Date(p.payment_date || p.date);
+          return paymentDate.getMonth() === currentMonth && 
+                 paymentDate.getFullYear() === currentYear &&
+                 p.payment_status === 'completed';
+        })
+        .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+      
+      return {
+        total_patients: patients.length,
+        total_owners: owners.length,
+        total_records: records.length,
+        total_vaccinations: vaccinations.length,
+        total_payments: payments.length,
+        today_appointments: todayAppointments,
+        monthly_revenue: monthlyRevenue.toFixed(2),
+        recent_patients: patients.slice(0, 5)
+      };
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      return {
+        total_patients: 0,
+        total_owners: 0,
+        total_records: 0,
+        total_vaccinations: 0,
+        total_payments: 0,
+        today_appointments: 0,
+        monthly_revenue: '0.00',
+        recent_patients: []
+      };
     }
   },
 
@@ -473,8 +424,23 @@ const api = {
     return response.data;
   },
 
+  async getMedicalRecord(id) {
+    const response = await apiClient.get(`/api/medical-records/${id}/`);
+    return response.data;
+  },
+
   async createMedicalRecord(data) {
     const response = await apiClient.post('/api/medical-records/', data);
+    return response.data;
+  },
+
+  async updateMedicalRecord(id, data) {
+    const response = await apiClient.put(`/api/medical-records/${id}/`, data);
+    return response.data;
+  },
+
+  async deleteMedicalRecord(id) {
+    const response = await apiClient.delete(`/api/medical-records/${id}/`);
     return response.data;
   },
 
@@ -484,8 +450,23 @@ const api = {
     return response.data;
   },
 
+  async getVaccination(id) {
+    const response = await apiClient.get(`/api/vaccinations/${id}/`);
+    return response.data;
+  },
+
   async createVaccination(data) {
     const response = await apiClient.post('/api/vaccinations/', data);
+    return response.data;
+  },
+
+  async updateVaccination(id, data) {
+    const response = await apiClient.put(`/api/vaccinations/${id}/`, data);
+    return response.data;
+  },
+
+  async deleteVaccination(id) {
+    const response = await apiClient.delete(`/api/vaccinations/${id}/`);
     return response.data;
   },
 
@@ -495,14 +476,34 @@ const api = {
     return response.data;
   },
 
+  async getPayment(id) {
+    const response = await apiClient.get(`/api/payments/${id}/`);
+    return response.data;
+  },
+
   async createPayment(data) {
     const response = await apiClient.post('/api/payments/', data);
+    return response.data;
+  },
+
+  async updatePayment(id, data) {
+    const response = await apiClient.put(`/api/payments/${id}/`, data);
+    return response.data;
+  },
+
+  async deletePayment(id) {
+    const response = await apiClient.delete(`/api/payments/${id}/`);
     return response.data;
   },
 
   // Passbooks
   async getPassbooks(params = {}) {
     const response = await apiClient.get('/api/passbooks/', { params });
+    return response.data;
+  },
+
+  async getPassbook(id) {
+    const response = await apiClient.get(`/api/passbooks/${id}/`);
     return response.data;
   },
 
@@ -524,25 +525,6 @@ const api = {
     return response.data;
   }
 };
-
-/**
- * Helper function to parse JWT token
- */
-function parseJwt(token) {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch (e) {
-    return {};
-  }
-}
 
 export default api;
 export { apiClient };
