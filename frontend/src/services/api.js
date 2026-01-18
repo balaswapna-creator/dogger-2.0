@@ -1,20 +1,19 @@
 import axios from 'axios'
-import { TokenManager, UserManager } from '../utils/security'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://dogger2-backend.onrender.com'
+const API_BASE_URL = 'https://dogger2-backend.onrender.com'
 
-// Create axios instance
+// Create axios instance with base configuration
 const axiosInstance = axios.create({
-  baseURL: `${API_BASE_URL}/api`,
+  baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
-  },
+    'Content-Type': 'application/json'
+  }
 })
 
-// Request interceptor to add auth token
+// Add request interceptor to attach token
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = TokenManager.getAccessToken()
+    const token = localStorage.getItem('token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -25,43 +24,33 @@ axiosInstance.interceptors.request.use(
   }
 )
 
-// Response interceptor to handle token refresh
+// Add response interceptor to handle token refresh
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config
 
-    // If error is 401 and we haven't tried to refresh yet
+    // If 401 and we haven't tried to refresh yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
 
       try {
-        const refreshToken = TokenManager.getRefreshToken()
-        
-        if (!refreshToken) {
-          // No refresh token, redirect to login
-          TokenManager.clearTokens()
-          UserManager.clearUser()
-          window.location.href = '/login'
-          return Promise.reject(error)
+        const refreshToken = localStorage.getItem('refreshToken')
+        if (refreshToken) {
+          const response = await axios.post(`${API_BASE_URL}/api/token/refresh/`, {
+            refresh: refreshToken
+          })
+
+          const { access } = response.data
+          localStorage.setItem('token', access)
+
+          // Retry original request with new token
+          originalRequest.headers.Authorization = `Bearer ${access}`
+          return axiosInstance(originalRequest)
         }
-
-        // Try to refresh the token
-        const response = await axios.post(
-          `${API_BASE_URL}/api/token/refresh/`,
-          { refresh: refreshToken }
-        )
-
-        const { access } = response.data
-        TokenManager.setAccessToken(access)
-
-        // Retry the original request with new token
-        originalRequest.headers.Authorization = `Bearer ${access}`
-        return axiosInstance(originalRequest)
       } catch (refreshError) {
-        // Refresh failed, clear everything and redirect to login
-        TokenManager.clearTokens()
-        UserManager.clearUser()
+        // Refresh failed, logout user
+        localStorage.clear()
         window.location.href = '/login'
         return Promise.reject(refreshError)
       }
@@ -71,281 +60,105 @@ axiosInstance.interceptors.response.use(
   }
 )
 
-// Helper function to decode JWT and extract user info
-const decodeJWT = (token) => {
-  try {
-    // JWT structure: header.payload.signature
-    const parts = token.split('.')
-    if (parts.length !== 3) {
-      console.error('Invalid JWT format')
-      return null
-    }
-
-    // Decode the payload (second part)
-    const payload = parts[1]
-    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    )
-
-    return JSON.parse(jsonPayload)
-  } catch (error) {
-    console.error('Error decoding JWT:', error)
-    return null
-  }
-}
-
 // API methods
 const api = {
-  // Authentication
-  async login(username, password) {
-    try {
-      console.log('API: Sending login request...')
+  // Auth methods
+  login: async (username, password) => {
+    const response = await axios.post(`${API_BASE_URL}/api/token/`, {
+      username,
+      password
+    })
+    
+    if (response.data.access && response.data.refresh) {
+      localStorage.setItem('token', response.data.access)
+      localStorage.setItem('refreshToken', response.data.refresh)
       
-      const response = await axiosInstance.post('/token/', {
-        username,
-        password,
-      })
-
-      console.log('API: Login response received:', response.data)
-
-      const { access, refresh } = response.data
-
-      if (!access || !refresh) {
-        throw new Error('Invalid response: missing tokens')
-      }
-
-      // Store tokens
-      TokenManager.setAccessToken(access)
-      TokenManager.setRefreshToken(refresh)
-
-      // Decode token to get user info
-      const payload = decodeJWT(access)
-      console.log('API: Decoded JWT payload:', payload)
-
-      if (payload) {
-        // Extract user info from JWT payload
-        const userInfo = {
+      // Decode JWT to get user info
+      try {
+        const payload = JSON.parse(atob(response.data.access.split('.')[1]))
+        const user = {
           id: payload.user_id,
           username: payload.username || username,
           email: payload.email || '',
-          // Add any other fields that exist in your JWT payload
+          role: payload.role || 'user'
         }
-
-        // Store user info
-        UserManager.setUser(userInfo)
-        console.log('API: User info stored:', userInfo)
-      } else {
-        console.warn('API: Could not decode JWT payload')
+        localStorage.setItem('user', JSON.stringify(user))
+      } catch (e) {
+        console.error('Error parsing JWT:', e)
       }
-
-      return response.data
-    } catch (error) {
-      console.error('API: Login error:', error)
-      throw error
     }
+    
+    return response.data
   },
 
-  logout() {
-    TokenManager.clearTokens()
-    UserManager.clearUser()
+  logout: () => {
+    localStorage.clear()
+    window.location.href = '/login'
   },
 
-  // Get current user info from stored data
-  getUserProfile() {
-    return UserManager.getUser()
+  getUserProfile: () => {
+    const userStr = localStorage.getItem('user')
+    return userStr ? JSON.parse(userStr) : null
   },
 
   // Dashboard
-  async getDashboardStats() {
-    const response = await axiosInstance.get('/dashboard/stats/')
-    return response.data
-  },
+  getDashboardStats: () => axiosInstance.get('/api/dashboard/stats/'),
 
   // Patients
-  async getPatients() {
-    const response = await axiosInstance.get('/patients/')
-    return response.data
-  },
-
-  async getPatient(id) {
-    const response = await axiosInstance.get(`/patients/${id}/`)
-    return response.data
-  },
-
-  async createPatient(data) {
-    const response = await axiosInstance.post('/patients/', data)
-    return response.data
-  },
-
-  async updatePatient(id, data) {
-    const response = await axiosInstance.put(`/patients/${id}/`, data)
-    return response.data
-  },
-
-  async deletePatient(id) {
-    const response = await axiosInstance.delete(`/patients/${id}/`)
-    return response.data
-  },
+  getPatients: () => axiosInstance.get('/api/patients/'),
+  getPatient: (id) => axiosInstance.get(`/api/patients/${id}/`),
+  createPatient: (data) => axiosInstance.post('/api/patients/', data),
+  updatePatient: (id, data) => axiosInstance.put(`/api/patients/${id}/`, data),
+  deletePatient: (id) => axiosInstance.delete(`/api/patients/${id}/`),
 
   // Owners
-  async getOwners() {
-    const response = await axiosInstance.get('/owners/')
-    return response.data
-  },
-
-  async getOwner(id) {
-    const response = await axiosInstance.get(`/owners/${id}/`)
-    return response.data
-  },
-
-  async createOwner(data) {
-    const response = await axiosInstance.post('/owners/', data)
-    return response.data
-  },
-
-  async updateOwner(id, data) {
-    const response = await axiosInstance.put(`/owners/${id}/`, data)
-    return response.data
-  },
-
-  async deleteOwner(id) {
-    const response = await axiosInstance.delete(`/owners/${id}/`)
-    return response.data
-  },
+  getOwners: () => axiosInstance.get('/api/owners/'),
+  getOwner: (id) => axiosInstance.get(`/api/owners/${id}/`),
+  createOwner: (data) => axiosInstance.post('/api/owners/', data),
+  updateOwner: (id, data) => axiosInstance.put(`/api/owners/${id}/`, data),
+  deleteOwner: (id) => axiosInstance.delete(`/api/owners/${id}/`),
 
   // Medical Records
-  async getMedicalRecords() {
-    const response = await axiosInstance.get('/medical-records/')
-    return response.data
-  },
-
-  async getMedicalRecord(id) {
-    const response = await axiosInstance.get(`/medical-records/${id}/`)
-    return response.data
-  },
-
-  async createMedicalRecord(data) {
-    const response = await axiosInstance.post('/medical-records/', data)
-    return response.data
-  },
-
-  async updateMedicalRecord(id, data) {
-    const response = await axiosInstance.put(`/medical-records/${id}/`, data)
-    return response.data
-  },
-
-  async deleteMedicalRecord(id) {
-    const response = await axiosInstance.delete(`/medical-records/${id}/`)
-    return response.data
-  },
+  getMedicalRecords: () => axiosInstance.get('/api/medical-records/'),
+  getMedicalRecord: (id) => axiosInstance.get(`/api/medical-records/${id}/`),
+  createMedicalRecord: (data) => axiosInstance.post('/api/medical-records/', data),
+  updateMedicalRecord: (id, data) => axiosInstance.put(`/api/medical-records/${id}/`, data),
+  deleteMedicalRecord: (id) => axiosInstance.delete(`/api/medical-records/${id}/`),
 
   // Vaccinations
-  async getVaccinations() {
-    const response = await axiosInstance.get('/vaccinations/')
-    return response.data
-  },
-
-  async getVaccination(id) {
-    const response = await axiosInstance.get(`/vaccinations/${id}/`)
-    return response.data
-  },
-
-  async createVaccination(data) {
-    const response = await axiosInstance.post('/vaccinations/', data)
-    return response.data
-  },
-
-  async updateVaccination(id, data) {
-    const response = await axiosInstance.put(`/vaccinations/${id}/`, data)
-    return response.data
-  },
-
-  async deleteVaccination(id) {
-    const response = await axiosInstance.delete(`/vaccinations/${id}/`)
-    return response.data
-  },
+  getVaccinations: () => axiosInstance.get('/api/vaccinations/'),
+  getVaccination: (id) => axiosInstance.get(`/api/vaccinations/${id}/`),
+  createVaccination: (data) => axiosInstance.post('/api/vaccinations/', data),
+  updateVaccination: (id, data) => axiosInstance.put(`/api/vaccinations/${id}/`, data),
+  deleteVaccination: (id) => axiosInstance.delete(`/api/vaccinations/${id}/`),
 
   // Payments
-  async getPayments() {
-    const response = await axiosInstance.get('/payments/')
-    return response.data
-  },
-
-  async getPayment(id) {
-    const response = await axiosInstance.get(`/payments/${id}/`)
-    return response.data
-  },
-
-  async createPayment(data) {
-    const response = await axiosInstance.post('/payments/', data)
-    return response.data
-  },
-
-  async updatePayment(id, data) {
-    const response = await axiosInstance.put(`/payments/${id}/`, data)
-    return response.data
-  },
-
-  async deletePayment(id) {
-    const response = await axiosInstance.delete(`/payments/${id}/`)
-    return response.data
-  },
+  getPayments: () => axiosInstance.get('/api/payments/'),
+  getPayment: (id) => axiosInstance.get(`/api/payments/${id}/`),
+  createPayment: (data) => axiosInstance.post('/api/payments/', data),
+  updatePayment: (id, data) => axiosInstance.put(`/api/payments/${id}/`, data),
+  deletePayment: (id) => axiosInstance.delete(`/api/payments/${id}/`),
 
   // Passbooks
-  async getPassbooks() {
-    const response = await axiosInstance.get('/passbooks/')
-    return response.data
-  },
-
-  async getPassbook(id) {
-    const response = await axiosInstance.get(`/passbooks/${id}/`)
-    return response.data
-  },
-
-  async createPassbook(data) {
-    const response = await axiosInstance.post('/passbooks/', data)
-    return response.data
-  },
-
-  async updatePassbook(id, data) {
-    const response = await axiosInstance.put(`/passbooks/${id}/`, data)
-    return response.data
-  },
-
-  async deletePassbook(id) {
-    const response = await axiosInstance.delete(`/passbooks/${id}/`)
-    return response.data
-  },
+  getPassbooks: () => axiosInstance.get('/api/passbooks/'),
+  getPassbook: (id) => axiosInstance.get(`/api/passbooks/${id}/`),
+  createPassbook: (data) => axiosInstance.post('/api/passbooks/', data),
+  updatePassbook: (id, data) => axiosInstance.put(`/api/passbooks/${id}/`, data),
+  deletePassbook: (id) => axiosInstance.delete(`/api/passbooks/${id}/`),
 
   // Prescriptions
-  async getPrescriptions() {
-    const response = await axiosInstance.get('/prescriptions/')
-    return response.data
-  },
+  getPrescriptions: () => axiosInstance.get('/api/prescriptions/'),
+  getPrescription: (id) => axiosInstance.get(`/api/prescriptions/${id}/`),
+  createPrescription: (data) => axiosInstance.post('/api/prescriptions/', data),
+  updatePrescription: (id, data) => axiosInstance.put(`/api/prescriptions/${id}/`, data),
+  deletePrescription: (id) => axiosInstance.delete(`/api/prescriptions/${id}/`),
 
-  async getPrescription(id) {
-    const response = await axiosInstance.get(`/prescriptions/${id}/`)
-    return response.data
-  },
-
-  async createPrescription(data) {
-    const response = await axiosInstance.post('/prescriptions/', data)
-    return response.data
-  },
-
-  async updatePrescription(id, data) {
-    const response = await axiosInstance.put(`/prescriptions/${id}/`, data)
-    return response.data
-  },
-
-  async deletePrescription(id) {
-    const response = await axiosInstance.delete(`/prescriptions/${id}/`)
-    return response.data
-  },
+  // Generic methods for direct axios usage
+  get: (url, config) => axiosInstance.get(url, config),
+  post: (url, data, config) => axiosInstance.post(url, data, config),
+  put: (url, data, config) => axiosInstance.put(url, data, config),
+  patch: (url, data, config) => axiosInstance.patch(url, data, config),
+  delete: (url, config) => axiosInstance.delete(url, config)
 }
 
 export default api
