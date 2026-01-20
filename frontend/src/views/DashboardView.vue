@@ -171,7 +171,7 @@
                   <td>{{ patient.owner_name || 'N/A' }}</td>
                   <td>{{ patient.owner_phone || 'N/A' }}</td>
                   <td>
-                    <button @click="navigateTo('/patients')" class="btn-view">View</button>
+                    <button @click="viewPatientDetail(patient.id)" class="btn-view">View</button>
                   </td>
                 </tr>
               </tbody>
@@ -286,6 +286,10 @@ const getFirstChar = (str) => {
 
 const navigateTo = (path) => {
   router.push(path)
+}
+
+const viewPatientDetail = (patientId) => {
+  router.push(`/patients/${patientId}`)
 }
 
 onMounted(() => {

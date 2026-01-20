@@ -35,6 +35,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/patients/:id',
+      name: 'patient-detail',
+      component: () => import('../views/PatientDetailView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/owners',
       name: 'owners',
       component: OwnersView,
@@ -69,6 +75,12 @@ const router = createRouter({
       name: 'passbooks',
       component: PassbooksView,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/passbook/public/:token',
+      name: 'passbook-public',
+      component: () => import('../views/PassbookPublicView.vue'),
+      meta: { requiresAuth: false }
     },
     {
       path: '/unauthorized',

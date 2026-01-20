@@ -11,8 +11,8 @@
             </svg>
           </div>
           <div class="brand-text">
-            <h1>Sri Adithya Pet Clinic</h1>
-            <p>Veterinary Management System</p>
+            <div class="brand-title">Sri Adithya Pet Clinic</div>
+            <div class="brand-subtitle">Veterinary Management System</div>
           </div>
         </div>
 
@@ -249,18 +249,24 @@ if (typeof window !== 'undefined') {
   backdrop-filter: blur(10px);
 }
 
-.brand-text h1 {
-  font-size: 18px;
-  font-weight: 700;
-  margin: 0;
-  line-height: 1.2;
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.brand-text p {
+.brand-title {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.brand-subtitle {
   font-size: 11px;
   opacity: 0.85;
-  margin: 2px 0 0 0;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .navbar-links {
