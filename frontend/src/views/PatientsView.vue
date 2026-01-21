@@ -427,7 +427,7 @@ const savePatient = async () => {
       date_of_birth: formData.value.date_of_birth,
       gender: formData.value.gender,
       color: formData.value.color || '',
-      owner: parseInt(formData.value.owner),
+      owner: formData.value.owner, // Send UUID as-is (string)
       microchip_id: formData.value.microchip_id || null,
       allergies: formData.value.allergies || '',
       chronic_conditions: formData.value.chronic_conditions || '',
