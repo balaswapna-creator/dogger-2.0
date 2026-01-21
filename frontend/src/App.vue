@@ -219,10 +219,11 @@ if (typeof window !== 'undefined') {
 .navbar-container {
   max-width: 1600px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 20px;
   display: flex;
   align-items: center;
-  gap: 32px;
+  justify-content: space-between;
+  gap: 24px;
   height: 70px;
 }
 
@@ -232,6 +233,7 @@ if (typeof window !== 'undefined') {
   gap: 12px;
   cursor: pointer;
   transition: opacity 0.3s;
+  flex-shrink: 0;
 }
 
 .navbar-brand:hover {
@@ -247,26 +249,32 @@ if (typeof window !== 'undefined') {
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(10px);
+  flex-shrink: 0;
 }
 
 .brand-text {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .brand-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   line-height: 1.2;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .brand-subtitle {
-  font-size: 11px;
+  font-size: 10px;
   opacity: 0.85;
   font-weight: 500;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .navbar-links {
@@ -274,6 +282,14 @@ if (typeof window !== 'undefined') {
   align-items: center;
   gap: 4px;
   flex: 1;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.navbar-links::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-link {
@@ -303,6 +319,7 @@ if (typeof window !== 'undefined') {
 
 .navbar-user {
   position: relative;
+  flex-shrink: 0;
 }
 
 .user-info {
@@ -413,6 +430,10 @@ main.with-navbar {
 
 /* Responsive Design */
 @media (max-width: 1200px) {
+  .navbar-container {
+    gap: 16px;
+  }
+  
   .navbar-links {
     gap: 2px;
   }
@@ -426,37 +447,53 @@ main.with-navbar {
     display: none;
   }
   
-  .brand-text {
+  .brand-subtitle {
     display: none;
   }
 }
 
 @media (max-width: 768px) {
   .navbar-container {
-    padding: 0 16px;
+    padding: 0 12px;
     height: 60px;
+    gap: 12px;
+  }
+  
+  .brand-title {
+    font-size: 14px;
+  }
+  
+  .logo {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .logo svg {
+    width: 20px;
+    height: 20px;
   }
   
   .navbar-links {
-    overflow-x: auto;
-    flex: 1;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-  
-  .navbar-links::-webkit-scrollbar {
-    display: none;
+    gap: 2px;
   }
   
   .nav-link {
     padding: 8px;
-    min-width: 44px;
+    min-width: 40px;
     justify-content: center;
   }
   
   .user-details {
     display: none;
+  }
+  
+  .user-info {
+    padding: 6px;
+  }
+  
+  .user-avatar {
+    width: 36px;
+    height: 36px;
   }
 }
 </style>

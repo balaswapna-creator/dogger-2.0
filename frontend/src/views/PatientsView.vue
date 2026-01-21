@@ -187,11 +187,11 @@
               <label>Species *</label>
               <select v-model="formData.species" required class="form-input">
                 <option value="">Select Species</option>
-                <option value="Dog">Dog</option>
-                <option value="Cat">Cat</option>
-                <option value="Bird">Bird</option>
-                <option value="Rabbit">Rabbit</option>
-                <option value="Other">Other</option>
+                <option value="dog">Dog</option>
+                <option value="cat">Cat</option>
+                <option value="bird">Bird</option>
+                <option value="rabbit">Rabbit</option>
+                <option value="other">Other</option>
               </select>
             </div>
 
@@ -208,7 +208,6 @@
                 required 
                 class="form-input"
                 :max="today"
-                @change="calculateAge"
               />
             </div>
 
@@ -227,8 +226,8 @@
               <label>Gender *</label>
               <select v-model="formData.gender" required class="form-input">
                 <option value="">Select Gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
               </select>
             </div>
 
@@ -248,18 +247,13 @@
             </div>
 
             <div class="form-group">
-              <label>Microchip Number</label>
-              <input v-model="formData.microchip_number" type="text" class="form-input" placeholder="Optional" />
+              <label>Microchip ID</label>
+              <input v-model="formData.microchip_id" type="text" class="form-input" placeholder="Optional" />
             </div>
 
             <div class="form-group">
-              <label>Registration Date</label>
-              <input 
-                v-model="formData.date_of_registration" 
-                type="date" 
-                class="form-input"
-                :max="today"
-              />
+              <label>Allergies</label>
+              <input v-model="formData.allergies" type="text" class="form-input" placeholder="e.g., Penicillin" />
             </div>
           </div>
 
@@ -314,22 +308,23 @@ const saving = ref(false)
 const deleting = ref(false)
 const patientToDelete = ref(null)
 
-const photoInput = ref(null)
-const photoPreview = ref(null)
-const photoFile = ref(null)
-
 const formData = ref({
   pet_name: '',
   species: '',
   breed: '',
   date_of_birth: '',
-  age: '',
   gender: '',
   color: '',
   owner: '',
-  microchip_number: '',
-  date_of_registration: new Date().toISOString().split('T')[0]
+  microchip_id: '',
+  allergies: '',
+  chronic_conditions: '',
+  current_medications: ''
 })
+
+const photoInput = ref(null)
+const photoPreview = ref(null)
+const photoFile = ref(null)
 
 const today = computed(() => new Date().toISOString().split('T')[0])
 
@@ -424,38 +419,22 @@ const savePatient = async () => {
   try {
     saving.value = true
     
-    // Calculate age from date of birth
-    if (formData.value.date_of_birth) {
-      const dob = new Date(formData.value.date_of_birth)
-      const today = new Date()
-      let age = today.getFullYear() - dob.getFullYear()
-      const monthDiff = today.getMonth() - dob.getMonth()
-      
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-        age--
-      }
-      
-      // Store age as decimal (years.months)
-      const months = today.getMonth() - dob.getMonth()
-      formData.value.age = age + (months / 12)
+    // Prepare data object matching Django model exactly
+    const submitData = {
+      pet_name: formData.value.pet_name,
+      species: formData.value.species,
+      breed: formData.value.breed || '',
+      date_of_birth: formData.value.date_of_birth,
+      gender: formData.value.gender,
+      color: formData.value.color || '',
+      owner: parseInt(formData.value.owner),
+      microchip_id: formData.value.microchip_id || null,
+      allergies: formData.value.allergies || '',
+      chronic_conditions: formData.value.chronic_conditions || '',
+      current_medications: formData.value.current_medications || ''
     }
     
-    // Create FormData for file upload
-    const submitData = new FormData()
-    
-    // Append all form fields
-    Object.keys(formData.value).forEach(key => {
-      if (formData.value[key] !== null && formData.value[key] !== '') {
-        submitData.append(key, formData.value[key])
-      }
-    })
-    
-    // Append photo if selected
-    if (photoFile.value) {
-      submitData.append('photo', photoFile.value)
-    }
-    
-    console.log('Saving patient with data:', Object.fromEntries(submitData))
+    console.log('Saving patient with data:', submitData)
     
     if (showEditModal.value) {
       await api.updatePatient(formData.value.id, submitData)
@@ -469,11 +448,28 @@ const savePatient = async () => {
     await fetchPatients()
   } catch (err) {
     console.error('Error saving patient:', err)
-    const errorMsg = err.response?.data?.detail 
-      || err.response?.data?.error
-      || Object.values(err.response?.data || {}).flat().join(', ')
-      || 'Failed to save patient'
-    alert('Error: ' + errorMsg)
+    console.error('Error response:', err.response?.data)
+    
+    let errorMsg = 'Failed to save patient'
+    
+    if (err.response?.data) {
+      const errors = err.response.data
+      if (typeof errors === 'object') {
+        // Format validation errors
+        errorMsg = Object.entries(errors)
+          .map(([field, messages]) => {
+            const msgArray = Array.isArray(messages) ? messages : [messages]
+            return `${field}: ${msgArray.join(', ')}`
+          })
+          .join('\n')
+      } else if (errors.detail) {
+        errorMsg = errors.detail
+      } else if (errors.error) {
+        errorMsg = errors.error
+      }
+    }
+    
+    alert('Error saving patient:\n\n' + errorMsg)
   } finally {
     saving.value = false
   }
@@ -558,12 +554,13 @@ const closeModal = () => {
     species: '',
     breed: '',
     date_of_birth: '',
-    age: '',
     gender: '',
     color: '',
     owner: '',
-    microchip_number: '',
-    date_of_registration: new Date().toISOString().split('T')[0]
+    microchip_id: '',
+    allergies: '',
+    chronic_conditions: '',
+    current_medications: ''
   }
   if (photoInput.value) {
     photoInput.value.value = ''
