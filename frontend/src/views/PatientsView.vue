@@ -129,10 +129,58 @@
         </div>
 
         <form @submit.prevent="savePatient" class="modal-body">
+          <!-- Photo Upload Section -->
+          <div class="photo-upload-section">
+            <label>Pet Photo</label>
+            <div class="photo-upload-area">
+              <div v-if="photoPreview" class="photo-preview">
+                <img :src="photoPreview" alt="Pet photo preview" />
+                <button type="button" @click="removePhoto" class="btn-remove-photo">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+              <div v-else class="photo-placeholder">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                <p>Click to upload or drag photo here</p>
+              </div>
+              <input
+                ref="photoInput"
+                type="file"
+                accept="image/*"
+                @change="handlePhotoSelect"
+                class="photo-input-hidden"
+              />
+            </div>
+            <div class="photo-buttons">
+              <button type="button" @click="triggerPhotoUpload" class="btn-upload">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Choose File
+              </button>
+              <button type="button" @click="capturePhoto" class="btn-camera">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+                Take Photo
+              </button>
+            </div>
+          </div>
+
           <div class="form-grid">
-            <div class="form-group">
+            <div class="form-group full-width">
               <label>Pet Name *</label>
-              <input v-model="formData.pet_name" type="text" required class="form-input" />
+              <input v-model="formData.pet_name" type="text" required class="form-input" placeholder="Enter pet name" />
             </div>
 
             <div class="form-group">
@@ -149,12 +197,30 @@
 
             <div class="form-group">
               <label>Breed</label>
-              <input v-model="formData.breed" type="text" class="form-input" />
+              <input v-model="formData.breed" type="text" class="form-input" placeholder="Enter breed" />
             </div>
 
             <div class="form-group">
-              <label>Age (years) *</label>
-              <input v-model.number="formData.age" type="number" min="0" step="0.1" required class="form-input" />
+              <label>Date of Birth *</label>
+              <input 
+                v-model="formData.date_of_birth" 
+                type="date" 
+                required 
+                class="form-input"
+                :max="today"
+                @change="calculateAge"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Age (calculated)</label>
+              <input 
+                :value="calculatedAge" 
+                type="text" 
+                readonly 
+                class="form-input readonly" 
+                placeholder="Auto-calculated from DOB"
+              />
             </div>
 
             <div class="form-group">
@@ -168,10 +234,10 @@
 
             <div class="form-group">
               <label>Color</label>
-              <input v-model="formData.color" type="text" class="form-input" />
+              <input v-model="formData.color" type="text" class="form-input" placeholder="e.g., Brown, White" />
             </div>
 
-            <div class="form-group">
+            <div class="form-group full-width">
               <label>Owner *</label>
               <select v-model="formData.owner" required class="form-input">
                 <option value="">Select Owner</option>
@@ -183,14 +249,24 @@
 
             <div class="form-group">
               <label>Microchip Number</label>
-              <input v-model="formData.microchip_number" type="text" class="form-input" />
+              <input v-model="formData.microchip_number" type="text" class="form-input" placeholder="Optional" />
+            </div>
+
+            <div class="form-group">
+              <label>Registration Date</label>
+              <input 
+                v-model="formData.date_of_registration" 
+                type="date" 
+                class="form-input"
+                :max="today"
+              />
             </div>
           </div>
 
           <div class="modal-footer">
             <button type="button" @click="closeModal" class="btn-cancel">Cancel</button>
             <button type="submit" :disabled="saving" class="btn-save">
-              {{ saving ? 'Saving...' : (showEditModal ? 'Update' : 'Add Patient') }}
+              {{ saving ? 'Saving...' : (showEditModal ? 'Update Patient' : 'Add Patient') }}
             </button>
           </div>
         </form>
@@ -238,15 +314,44 @@ const saving = ref(false)
 const deleting = ref(false)
 const patientToDelete = ref(null)
 
+const photoInput = ref(null)
+const photoPreview = ref(null)
+const photoFile = ref(null)
+
 const formData = ref({
   pet_name: '',
   species: '',
   breed: '',
+  date_of_birth: '',
   age: '',
   gender: '',
   color: '',
   owner: '',
-  microchip_number: ''
+  microchip_number: '',
+  date_of_registration: new Date().toISOString().split('T')[0]
+})
+
+const today = computed(() => new Date().toISOString().split('T')[0])
+
+const calculatedAge = computed(() => {
+  if (!formData.value.date_of_birth) return ''
+  
+  const dob = new Date(formData.value.date_of_birth)
+  const today = new Date()
+  
+  let years = today.getFullYear() - dob.getFullYear()
+  let months = today.getMonth() - dob.getMonth()
+  
+  if (months < 0) {
+    years--
+    months += 12
+  }
+  
+  if (years > 0) {
+    return `${years} year${years > 1 ? 's' : ''}${months > 0 ? ` ${months} month${months > 1 ? 's' : ''}` : ''}`
+  } else {
+    return `${months} month${months > 1 ? 's' : ''}`
+  }
 })
 
 const filteredPatients = computed(() => {
@@ -319,11 +424,44 @@ const savePatient = async () => {
   try {
     saving.value = true
     
+    // Calculate age from date of birth
+    if (formData.value.date_of_birth) {
+      const dob = new Date(formData.value.date_of_birth)
+      const today = new Date()
+      let age = today.getFullYear() - dob.getFullYear()
+      const monthDiff = today.getMonth() - dob.getMonth()
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--
+      }
+      
+      // Store age as decimal (years.months)
+      const months = today.getMonth() - dob.getMonth()
+      formData.value.age = age + (months / 12)
+    }
+    
+    // Create FormData for file upload
+    const submitData = new FormData()
+    
+    // Append all form fields
+    Object.keys(formData.value).forEach(key => {
+      if (formData.value[key] !== null && formData.value[key] !== '') {
+        submitData.append(key, formData.value[key])
+      }
+    })
+    
+    // Append photo if selected
+    if (photoFile.value) {
+      submitData.append('photo', photoFile.value)
+    }
+    
+    console.log('Saving patient with data:', Object.fromEntries(submitData))
+    
     if (showEditModal.value) {
-      await api.updatePatient(formData.value.id, formData.value)
+      await api.updatePatient(formData.value.id, submitData)
       console.log('Patient updated successfully')
     } else {
-      await api.createPatient(formData.value)
+      await api.createPatient(submitData)
       console.log('Patient created successfully')
     }
     
@@ -331,9 +469,53 @@ const savePatient = async () => {
     await fetchPatients()
   } catch (err) {
     console.error('Error saving patient:', err)
-    alert(err.response?.data?.detail || 'Failed to save patient')
+    const errorMsg = err.response?.data?.detail 
+      || err.response?.data?.error
+      || Object.values(err.response?.data || {}).flat().join(', ')
+      || 'Failed to save patient'
+    alert('Error: ' + errorMsg)
   } finally {
     saving.value = false
+  }
+}
+
+const calculateAge = () => {
+  // Age is auto-calculated via computed property
+  console.log('DOB changed:', formData.value.date_of_birth)
+}
+
+const triggerPhotoUpload = () => {
+  photoInput.value?.click()
+}
+
+const capturePhoto = () => {
+  // Trigger file input with camera
+  const input = photoInput.value
+  if (input) {
+    input.setAttribute('capture', 'camera')
+    input.click()
+  }
+}
+
+const handlePhotoSelect = (event) => {
+  const file = event.target.files?.[0]
+  if (file) {
+    photoFile.value = file
+    
+    // Create preview
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      photoPreview.value = e.target?.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+const removePhoto = () => {
+  photoFile.value = null
+  photoPreview.value = null
+  if (photoInput.value) {
+    photoInput.value.value = ''
   }
 }
 
@@ -369,15 +551,22 @@ const deletePatient = async () => {
 const closeModal = () => {
   showAddModal.value = false
   showEditModal.value = false
+  photoFile.value = null
+  photoPreview.value = null
   formData.value = {
     pet_name: '',
     species: '',
     breed: '',
+    date_of_birth: '',
     age: '',
     gender: '',
     color: '',
     owner: '',
-    microchip_number: ''
+    microchip_number: '',
+    date_of_registration: new Date().toISOString().split('T')[0]
+  }
+  if (photoInput.value) {
+    photoInput.value.value = ''
   }
 }
 
@@ -728,6 +917,123 @@ onMounted(() => {
   padding: 24px;
 }
 
+.photo-upload-section {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.photo-upload-section > label {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.photo-upload-area {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.photo-upload-area:hover {
+  border-color: #7C3AED;
+  background: #f9fafb;
+}
+
+.photo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+}
+
+.photo-placeholder svg {
+  margin-bottom: 12px;
+}
+
+.photo-placeholder p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.photo-preview {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.btn-remove-photo {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.btn-remove-photo:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+.photo-input-hidden {
+  display: none;
+}
+
+.photo-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.btn-upload,
+.btn-camera {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border: 2px solid #e5e7eb;
+  background: white;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  transition: all 0.3s;
+}
+
+.btn-upload:hover,
+.btn-camera:hover {
+  border-color: #7C3AED;
+  color: #7C3AED;
+  background: #f9fafb;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -739,6 +1045,10 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
 }
 
 .form-group label {
@@ -759,6 +1069,12 @@ onMounted(() => {
   outline: none;
   border-color: #7C3AED;
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.form-input.readonly {
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
 }
 
 .modal-footer {

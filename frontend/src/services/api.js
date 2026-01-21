@@ -140,8 +140,20 @@ const api = {
   // ===== PATIENTS =====
   getPatients: () => axiosInstance.get('/patients/'),
   getPatient: (id) => axiosInstance.get(`/patients/${id}/`),
-  createPatient: (data) => axiosInstance.post('/patients/', data),
-  updatePatient: (id, data) => axiosInstance.put(`/patients/${id}/`, data),
+  createPatient: (data) => {
+    // Handle both FormData and regular objects
+    const config = data instanceof FormData ? {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    } : {}
+    return axiosInstance.post('/patients/', data, config)
+  },
+  updatePatient: (id, data) => {
+    // Handle both FormData and regular objects
+    const config = data instanceof FormData ? {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    } : {}
+    return axiosInstance.put(`/patients/${id}/`, data, config)
+  },
   deletePatient: (id) => axiosInstance.delete(`/patients/${id}/`),
 
   // ===== OWNERS =====
