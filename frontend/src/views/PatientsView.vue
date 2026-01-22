@@ -258,10 +258,26 @@
           </div>
 
           <div class="modal-footer">
-            <button type="button" @click="closeModal" class="btn-cancel">Cancel</button>
-            <button type="submit" :disabled="saving" class="btn-save">
-              {{ saving ? 'Saving...' : (showEditModal ? 'Update Patient' : 'Add Patient') }}
-            </button>
+            <div class="footer-left">
+              <button 
+                v-if="showEditModal" 
+                type="button" 
+                @click="confirmDeleteFromModal" 
+                class="btn-delete-modal"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                Delete Patient
+              </button>
+            </div>
+            <div class="footer-right">
+              <button type="button" @click="closeModal" class="btn-cancel">Cancel</button>
+              <button type="submit" :disabled="saving" class="btn-save">
+                {{ saving ? 'Saving...' : (showEditModal ? 'Update Patient' : 'Add Patient') }}
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -532,7 +548,34 @@ const removePhoto = () => {
 
 const editPatient = (patient) => {
   formData.value = { ...patient }
+  
+  // Load photo preview if exists
+  if (patient.photo) {
+    photoPreview.value = getPhotoUrl(patient.photo)
+  }
+  
   showEditModal.value = true
+}
+
+const confirmDeleteFromModal = () => {
+  if (confirm(`Are you sure you want to delete ${formData.value.pet_name}?`)) {
+    deletePatientById(formData.value.id)
+  }
+}
+
+const deletePatientById = async (id) => {
+  try {
+    deleting.value = true
+    await api.deletePatient(id)
+    console.log('Patient deleted successfully')
+    closeModal()
+    await fetchPatients()
+  } catch (err) {
+    console.error('Error deleting patient:', err)
+    alert(err.response?.data?.detail || 'Failed to delete patient')
+  } finally {
+    deleting.value = false
+  }
 }
 
 const viewPatient = (patient) => {
@@ -1099,10 +1142,39 @@ onMounted(() => {
 
 .modal-footer {
   display: flex;
-  gap: 12px;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   padding: 24px;
   border-top: 2px solid #f3f4f6;
+}
+
+.footer-left {
+  flex: 1;
+}
+
+.footer-right {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-delete-modal {
+  background: transparent;
+  color: #ef4444;
+  border: 2px solid #ef4444;
+  padding: 12px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.btn-delete-modal:hover {
+  background: #ef4444;
+  color: white;
 }
 
 .btn-cancel {

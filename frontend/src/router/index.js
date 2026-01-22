@@ -77,6 +77,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/passbook/:id',
+      name: 'passbook-detail',
+      component: () => import('../views/PassbookDetailView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/passbook/public/:token',
       name: 'passbook-public',
       component: () => import('../views/PassbookPublicView.vue'),
