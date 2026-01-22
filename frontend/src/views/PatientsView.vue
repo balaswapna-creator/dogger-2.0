@@ -419,22 +419,38 @@ const savePatient = async () => {
   try {
     saving.value = true
     
-    // Prepare data object matching Django model exactly
-    const submitData = {
-      pet_name: formData.value.pet_name,
-      species: formData.value.species,
-      breed: formData.value.breed || '',
-      date_of_birth: formData.value.date_of_birth,
-      gender: formData.value.gender,
-      color: formData.value.color || '',
-      owner: formData.value.owner, // Send UUID as-is (string)
-      microchip_id: formData.value.microchip_id || null,
-      allergies: formData.value.allergies || '',
-      chronic_conditions: formData.value.chronic_conditions || '',
-      current_medications: formData.value.current_medications || ''
+    // Use FormData for file uploads
+    const submitData = new FormData()
+    
+    // Add all text fields
+    submitData.append('pet_name', formData.value.pet_name)
+    submitData.append('species', formData.value.species)
+    submitData.append('breed', formData.value.breed || '')
+    submitData.append('date_of_birth', formData.value.date_of_birth)
+    submitData.append('gender', formData.value.gender)
+    submitData.append('color', formData.value.color || '')
+    submitData.append('owner', formData.value.owner)
+    
+    if (formData.value.microchip_id) {
+      submitData.append('microchip_id', formData.value.microchip_id)
+    }
+    if (formData.value.allergies) {
+      submitData.append('allergies', formData.value.allergies)
+    }
+    if (formData.value.chronic_conditions) {
+      submitData.append('chronic_conditions', formData.value.chronic_conditions)
+    }
+    if (formData.value.current_medications) {
+      submitData.append('current_medications', formData.value.current_medications)
     }
     
-    console.log('Saving patient with data:', submitData)
+    // Add photo file if selected
+    if (photoFile.value) {
+      submitData.append('photo', photoFile.value)
+      console.log('Photo file added:', photoFile.value.name)
+    }
+    
+    console.log('Saving patient with FormData')
     
     if (showEditModal.value) {
       await api.updatePatient(formData.value.id, submitData)
@@ -455,7 +471,6 @@ const savePatient = async () => {
     if (err.response?.data) {
       const errors = err.response.data
       if (typeof errors === 'object') {
-        // Format validation errors
         errorMsg = Object.entries(errors)
           .map(([field, messages]) => {
             const msgArray = Array.isArray(messages) ? messages : [messages]
@@ -569,8 +584,16 @@ const closeModal = () => {
 
 const getPhotoUrl = (photo) => {
   if (!photo) return ''
-  if (photo.startsWith('http')) return photo
-  return `https://dogger2-backend.onrender.com${photo}`
+  // If photo is already a full URL, return it
+  if (photo.startsWith('http://') || photo.startsWith('https://')) {
+    return photo
+  }
+  // If photo is a relative path, prepend the backend URL
+  if (photo.startsWith('/')) {
+    return `https://dogger2-backend.onrender.com${photo}`
+  }
+  // Otherwise, assume it's a path without leading slash
+  return `https://dogger2-backend.onrender.com/${photo}`
 }
 
 const getFirstChar = (str) => {

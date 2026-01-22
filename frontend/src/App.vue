@@ -214,26 +214,31 @@ if (typeof window !== 'undefined') {
   position: sticky;
   top: 0;
   z-index: 100;
+  width: 100%;
 }
 
 .navbar-container {
   max-width: 1600px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 16px;
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 16px;
   height: 70px;
+  min-height: 70px;
 }
 
 .navbar-brand {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 12px;
   cursor: pointer;
   transition: opacity 0.3s;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .navbar-brand:hover {
@@ -243,6 +248,7 @@ if (typeof window !== 'undefined') {
 .logo {
   width: 44px;
   height: 44px;
+  min-width: 44px;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 12px;
   display: flex;
@@ -257,6 +263,7 @@ if (typeof window !== 'undefined') {
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  flex-shrink: 1;
 }
 
 .brand-title {
@@ -266,6 +273,7 @@ if (typeof window !== 'undefined') {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 250px;
 }
 
 .brand-subtitle {
@@ -275,10 +283,12 @@ if (typeof window !== 'undefined') {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 250px;
 }
 
 .navbar-links {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 4px;
   flex: 1;
@@ -286,6 +296,7 @@ if (typeof window !== 'undefined') {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  min-width: 0;
 }
 
 .navbar-links::-webkit-scrollbar {
@@ -324,6 +335,7 @@ if (typeof window !== 'undefined') {
 
 .user-info {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
@@ -331,6 +343,7 @@ if (typeof window !== 'undefined') {
   cursor: pointer;
   transition: all 0.3s;
   background: rgba(255, 255, 255, 0.1);
+  min-width: 0;
 }
 
 .user-info:hover {
@@ -340,6 +353,7 @@ if (typeof window !== 'undefined') {
 .user-avatar {
   width: 40px;
   height: 40px;
+  min-width: 40px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.2);
   display: flex;
@@ -348,12 +362,14 @@ if (typeof window !== 'undefined') {
   font-weight: 700;
   font-size: 16px;
   backdrop-filter: blur(10px);
+  flex-shrink: 0;
 }
 
 .user-details {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .user-name {
@@ -431,50 +447,55 @@ main.with-navbar {
 /* Responsive Design */
 @media (max-width: 1200px) {
   .navbar-container {
-    gap: 16px;
+    gap: 12px;
+    padding: 0 12px;
+  }
+  
+  .brand-title {
+    font-size: 14px;
+    max-width: 180px;
+  }
+  
+  .brand-subtitle {
+    display: none;
   }
   
   .navbar-links {
     gap: 2px;
-  }
-  
-  .nav-link {
-    padding: 10px 12px;
-    font-size: 13px;
   }
   
   .nav-link span {
     display: none;
   }
   
-  .brand-subtitle {
-    display: none;
+  .nav-link {
+    padding: 10px 12px;
+    font-size: 13px;
   }
 }
 
 @media (max-width: 768px) {
   .navbar-container {
-    padding: 0 12px;
+    padding: 0 8px;
     height: 60px;
-    gap: 12px;
+    min-height: 60px;
+    gap: 8px;
   }
   
   .brand-title {
-    font-size: 14px;
+    font-size: 13px;
+    max-width: 120px;
   }
   
   .logo {
     width: 36px;
     height: 36px;
+    min-width: 36px;
   }
   
   .logo svg {
     width: 20px;
     height: 20px;
-  }
-  
-  .navbar-links {
-    gap: 2px;
   }
   
   .nav-link {
@@ -494,6 +515,8 @@ main.with-navbar {
   .user-avatar {
     width: 36px;
     height: 36px;
+    min-width: 36px;
+    font-size: 14px;
   }
 }
 </style>
