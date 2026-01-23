@@ -342,7 +342,6 @@ class LabTest(models.Model):
 # ============================================================================
 # SHARED URLS
 # ============================================================================
-
 class SharedURL(models.Model):
     """Short-lived signed URLs for sharing"""
     SHARE_TYPE_CHOICES = [
@@ -373,31 +372,19 @@ class SharedURL(models.Model):
         ]
 
     def save(self, *args, **kwargs):
-    if not self.certificate_number:
-        try:
-            last_vax = Vaccination.objects.order_by('-created_at').first()
-            if last_vax and last_vax.certificate_number:
-                try:
-                    last_num = int(last_vax.certificate_number.replace('VAX', ''))
-                    self.certificate_number = f'VAX{str(last_num + 1).zfill(8)}'
-                except ValueError:
-                    # If parsing fails, count all vaccinations
-                    count = Vaccination.objects.count()
-                    self.certificate_number = f'VAX{str(count + 1).zfill(8)}'
-            else:
-                self.certificate_number = 'VAX00000001'
-        except Exception as e:
-            # Fallback: use timestamp-based number
-            import time
-            self.certificate_number = f'VAX{str(int(time.time()))[-8:]}'
-    
-    super().save(*args, **kwargs)
+        if not self.short_code:
+            self.short_code = uuid.uuid4().hex[:12]
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timedelta(minutes=30)
+        super().save(*args, **kwargs)
+
     @property
     def is_valid(self):
         return timezone.now() < self.expires_at
 
     def __str__(self):
         return f"{self.share_type} - {self.short_code}"
+
 
 
 # ============================================================================
