@@ -146,7 +146,7 @@ class VaccinationSerializer(serializers.ModelSerializer):
             'administered_by', 'notes', 'certificate_number',
             'created_at'
         ]
-        read_only_fields = ['certificate_number', 'created_at']
+        read_only_fields = ['id', 'certificate_number', 'created_at']  # ✅ Added 'id' here
     
     def get_patient_name(self, obj):
         return obj.patient.pet_name if obj.patient else None
