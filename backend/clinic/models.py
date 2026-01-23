@@ -253,7 +253,6 @@ class Prescription(models.Model):
 # ============================================================================
 # VACCINATIONS
 # ============================================================================
-
 class Vaccination(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='vaccinations')
@@ -294,6 +293,7 @@ class Vaccination(models.Model):
     
     def __str__(self):
         return f'{self.vaccine_name} - {self.patient.pet_name}'
+
 
 
 # ============================================================================
