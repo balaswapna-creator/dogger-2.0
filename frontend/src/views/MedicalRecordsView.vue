@@ -91,19 +91,36 @@
               </td>
               <td class="treatment-cell">{{ record.treatment_plan || '-' }}</td>
               <td>
-                <button @click="viewRecord(record.id)" class="btn-view">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                  View
-                </button>
+                <div class="action-buttons">
+                  <button @click="viewRecord(record.id)" class="btn-icon btn-view" title="View">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  </button>
+                  <button @click="editRecord(record)" class="btn-icon btn-edit" title="Edit">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                  </button>
+                  <button @click="deleteRecord(record.id)" class="btn-icon btn-delete" title="Delete">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                  </button>
+                </div>
               </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+            </svg>
+            View
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
 
    <!-- Styled Medical Record View Modal -->
 <div v-if="viewingRecord" class="modal-overlay" @click.self="closeViewModal">
@@ -771,12 +788,29 @@ export default {
     }
 
     const getOwnerName = (record) => {
-      if (!record) return 'Unknown'
-      if (record.owner_name) return record.owner_name
-      if (record.patient?.owner_name) return record.patient.owner_name
-      if (record.patient?.owner?.name) return record.patient.owner.name
-      return 'Unknown Owner'
+  if (!record) return 'Unknown'
+  
+  // Try different ways to get owner name
+  if (record.owner_name) return record.owner_name
+  
+  // Get patient first
+  const patientId = record.patient?.id || record.patient
+  if (patientId) {
+    const patient = patients.value.find(p => String(p.id) === String(patientId))
+    if (patient) {
+      // Now get owner from patient
+      const ownerId = patient.owner?.id || patient.owner
+      if (ownerId) {
+        const owner = owners.value.find(o => String(o.id) === String(ownerId))
+        if (owner) return owner.name
+      }
+      // If patient has owner_name directly
+      if (patient.owner_name) return patient.owner_name
     }
+  }
+  
+  return 'Unknown Owner'
+}
 
     const getPatientOwnerName = (ownerId) => {
       const owner = owners.value.find(o => o.id === ownerId)
@@ -974,6 +1008,25 @@ Additional Notes: ${form.value.notes || 'None'}
       viewingRecord.value = null
     }
 
+    const editRecord = (record) => {
+  // TODO: Implement edit functionality
+  alert('Edit functionality coming soon!\n\nFor now, you can:\n1. Delete this record\n2. Create a new one with updated information')
+}
+
+const deleteRecord = async (id) => {
+  if (!confirm('Are you sure you want to delete this medical record? This action cannot be undone.')) {
+    return
+  }
+  
+  try {
+    await api.delete(`/medical-records/${id}/`)
+    alert('✅ Medical record deleted successfully!')
+    await fetchRecords()
+  } catch (err) {
+    console.error('Error deleting record:', err)
+    alert('❌ Failed to delete record: ' + (err.response?.data?.detail || err.message))
+  }
+}
     const printRecord = () => {
       window.print();
     }
@@ -1008,6 +1061,8 @@ Additional Notes: ${form.value.notes || 'None'}
       closeViewModal,
       fetchRecords,
       printRecord  // ✅ ADDED THIS
+      editRecord,    // ✅ ADD THIS
+      deleteRecord   // ✅ ADD THIS
     }
   }
 }
@@ -1070,6 +1125,53 @@ Additional Notes: ${form.value.notes || 'None'}
 .btn-add:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.btn-icon.btn-view {
+  background: #E0F2FE;
+  color: #0369A1;
+}
+
+.btn-icon.btn-view:hover {
+  background: #0EA5E9;
+  color: white;
+}
+
+.btn-icon.btn-edit {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.btn-icon.btn-edit:hover {
+  background: #F59E0B;
+  color: white;
+}
+
+.btn-icon.btn-delete {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+.btn-icon.btn-delete:hover {
+  background: #EF4444;
+  color: white;
 }
 
 .loading-state {
