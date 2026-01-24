@@ -103,25 +103,49 @@ export default {
     const loading = ref(true)
     const error = ref(null)
 
-    const fetchPassbooks = async () => {
-      try {
-        loading.value = true
-        error.value = null
-        const response = await api.get('/passbooks/')
-        
-        const data = response.data || []
-        passbooks.value = Array.isArray(data) ? data : (data.results || [])
-        
-        console.log('Passbooks loaded:', passbooks.value)
-        
-      } catch (err) {
-        console.error('Error fetching passbooks:', err)
-        error.value = 'Failed to load passbooks. Please try again.'
-        passbooks.value = []
-      } finally {
-        loading.value = false
+   const fetchPassbooks = async () => {
+  try {
+    loading.value = true
+    error.value = null
+    
+    console.log('Fetching passbooks from API...')
+    const response = await api.get('/passbooks/')
+    console.log('Passbooks API response:', response)
+    console.log('Response data:', response.data)
+    
+    // Handle response data
+    let passbooksData = response.data
+    
+    // Check if it's paginated
+    if (passbooksData && typeof passbooksData === 'object') {
+      if (Array.isArray(passbooksData)) {
+        passbooks.value = passbooksData
+      } else if (passbooksData.results && Array.isArray(passbooksData.results)) {
+        passbooks.value = passbooksData.results
+      } else if (passbooksData.count !== undefined) {
+        // It's paginated but results might be in different key
+        passbooks.value = passbooksData.results || []
+      } else {
+        // Single object wrapped
+        passbooks.value = [passbooksData]
       }
+    } else {
+      passbooks.value = []
     }
+    
+    console.log('Parsed passbooks:', passbooks.value)
+    console.log('Total passbooks:', passbooks.value.length)
+    
+  } catch (err) {
+    console.error('Error fetching passbooks:', err)
+    console.error('Error response:', err.response)
+    console.error('Error data:', err.response?.data)
+    error.value = err.response?.data?.detail || err.message || 'Failed to load passbooks. Please try again.'
+    passbooks.value = []
+  } finally {
+    loading.value = false
+  }
+}
 
     const getPatientName = (passbook) => {
       if (!passbook) return 'Unknown'
