@@ -24,15 +24,21 @@ class UserSerializer(serializers.ModelSerializer):
 # ============================================================================
 # OWNER SERIALIZER
 # ============================================================================
-
 class OwnerSerializer(serializers.ModelSerializer):
+    patient_count = serializers.SerializerMethodField()
+    
     class Meta:
         model = Owner
         fields = [
             'id', 'name', 'phone', 'email', 'address', 
-            'city', 'whatsapp_number', 'created_at', 'updated_at', 'created_by'
+            'city', 'whatsapp_number', 'created_at', 'updated_at', 
+            'created_by', 'patient_count'
         ]
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'patient_count']
+    
+    def get_patient_count(self, obj):
+        """Count number of patients (pets) for this owner"""
+        return obj.patients.count()
 
 
 # ============================================================================
