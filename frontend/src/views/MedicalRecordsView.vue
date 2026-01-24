@@ -112,15 +112,11 @@
                   </button>
                 </div>
               </td>
-            </svg>
-            View
-          </button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-</div>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
    <!-- Styled Medical Record View Modal -->
 <div v-if="viewingRecord" class="modal-overlay" @click.self="closeViewModal">
