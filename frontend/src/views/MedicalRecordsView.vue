@@ -1056,7 +1056,7 @@ const deleteRecord = async (id) => {
       viewRecord,
       closeViewModal,
       fetchRecords,
-      printRecord  // ✅ ADDED THIS
+      printRecord,  // ✅ ADDED THIS
       editRecord,    // ✅ ADD THIS
       deleteRecord   // ✅ ADD THIS
     }
