@@ -340,16 +340,20 @@ class PassbookViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
 
-class PassbookPublicViewSet(viewsets.ViewSet):
+class PassbookPublicViewSet(viewsets.ReadOnlyModelViewSet):
     """Public passbook access (no authentication)"""
     permission_classes = [AllowAny]
+    queryset = PetPassbook.objects.select_related('patient__owner').all()
+    serializer_class = PassbookPublicSerializer
+    lookup_field = 'access_token'
     
-    def retrieve(self, request, token=None):
+    def retrieve(self, request, access_token=None):
         """Get passbook by access token"""
         try:
-            passbook = PetPassbook.objects.select_related('patient').get(access_token=token)
+            passbook = self.get_queryset().get(access_token=access_token)
             passbook.record_access()
-            serializer = PassbookPublicSerializer(passbook)
+            
+            serializer = self.get_serializer(passbook)
             
             return Response({
                 'success': True,
@@ -361,3 +365,8 @@ class PassbookPublicViewSet(viewsets.ViewSet):
                 'success': False,
                 'error': 'Invalid or expired passbook link'
             }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
