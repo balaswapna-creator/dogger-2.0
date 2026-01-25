@@ -1,0 +1,4 @@
+[PRODUCTION] ALLOWED_HOSTS = ['dogger2-backend.onrender.com', '.onrender.com', 'localhost', '127.0.0.1']
+[PRODUCTION] DEBUG = False
+[PRODUCTION] Rate limiting: DISABLED
+[

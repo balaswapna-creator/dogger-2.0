@@ -308,10 +308,17 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '../services/api'
+import axios from 'axios'
 
 const router = useRouter()
+const API_BASE_URL = 'https://dogger2-backend.onrender.com'
 
+const getAuthHeader = () => {
+  const token = localStorage.getItem('token')
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+// State
 const patients = ref([])
 const owners = ref([])
 const loading = ref(true)
@@ -319,39 +326,35 @@ const error = ref(null)
 const searchQuery = ref('')
 const showAddModal = ref(false)
 const showEditModal = ref(false)
-const showDeleteModal = ref(false)
 const saving = ref(false)
-const deleting = ref(false)
-const patientToDelete = ref(null)
 
 const formData = ref({
   pet_name: '',
   species: '',
   breed: '',
   date_of_birth: '',
-  gender: '',
+  gender: 'male',
   color: '',
   owner: '',
-  microchip_id: '',
   allergies: '',
-  chronic_conditions: '',
-  current_medications: ''
+  chronic_conditions: ''
 })
 
 const photoInput = ref(null)
 const photoPreview = ref(null)
 const photoFile = ref(null)
 
+// Computed
 const today = computed(() => new Date().toISOString().split('T')[0])
 
 const calculatedAge = computed(() => {
   if (!formData.value.date_of_birth) return ''
   
   const dob = new Date(formData.value.date_of_birth)
-  const today = new Date()
+  const now = new Date()
   
-  let years = today.getFullYear() - dob.getFullYear()
-  let months = today.getMonth() - dob.getMonth()
+  let years = now.getFullYear() - dob.getFullYear()
+  let months = now.getMonth() - dob.getMonth()
   
   if (months < 0) {
     years--
@@ -359,51 +362,64 @@ const calculatedAge = computed(() => {
   }
   
   if (years > 0) {
-    return `${years} year${years > 1 ? 's' : ''}${months > 0 ? ` ${months} month${months > 1 ? 's' : ''}` : ''}`
-  } else {
-    return `${months} month${months > 1 ? 's' : ''}`
+    return `${years} year${years > 1 ? 's' : ''}${months > 0 ? ` ${months} mo.` : ''}`
   }
+  return `${months} month${months > 1 ? 's' : ''}`
 })
 
 const filteredPatients = computed(() => {
   if (!searchQuery.value) return patients.value
-  
   const query = searchQuery.value.toLowerCase()
   return patients.value.filter(p => 
     p.pet_name?.toLowerCase().includes(query) ||
     p.species?.toLowerCase().includes(query) ||
     p.breed?.toLowerCase().includes(query) ||
-    p.owner_name?.toLowerCase().includes(query) ||
-    p.owner_phone?.includes(query)
+    p.owner_name?.toLowerCase().includes(query)
   )
 })
 
-const fetchPatients = async () => {
+// Methods
+const calculateAge = (dob) => {
+  if (!dob) return 'Unknown'
+  
   try {
-    loading.value = true
-    error.value = null
+    const birthDate = new Date(dob)
+    const now = new Date()
     
-    console.log('Fetching patients...')
-    const response = await api.getPatients()
-    console.log('Patients response:', response.data)
+    let years = now.getFullYear() - birthDate.getFullYear()
+    let months = now.getMonth() - birthDate.getMonth()
     
-    // Handle both array and paginated responses
-    if (Array.isArray(response.data)) {
-      patients.value = response.data
-    } else if (response.data.results) {
-      patients.value = response.data.results
-    } else {
-      patients.value = []
+    if (months < 0) {
+      years--
+      months += 12
     }
     
-    console.log(`Loaded ${patients.value.length} patients`)
+    if (years > 0) {
+      return `${years} yr${years > 1 ? 's' : ''}${months > 0 ? ` ${months} mo` : ''}`
+    }
+    return `${months} month${months > 1 ? 's' : ''}`
+  } catch (e) {
+    return 'Unknown'
+  }
+}
+
+const fetchPatients = async () => {
+  loading.value = true
+  error.value = null
+  
+  try {
+    const response = await axios.get(`${API_BASE_URL}/api/patients/`, {
+      headers: getAuthHeader()
+    })
+    patients.value = Array.isArray(response.data) ? response.data : (response.data.results || [])
+    console.log('Patients loaded:', patients.value.length)
   } catch (err) {
     console.error('Error fetching patients:', err)
-    error.value = err.response?.data?.detail || err.message || 'Failed to load patients'
+    error.value = 'Failed to load patients'
     
     if (err.response?.status === 401) {
       localStorage.clear()
-      router.push('/login')
+      window.location.href = '/login'
     }
   } finally {
     loading.value = false
@@ -412,124 +428,52 @@ const fetchPatients = async () => {
 
 const fetchOwners = async () => {
   try {
-    console.log('Fetching owners...')
-    const response = await api.getOwners()
-    console.log('Owners response:', response.data)
-    
-    // Handle both array and paginated responses
-    if (Array.isArray(response.data)) {
-      owners.value = response.data
-    } else if (response.data.results) {
-      owners.value = response.data.results
-    } else {
-      owners.value = []
-    }
-    
-    console.log(`Loaded ${owners.value.length} owners`)
+    const response = await axios.get(`${API_BASE_URL}/api/owners/`, {
+      headers: getAuthHeader()
+    })
+    owners.value = Array.isArray(response.data) ? response.data : (response.data.results || [])
   } catch (err) {
     console.error('Error fetching owners:', err)
   }
 }
 
-const savePatient = async () => {
-  try {
-    saving.value = true
-    
-    // Use FormData for file uploads
-    const submitData = new FormData()
-    
-    // Add all text fields
-    submitData.append('pet_name', formData.value.pet_name)
-    submitData.append('species', formData.value.species)
-    submitData.append('breed', formData.value.breed || '')
-    submitData.append('date_of_birth', formData.value.date_of_birth)
-    submitData.append('gender', formData.value.gender)
-    submitData.append('color', formData.value.color || '')
-    submitData.append('owner', formData.value.owner)
-    
-    if (formData.value.microchip_id) {
-      submitData.append('microchip_id', formData.value.microchip_id)
-    }
-    if (formData.value.allergies) {
-      submitData.append('allergies', formData.value.allergies)
-    }
-    if (formData.value.chronic_conditions) {
-      submitData.append('chronic_conditions', formData.value.chronic_conditions)
-    }
-    if (formData.value.current_medications) {
-      submitData.append('current_medications', formData.value.current_medications)
-    }
-    
-    // Add photo file if selected
-    if (photoFile.value) {
-      submitData.append('photo', photoFile.value)
-      console.log('Photo file added:', photoFile.value.name)
-    }
-    
-    console.log('Saving patient with FormData')
-    
-    if (showEditModal.value) {
-      await api.updatePatient(formData.value.id, submitData)
-      console.log('Patient updated successfully')
-    } else {
-      await api.createPatient(submitData)
-      console.log('Patient created successfully')
-    }
-    
-    closeModal()
-    await fetchPatients()
-  } catch (err) {
-    console.error('Error saving patient:', err)
-    console.error('Error response:', err.response?.data)
-    
-    let errorMsg = 'Failed to save patient'
-    
-    if (err.response?.data) {
-      const errors = err.response.data
-      if (typeof errors === 'object') {
-        errorMsg = Object.entries(errors)
-          .map(([field, messages]) => {
-            const msgArray = Array.isArray(messages) ? messages : [messages]
-            return `${field}: ${msgArray.join(', ')}`
-          })
-          .join('\n')
-      } else if (errors.detail) {
-        errorMsg = errors.detail
-      } else if (errors.error) {
-        errorMsg = errors.error
-      }
-    }
-    
-    alert('Error saving patient:\n\n' + errorMsg)
-  } finally {
-    saving.value = false
-  }
+const getOwnerName = (ownerId) => {
+  const owner = owners.value.find(o => o.id === ownerId)
+  return owner ? owner.name : 'Unknown'
 }
 
-const calculateAge = () => {
-  // Age is auto-calculated via computed property
-  console.log('DOB changed:', formData.value.date_of_birth)
+const getPhotoUrl = (photo) => {
+  if (!photo) return ''
+  if (photo.startsWith('http')) return photo
+  return `${API_BASE_URL}${photo}`
+}
+
+const getFirstChar = (str) => {
+  if (!str) return '?'
+  return str.charAt(0).toUpperCase()
+}
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A'
+  try {
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  } catch (e) {
+    return 'N/A'
+  }
 }
 
 const triggerPhotoUpload = () => {
   photoInput.value?.click()
 }
 
-const capturePhoto = () => {
-  // Trigger file input with camera
-  const input = photoInput.value
-  if (input) {
-    input.setAttribute('capture', 'camera')
-    input.click()
-  }
-}
-
 const handlePhotoSelect = (event) => {
   const file = event.target.files?.[0]
   if (file) {
     photoFile.value = file
-    
-    // Create preview
     const reader = new FileReader()
     reader.onload = (e) => {
       photoPreview.value = e.target?.result
@@ -541,65 +485,7 @@ const handlePhotoSelect = (event) => {
 const removePhoto = () => {
   photoFile.value = null
   photoPreview.value = null
-  if (photoInput.value) {
-    photoInput.value.value = ''
-  }
-}
-
-const editPatient = (patient) => {
-  formData.value = { ...patient }
-  
-  // Load photo preview if exists
-  if (patient.photo) {
-    photoPreview.value = getPhotoUrl(patient.photo)
-  }
-  
-  showEditModal.value = true
-}
-
-const confirmDeleteFromModal = () => {
-  if (confirm(`Are you sure you want to delete ${formData.value.pet_name}?`)) {
-    deletePatientById(formData.value.id)
-  }
-}
-
-const deletePatientById = async (id) => {
-  try {
-    deleting.value = true
-    await api.deletePatient(id)
-    console.log('Patient deleted successfully')
-    closeModal()
-    await fetchPatients()
-  } catch (err) {
-    console.error('Error deleting patient:', err)
-    alert(err.response?.data?.detail || 'Failed to delete patient')
-  } finally {
-    deleting.value = false
-  }
-}
-
-const viewPatient = (patient) => {
-  router.push(`/patients/${patient.id}`)
-}
-
-const confirmDelete = (patient) => {
-  patientToDelete.value = patient
-  showDeleteModal.value = true
-}
-
-const deletePatient = async () => {
-  try {
-    deleting.value = true
-    await api.deletePatient(patientToDelete.value.id)
-    console.log('Patient deleted successfully')
-    showDeleteModal.value = false
-    await fetchPatients()
-  } catch (err) {
-    console.error('Error deleting patient:', err)
-    alert(err.response?.data?.detail || 'Failed to delete patient')
-  } finally {
-    deleting.value = false
-  }
+  if (photoInput.value) photoInput.value.value = ''
 }
 
 const closeModal = () => {
@@ -612,36 +498,81 @@ const closeModal = () => {
     species: '',
     breed: '',
     date_of_birth: '',
-    gender: '',
+    gender: 'male',
     color: '',
     owner: '',
-    microchip_id: '',
     allergies: '',
-    chronic_conditions: '',
-    current_medications: ''
-  }
-  if (photoInput.value) {
-    photoInput.value.value = ''
+    chronic_conditions: ''
   }
 }
 
-const getPhotoUrl = (photo) => {
-  if (!photo) return ''
-  // If photo is already a full URL, return it
-  if (photo.startsWith('http://') || photo.startsWith('https://')) {
-    return photo
+const editPatient = (patient) => {
+  formData.value = { ...patient }
+  if (patient.photo) {
+    photoPreview.value = getPhotoUrl(patient.photo)
   }
-  // If photo is a relative path, prepend the backend URL
-  if (photo.startsWith('/')) {
-    return `https://dogger2-backend.onrender.com${photo}`
-  }
-  // Otherwise, assume it's a path without leading slash
-  return `https://dogger2-backend.onrender.com/${photo}`
+  showEditModal.value = true
 }
 
-const getFirstChar = (str) => {
-  if (!str || typeof str !== 'string') return '?'
-  return str.charAt(0).toUpperCase()
+const savePatient = async () => {
+  saving.value = true
+  
+  try {
+    const submitData = new FormData()
+    submitData.append('pet_name', formData.value.pet_name)
+    submitData.append('species', formData.value.species)
+    submitData.append('breed', formData.value.breed || '')
+    submitData.append('date_of_birth', formData.value.date_of_birth)
+    submitData.append('gender', formData.value.gender)
+    submitData.append('color', formData.value.color || '')
+    submitData.append('owner', formData.value.owner)
+    submitData.append('allergies', formData.value.allergies || '')
+    submitData.append('chronic_conditions', formData.value.chronic_conditions || '')
+    
+    if (photoFile.value) {
+      submitData.append('photo', photoFile.value)
+    }
+    
+    if (showEditModal.value) {
+      await axios.put(
+        `${API_BASE_URL}/api/patients/${formData.value.id}/`,
+        submitData,
+        { headers: { ...getAuthHeader(), 'Content-Type': 'multipart/form-data' } }
+      )
+    } else {
+      await axios.post(
+        `${API_BASE_URL}/api/patients/`,
+        submitData,
+        { headers: { ...getAuthHeader(), 'Content-Type': 'multipart/form-data' } }
+      )
+    }
+    
+    closeModal()
+    await fetchPatients()
+  } catch (err) {
+    console.error('Error saving patient:', err)
+    alert(err.response?.data?.detail || 'Failed to save patient')
+  } finally {
+    saving.value = false
+  }
+}
+
+const deletePatient = async (id) => {
+  if (!confirm('Are you sure you want to delete this patient?')) return
+  
+  try {
+    await axios.delete(`${API_BASE_URL}/api/patients/${id}/`, {
+      headers: getAuthHeader()
+    })
+    await fetchPatients()
+  } catch (err) {
+    console.error('Error deleting patient:', err)
+    alert('Failed to delete patient')
+  }
+}
+
+const viewPatient = (patient) => {
+  router.push(`/patients/${patient.id}`)
 }
 
 onMounted(() => {
@@ -649,6 +580,7 @@ onMounted(() => {
   fetchOwners()
 })
 </script>
+
 
 <style scoped>
 .patients-container {
