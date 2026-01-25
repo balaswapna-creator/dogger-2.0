@@ -1,87 +1,78 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Environment Switcher for Dogger 2.0
-Quickly switch between development, staging, and production environments
+Switches between development and production .env files
 """
-
-import shutil
+import os
 import sys
+import shutil
 from pathlib import Path
 
-
-def switch_environment(env):
-    """Switch to specified environment"""
-    env_files = {
-        'dev': '.env.development',
-        'development': '.env.development',
-        'staging': '.env.staging',
-        'prod': '.env.production',
-        'production': '.env.production',
-    }
+def switch_environment(env_name):
+    """
+    Switch between development and production environments
+    Args:
+        env_name: 'development' or 'production'
+    """
+    # Get the backend directory
+    backend_dir = Path(__file__).parent
     
-    if env.lower() not in env_files:
-        print(f"❌ Invalid environment: {env}")
-        print(f"Valid options: {', '.join(set(env_files.keys()))}")
+    # Define file paths
+    current_env = backend_dir / '.env'
+    backup_env = backend_dir / '.env.backup'
+    target_env = backend_dir / f'.env.{env_name}'
+    
+    # Check if target environment file exists
+    if not target_env.exists():
+        print(f"❌ Error: {target_env} does not exist!")
+        print(f"📁 Please create .env.{env_name} file first")
         sys.exit(1)
     
-    source_file = Path(env_files[env.lower()])
-    target_file = Path('.env')
-    
-    if not source_file.exists():
-        print(f"❌ Environment file not found: {source_file}")
-        print(f"Please create {source_file} first")
-        sys.exit(1)
-    
-    # Backup current .env
-    if target_file.exists():
-        backup_file = Path('.env.backup')
-        shutil.copy(target_file, backup_file)
+    # Backup current .env if it exists
+    if current_env.exists():
+        shutil.copy(current_env, backup_env)
         print(f"📦 Backed up current .env to .env.backup")
     
-    # Copy environment file
-    shutil.copy(source_file, target_file)
-    print(f"✅ Switched to {env.upper()} environment")
-    print(f"📄 Copied {source_file} → .env")
-    print()
+    # Copy target environment file to .env
+    shutil.copy(target_env, current_env)
+    print(f"✅ Switched to {env_name.upper()} environment")
+    print(f"📄 Copied .env.{env_name} → .env")
     
-    # Show current environment
-    print("🔍 Current Environment Settings:")
-    with open(target_file, 'r') as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith('#'):
-                # Mask sensitive values
-                if any(key in line.upper() for key in ['PASSWORD', 'SECRET', 'KEY', 'TOKEN']):
-                    key = line.split('=')[0]
-                    print(f"  {key}=***REDACTED***")
-                else:
-                    print(f"  {line}")
-    print()
-    print("⚠️  Remember to restart your Django server!")
-
+    # Display current settings
+    print("\n🔍 Current Environment Settings:")
+    try:
+        # FIXED: Add encoding='utf-8' to handle Unicode characters
+        with open(current_env, 'r', encoding='utf-8', errors='ignore') as f:
+            for line in f:
+                line = line.strip()
+                # Only show non-empty lines and non-comments
+                if line and not line.startswith('#'):
+                    # Hide sensitive values (show only key names)
+                    if '=' in line:
+                        key = line.split('=')[0]
+                        print(f"  ✓ {key}")
+    except Exception as e:
+        print(f"⚠️  Could not read .env file: {e}")
+    
+    print(f"\n🎯 Now using {env_name.upper()} configuration")
+    print(f"💡 Restart your Django server for changes to take effect")
 
 def main():
-    if len(sys.argv) < 2:
-        print("=" * 70)
-        print("🔄 DOGGER 2.0 - ENVIRONMENT SWITCHER")
-        print("=" * 70)
-        print()
-        print("Usage: python switch_env.py <environment>")
-        print()
-        print("Available environments:")
-        print("  • dev / development  - Local development")
-        print("  • staging           - Staging server")
-        print("  • prod / production - Production server")
-        print()
-        print("Example:")
-        print("  python switch_env.py dev")
+    """Main entry point"""
+    if len(sys.argv) != 2:
+        print("Usage: python switch_env.py [development|production]")
+        print("\nExample:")
+        print("  python switch_env.py development")
         print("  python switch_env.py production")
-        print()
         sys.exit(1)
     
-    env = sys.argv[1]
+    env = sys.argv[1].lower()
+    
+    if env not in ['development', 'production']:
+        print("❌ Error: Environment must be 'development' or 'production'")
+        sys.exit(1)
+    
     switch_environment(env)
-
 
 if __name__ == '__main__':
     main()

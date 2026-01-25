@@ -1,6 +1,5 @@
-"""
 Clinic App Serializers - Complete and Fixed
-✅ FIXED VERSION - Added missing PassbookSerializer
+âœ… FIXED VERSION
 """
 from rest_framework import serializers
 from .models import (
@@ -72,13 +71,12 @@ class PatientSerializer(serializers.ModelSerializer):
     def get_last_visit(self, obj):
         """Calculate last visit from medical records"""
         try:
-            latest_record = obj.medical_records.order_by('-visit_date').first()
+            latest_record = obj.medicalrecord_set.order_by('-visit_date').first()
             if latest_record:
                 return latest_record.visit_date.isoformat()
             return obj.created_at.isoformat() if obj.created_at else None
         except Exception:
             return None
-
 
 # ============================================================================
 # MEDICAL RECORD SERIALIZER
@@ -153,7 +151,7 @@ class VaccinationSerializer(serializers.ModelSerializer):
             'administered_by', 'notes', 'certificate_number',
             'created_at'
         ]
-        read_only_fields = ['id', 'certificate_number', 'created_at']
+        read_only_fields = ['id', 'certificate_number', 'created_at']  # âœ… Added 'id' here
     
     def get_patient_name(self, obj):
         return obj.patient.pet_name if obj.patient else None
@@ -285,42 +283,27 @@ class AuditLogSerializer(serializers.ModelSerializer):
 # ============================================================================
 # PASSBOOK SERIALIZERS
 # ============================================================================
-
 class PassbookSerializer(serializers.ModelSerializer):
-    """Admin/Internal Passbook Serializer - Full CRUD access"""
     patient_name = serializers.CharField(source='patient.pet_name', read_only=True)
-    owner_name = serializers.CharField(source='patient.owner.name', read_only=True)
+    is_active = serializers.BooleanField(read_only=True)
+    days_remaining = serializers.IntegerField(read_only=True)
+    qr_url = serializers.SerializerMethodField()
     
     class Meta:
         model = PetPassbook
         fields = [
-            'id',
-            'patient',
-            'patient_name',
-            'owner_name',
-            'access_token',
-            'is_enabled',
-            'subscription_start',
-            'subscription_end',
-            'subscription_type',
-            'is_active',
-            'days_remaining',
-            'created_at',
-            'updated_at',
-            'last_accessed',
-            'access_count'
+            'id', 'patient', 'patient_name', 'access_token', 
+            'is_enabled', 'is_active', 'subscription_start', 
+            'subscription_end', 'subscription_type', 'days_remaining',
+            'qr_url', 'access_count', 'last_accessed'
         ]
-        read_only_fields = [
-            'id',
-            'access_token',
-            'created_at',
-            'updated_at',
-            'is_active',
-            'days_remaining',
-            'last_accessed',
-            'access_count'
-        ]
-
+        read_only_fields = ['id', 'access_token', 'access_count', 'last_accessed']
+    
+    def get_qr_url(self, obj):
+        request = self.context.get('request')
+        if request:
+            return f"{request.scheme}://{request.get_host()}/passbook/{obj.access_token}"
+        return f"/passbook/{obj.access_token}"
 
 class PassbookPublicSerializer(serializers.Serializer):
     """Public passbook data (read-only, subscription-validated)"""
@@ -422,3 +405,5 @@ class PassbookPublicSerializer(serializers.Serializer):
         except Exception as e:
             print(f"Error fetching consultations: {e}")
             return []
+
+
