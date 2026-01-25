@@ -286,7 +286,7 @@ class AuditLogSerializer(serializers.ModelSerializer):
 # ============================================================================
 class PassbookSerializer(serializers.ModelSerializer):
     patient = PatientSerializer(read_only=True)
-    patient_id = serializers.UUIDField(write_only=True)
+    patient_id = serializers.UUIDField(write_only=True, required=True)
     
     class Meta:
         model = PetPassbook
@@ -300,7 +300,18 @@ class PassbookSerializer(serializers.ModelSerializer):
             'is_active'
         ]
         read_only_fields = ['id', 'created_date', 'qr_code', 'access_token']
-
+    
+    def create(self, validated_data):
+        patient_id = validated_data.get('patient_id')
+        
+        # Check if passbook already exists for this patient
+        existing_passbook = PetPassbook.objects.filter(patient_id=patient_id).first()
+        if existing_passbook:
+            return existing_passbook
+        
+        # Create new passbook
+        passbook = PetPassbook.objects.create(patient_id=patient_id)
+        return passbook
 class PassbookPublicSerializer(serializers.Serializer):
     """Public passbook data (read-only, subscription-validated)"""
     

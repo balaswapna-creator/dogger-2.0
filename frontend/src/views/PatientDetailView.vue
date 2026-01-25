@@ -40,7 +40,33 @@
               <div class="no-photo">📷</div>
             </div>
           </div>
-          
+           
+             <!-- In the patient info section, update these fields: -->
+  
+  <!-- Age -->
+  <div>
+    <span class="text-gray-600">Age:</span>
+    <span class="ml-2 font-medium">{{ calculateAge(patient.date_of_birth) }}</span>
+  </div>
+  
+  <!-- Registration Date -->
+  <div>
+    <span class="text-gray-600">Registration Date:</span>
+    <span class="ml-2 font-medium">{{ formatDate(patient.created_at) }}</span>
+  </div>
+  
+  <!-- Latest Vaccination -->
+  <div>
+    <span class="text-gray-600">Latest Vaccination:</span>
+    <span class="ml-2 font-medium">{{ getLatestVaccination() }}</span>
+  </div>
+  
+  <!-- Total Payments -->
+  <div>
+    <span class="text-gray-600">Total Payments:</span>
+    <span class="ml-2 font-medium text-green-600">{{ getTotalPayments() }}</span>
+  </div>
+
           <div class="info-details">
             <div class="detail-row">
               <span class="label">Species:</span>
@@ -269,15 +295,63 @@ export default {
       return `https://dogger2-backend.onrender.com${photo}`
     }
 
-    const formatDate = (dateString) => {
-      if (!dateString) return 'N/A'
-      const date = new Date(dateString)
-      return date.toLocaleDateString('en-IN', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-      })
-    }
+    const calculateAge = (dateOfBirth) => {
+  if (!dateOfBirth) return 'Unknown';
+  
+  const birthDate = new Date(dateOfBirth);
+  const today = new Date();
+  
+  let years = today.getFullYear() - birthDate.getFullYear();
+  let months = today.getMonth() - birthDate.getMonth();
+  
+  if (months < 0) {
+    years--;
+    months += 12;
+  }
+  
+  if (years === 0) {
+    return `${months} month${months !== 1 ? 's' : ''}`;
+  } else if (months === 0) {
+    return `${years} year${years !== 1 ? 's' : ''}`;
+  } else {
+    return `${years} year${years !== 1 ? 's' : ''}, ${months} month${months !== 1 ? 's' : ''}`;
+  }
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-IN', { 
+    day: '2-digit', 
+    month: 'short', 
+    year: 'numeric' 
+  });
+};
+
+const getLatestVaccination = () => {
+  if (!patient.value?.vaccinations || patient.value.vaccinations.length === 0) {
+    return 'No vaccinations recorded';
+  }
+  
+  const latest = patient.value.vaccinations.sort((a, b) => 
+    new Date(b.date_administered) - new Date(a.date_administered)
+  )[0];
+  
+  return `${latest.vaccine_name} - ${formatDate(latest.date_administered)}`;
+};
+
+const getTotalPayments = () => {
+  if (!patient.value?.payments || patient.value.payments.length === 0) {
+    return '₹0';
+  }
+  
+  const total = patient.value.payments.reduce((sum, payment) => 
+    sum + parseFloat(payment.amount || 0), 0
+  );
+  
+  return `₹${total.toFixed(2)}`;
+};
+</script>
 
     const fetchPatientData = async () => {
       try {

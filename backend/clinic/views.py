@@ -300,45 +300,46 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
 # ============================================================================
 
 class PassbookViewSet(viewsets.ModelViewSet):
-    """Admin management of pet passbooks"""
     queryset = PetPassbook.objects.all()
     serializer_class = PassbookSerializer
-    permission_classes = [AllowAny]  # Change to IsAuthenticated in production
+    permission_classes = [permissions.IsAuthenticated]
     
-    @action(detail=True, methods=['post'])
-    def activate(self, request, pk=None):
-        """Activate subscription for X months"""
-        passbook = self.get_object()
-        months = int(request.data.get('months', 1))
-        passbook.activate_subscription(duration_months=months)
-        return Response({
-            'message': 'Subscription activated',
-            'subscription_end': passbook.subscription_end,
-            'is_active': passbook.is_active
-        })
-    
-    @action(detail=True, methods=['post'])
-    def regenerate_token(self, request, pk=None):
-        """Regenerate QR code token"""
-        passbook = self.get_object()
-        new_token = passbook.regenerate_token()
-        serializer = self.get_serializer(passbook)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['post'])
-    def create_for_patient(self, request):
-        """Create passbook for a patient"""
-        patient_id = request.data.get('patient_id')
-        patient = get_object_or_404(Patient, id=patient_id)
-        
-        passbook, created = PetPassbook.objects.get_or_create(patient=patient)
-        
-        if created:
-            passbook.activate_subscription(duration_months=1)
-        
-        serializer = self.get_serializer(passbook, context={'request': request})
-        return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
-
+    def create(self, request, *args, **kwargs):
+        try:
+            patient_id = request.data.get('patient_id')
+            if not patient_id:
+                return Response(
+                    {'error': 'patient_id is required'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Check if patient exists
+            try:
+                patient = Patient.objects.get(id=patient_id)
+            except Patient.DoesNotExist:
+                return Response(
+                    {'error': 'Patient not found'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Check if passbook already exists
+            passbook = PetPassbook.objects.filter(patient=patient).first()
+            if passbook:
+                serializer = self.get_serializer(passbook)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            
+            # Create new passbook
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class PassbookPublicViewSet(viewsets.ReadOnlyModelViewSet):
     """Public passbook access (no authentication)"""
