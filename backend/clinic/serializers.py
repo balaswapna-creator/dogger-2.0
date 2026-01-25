@@ -284,26 +284,21 @@ class AuditLogSerializer(serializers.ModelSerializer):
 # PASSBOOK SERIALIZERS
 # ============================================================================
 class PassbookSerializer(serializers.ModelSerializer):
-    patient_name = serializers.CharField(source='patient.pet_name', read_only=True)
-    is_active = serializers.BooleanField(read_only=True)
-    days_remaining = serializers.IntegerField(read_only=True)
-    qr_url = serializers.SerializerMethodField()
+    patient = PatientSerializer(read_only=True)
+    patient_id = serializers.UUIDField(write_only=True)
     
     class Meta:
         model = PetPassbook
         fields = [
-            'id', 'patient', 'patient_name', 'access_token', 
-            'is_enabled', 'is_active', 'subscription_start', 
-            'subscription_end', 'subscription_type', 'days_remaining',
-            'qr_url', 'access_count', 'last_accessed'
+            'id',
+            'patient',
+            'patient_id',
+            'created_date',
+            'qr_code',
+            'access_token',
+            'is_active'
         ]
-        read_only_fields = ['id', 'access_token', 'access_count', 'last_accessed']
-    
-    def get_qr_url(self, obj):
-        request = self.context.get('request')
-        if request:
-            return f"{request.scheme}://{request.get_host()}/passbook/{obj.access_token}"
-        return f"/passbook/{obj.access_token}"
+        read_only_fields = ['id', 'created_date', 'qr_code', 'access_token']
 
 class PassbookPublicSerializer(serializers.Serializer):
     """Public passbook data (read-only, subscription-validated)"""
