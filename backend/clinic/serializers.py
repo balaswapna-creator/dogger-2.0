@@ -285,27 +285,106 @@ class AuditLogSerializer(serializers.ModelSerializer):
 # PASSBOOK SERIALIZERS
 # ============================================================================
 
-class PassbookSerializer(serializers.ModelSerializer):
-    patient_name = serializers.CharField(source='patient.pet_name', read_only=True)
-    is_active = serializers.BooleanField(read_only=True)
-    days_remaining = serializers.IntegerField(read_only=True)
-    qr_url = serializers.SerializerMethodField()
+class PassbookPublicSerializer(serializers.Serializer):
+    """Public passbook data (read-only, subscription-validated)"""
     
-    class Meta:
-        model = PetPassbook
-        fields = [
-            'id', 'patient', 'patient_name', 'access_token', 
-            'is_enabled', 'is_active', 'subscription_start', 
-            'subscription_end', 'subscription_type', 'days_remaining',
-            'qr_url', 'access_count', 'last_accessed'
-        ]
-        read_only_fields = ['id', 'access_token', 'access_count', 'last_accessed']
+    # Clinic info
+    clinic_name = serializers.SerializerMethodField()
+    clinic_address = serializers.SerializerMethodField()
     
-    def get_qr_url(self, obj):
-        request = self.context.get('request')
-        if request:
-            return f"{request.scheme}://{request.get_host()}/passbook/{obj.access_token}"
-        return f"/passbook/{obj.access_token}"
+    # Pet info  
+    pet_name = serializers.CharField(source='patient.pet_name')
+    species = serializers.CharField(source='patient.species')
+    breed = serializers.CharField(source='patient.breed')
+    gender = serializers.CharField(source='patient.gender')
+    date_of_birth = serializers.DateField(source='patient.date_of_birth')
+    color = serializers.CharField(source='patient.color')
+    photo = serializers.SerializerMethodField()
+    
+    # Owner info (limited)
+    owner_name = serializers.SerializerMethodField()
+    owner_phone = serializers.SerializerMethodField()
+    
+    # Medical data
+    vaccinations = serializers.SerializerMethodField()
+    consultations = serializers.SerializerMethodField()
+    
+    # Subscription status
+    is_active = serializers.BooleanField()
+    subscription_end = serializers.DateTimeField()
+    days_remaining = serializers.IntegerField()
+    
+    def get_clinic_name(self, obj):
+        return "Sri Adithya Pet Clinic"
+    
+    def get_clinic_address(self, obj):
+        return "No:16,Sriram Nagar, Theni, Tamil Nadu - 625531"
+    
+    def get_photo(self, obj):
+        """Get patient photo URL"""
+        if obj.patient and obj.patient.photo:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.patient.photo.url)
+            return obj.patient.photo.url
+        return None
+    
+    def get_owner_name(self, obj):
+        try:
+            return obj.patient.owner.name
+        except:
+            return "N/A"
+    
+    def get_owner_phone(self, obj):
+        try:
+            phone = obj.patient.owner.phone
+            if len(phone) > 4:
+                return phone[:4] + "****" + phone[-2:]
+            return phone
+        except:
+            return "N/A"
+    
+    def get_vaccinations(self, obj):
+        if not obj.is_active:
+            return []
+        
+        try:
+            vaccinations = Vaccination.objects.filter(
+                patient=obj.patient
+            ).order_by('-date_administered')[:10]
+            
+            return [{
+                'vaccine_name': v.vaccine_name,
+                'date_administered': v.date_administered.isoformat() if v.date_administered else None,
+                'next_due_date': v.next_due_date.isoformat() if v.next_due_date else None,
+                'certificate_number': v.certificate_number,
+                'administered_by': v.administered_by or 'Dr. A. Balasubramanan'
+            } for v in vaccinations]
+        except Exception as e:
+            print(f"Error fetching vaccinations: {e}")
+            return []
+    
+    def get_consultations(self, obj):
+        if not obj.is_active:
+            return []
+        
+        try:
+            records = MedicalRecord.objects.filter(
+                patient=obj.patient
+            ).order_by('-visit_date')[:10]
+            
+            return [{
+                'visit_date': r.visit_date.isoformat() if r.visit_date else None,
+                'visit_type': r.visit_type,
+                'chief_complaint': r.chief_complaint,
+                'diagnosis': r.diagnosis,
+                'treatment_plan': r.treatment_plan,
+                'temperature': float(r.temperature) if r.temperature else None,
+                'weight': float(r.weight) if r.weight else None
+            } for r in records]
+        except Exception as e:
+            print(f"Error fetching consultations: {e}")
+            return []
 
 
 class PassbookPublicSerializer(serializers.Serializer):
