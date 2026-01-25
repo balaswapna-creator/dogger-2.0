@@ -289,13 +289,13 @@ class PassbookSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = PetPassbook
-        fields = ['id', 'patient', 'patient_id', 'qr_code', 'access_token']
-        read_only_fields = ['patient', 'qr_code', 'access_token']
+        fields = ['id', 'patient', 'patient_id', 'access_token', 'is_active']
+        read_only_fields = ['patient', 'access_token', 'is_active']
     
     def create(self, validated_data):
         patient_id = validated_data.pop('patient_id')
         patient = Patient.objects.get(id=patient_id)
-        passbook = PetPassbook.objects.create(patient=patient, **validated_data)
+        passbook = PetPassbook.objects.create(patient=patient)
         return passbook
         
         # Check if passbook already exists for this patient
