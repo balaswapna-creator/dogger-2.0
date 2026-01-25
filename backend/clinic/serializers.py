@@ -290,16 +290,8 @@ class PassbookSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = PetPassbook
-        fields = [
-            'id',
-            'patient',
-            'patient_id',
-            'created_date',
-            'qr_code',
-            'access_token',
-            'is_active'
-        ]
-        read_only_fields = ['id', 'created_date', 'qr_code', 'access_token']
+        fields = ['id', 'patient', 'qr_code', 'access_token']
+        read_only_fields = ['qr_code', 'access_token']
     
     def create(self, validated_data):
         patient_id = validated_data.get('patient_id')
