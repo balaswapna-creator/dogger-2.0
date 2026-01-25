@@ -581,7 +581,6 @@ onMounted(() => {
 })
 </script>
 
-
 <style scoped>
 .patients-container {
   max-width: 1400px;
