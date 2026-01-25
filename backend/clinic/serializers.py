@@ -1,6 +1,6 @@
 """
 Clinic App Serializers - Complete and Fixed
-✅ FIXED VERSION
+✅ FIXED VERSION - Added missing PassbookSerializer
 """
 from rest_framework import serializers
 from .models import (
@@ -72,12 +72,13 @@ class PatientSerializer(serializers.ModelSerializer):
     def get_last_visit(self, obj):
         """Calculate last visit from medical records"""
         try:
-            latest_record = obj.medicalrecord_set.order_by('-visit_date').first()
+            latest_record = obj.medical_records.order_by('-visit_date').first()
             if latest_record:
                 return latest_record.visit_date.isoformat()
             return obj.created_at.isoformat() if obj.created_at else None
         except Exception:
             return None
+
 
 # ============================================================================
 # MEDICAL RECORD SERIALIZER
@@ -152,7 +153,7 @@ class VaccinationSerializer(serializers.ModelSerializer):
             'administered_by', 'notes', 'certificate_number',
             'created_at'
         ]
-        read_only_fields = ['id', 'certificate_number', 'created_at']  # ✅ Added 'id' here
+        read_only_fields = ['id', 'certificate_number', 'created_at']
     
     def get_patient_name(self, obj):
         return obj.patient.pet_name if obj.patient else None
@@ -285,6 +286,42 @@ class AuditLogSerializer(serializers.ModelSerializer):
 # PASSBOOK SERIALIZERS
 # ============================================================================
 
+class PassbookSerializer(serializers.ModelSerializer):
+    """Admin/Internal Passbook Serializer - Full CRUD access"""
+    patient_name = serializers.CharField(source='patient.pet_name', read_only=True)
+    owner_name = serializers.CharField(source='patient.owner.name', read_only=True)
+    
+    class Meta:
+        model = PetPassbook
+        fields = [
+            'id',
+            'patient',
+            'patient_name',
+            'owner_name',
+            'access_token',
+            'is_enabled',
+            'subscription_start',
+            'subscription_end',
+            'subscription_type',
+            'is_active',
+            'days_remaining',
+            'created_at',
+            'updated_at',
+            'last_accessed',
+            'access_count'
+        ]
+        read_only_fields = [
+            'id',
+            'access_token',
+            'created_at',
+            'updated_at',
+            'is_active',
+            'days_remaining',
+            'last_accessed',
+            'access_count'
+        ]
+
+
 class PassbookPublicSerializer(serializers.Serializer):
     """Public passbook data (read-only, subscription-validated)"""
     
@@ -385,82 +422,3 @@ class PassbookPublicSerializer(serializers.Serializer):
         except Exception as e:
             print(f"Error fetching consultations: {e}")
             return []
-
-
-class PassbookPublicSerializer(serializers.Serializer):
-    """Public passbook data (read-only, subscription-validated)"""
-    
-    # Clinic info
-    clinic_name = serializers.SerializerMethodField()
-    clinic_address = serializers.SerializerMethodField()
-    
-    # Pet info  
-    pet_name = serializers.CharField(source='patient.pet_name')
-    species = serializers.CharField(source='patient.species')
-    breed = serializers.CharField(source='patient.breed')
-    gender = serializers.CharField(source='patient.gender')
-    date_of_birth = serializers.DateField(source='patient.date_of_birth')
-    color = serializers.CharField(source='patient.color')
-    photo = serializers.ImageField(source='patient.photo')
-    
-    # Owner info (limited)
-    owner_name = serializers.SerializerMethodField()
-    owner_phone = serializers.SerializerMethodField()
-    
-    # Medical data
-    vaccinations = serializers.SerializerMethodField()
-    consultations = serializers.SerializerMethodField()
-    
-    # Subscription status
-    is_active = serializers.BooleanField()
-    subscription_end = serializers.DateTimeField()
-    days_remaining = serializers.IntegerField()
-    
-    def get_clinic_name(self, obj):
-        return "Sri Adithya Pet Clinic"
-    
-    def get_clinic_address(self, obj):
-        return "Main Road, Cumbum, Tamil Nadu - 625516"
-    
-    def get_owner_name(self, obj):
-        try:
-            return obj.patient.owner.name
-        except:
-            return "N/A"
-    
-    def get_owner_phone(self, obj):
-        try:
-            phone = obj.patient.owner.phone
-            if len(phone) > 4:
-                return phone[:4] + "****" + phone[-2:]
-            return phone
-        except:
-            return "N/A"
-    
-    def get_vaccinations(self, obj):
-        if not obj.is_active:
-            return []
-        
-        vaccinations = Vaccination.objects.filter(patient=obj.patient).order_by('-date_administered')[:10]
-        return [{
-            'vaccine_name': v.vaccine_name,
-            'date_administered': v.date_administered,
-            'next_due_date': v.next_due_date,
-            'certificate_number': v.certificate_number,
-            'administered_by': v.administered_by or 'Dr. A. Balasubramanian'
-        } for v in vaccinations]
-    
-    def get_consultations(self, obj):
-        if not obj.is_active:
-            return []
-        
-        records = MedicalRecord.objects.filter(patient=obj.patient).order_by('-visit_date')[:10]
-        return [{
-            'visit_date': r.visit_date,
-            'visit_type': r.visit_type,
-            'chief_complaint': r.chief_complaint,
-            'diagnosis': r.diagnosis,
-            'treatment_plan': r.treatment_plan,
-            'temperature': r.temperature,
-            'weight': r.weight
-        } for r in records]
