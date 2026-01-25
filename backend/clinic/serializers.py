@@ -1,5 +1,6 @@
+"""
 Clinic App Serializers - Complete and Fixed
-âœ… FIXED VERSION
+
 """
 from rest_framework import serializers
 from .models import (
