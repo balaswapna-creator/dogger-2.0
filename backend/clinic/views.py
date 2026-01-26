@@ -351,23 +351,98 @@ class PassbookPublicViewSet(viewsets.ReadOnlyModelViewSet):
     def retrieve(self, request, access_token=None):
         """Get passbook by access token"""
         try:
-            passbook = self.get_queryset().get(access_token=access_token)
+            passbook = get_object_or_404(PetPassbook, access_token=access_token)
             passbook.record_access()
             
-            serializer = self.get_serializer(passbook)
+            # Build response data with all required fields
+            response_data = {
+                # Clinic info
+                'clinic_name': 'Sri Adithya Pet Clinic',
+                'clinic_address': 'No:16,Sriram Nagar, Theni, Tamil Nadu - 625531',
+                
+                # Patient info
+                'pet_name': passbook.patient.pet_name if passbook.patient else 'N/A',
+                'species': passbook.patient.species if passbook.patient else 'N/A',
+                'breed': passbook.patient.breed if passbook.patient else 'N/A',
+                'gender': passbook.patient.gender if passbook.patient else 'N/A',
+                'date_of_birth': passbook.patient.date_of_birth.isoformat() if passbook.patient and passbook.patient.date_of_birth else None,
+                'color': passbook.patient.color if passbook.patient else 'N/A',
+                
+                # Owner info
+                'owner_name': passbook.patient.owner.name if passbook.patient and passbook.patient.owner else 'N/A',
+                'owner_phone': self._mask_phone(passbook.patient.owner.phone) if passbook.patient and passbook.patient.owner else 'N/A',
+                
+                # Photo
+                'photo': request.build_absolute_uri(passbook.patient.photo.url) if passbook.patient and passbook.patient.photo else None,
+                
+                # Subscription (mock for now)
+                'is_active': passbook.is_active,
+                'subscription_end': (timezone.now() + timedelta(days=365)).isoformat(),
+                'days_remaining': 365,
+                
+                # Medical data
+                'vaccinations': self._get_vaccinations(passbook),
+                'consultations': self._get_consultations(passbook),
+            }
             
-            return Response({
-                'success': True,
-                'data': serializer.data
-            })
+            return Response(response_data)
             
         except PetPassbook.DoesNotExist:
             return Response({
-                'success': False,
                 'error': 'Invalid or expired passbook link'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            print(f"Passbook error: {e}")
             return Response({
-                'success': False,
                 'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _mask_phone(self, phone):
+        """Mask phone number for privacy"""
+        if phone and len(phone) > 4:
+            return phone[:4] + "****" + phone[-2:]
+        return phone or 'N/A'
+    
+    def _get_vaccinations(self, passbook):
+        """Get vaccination records"""
+        if not passbook.is_active:
+            return []
+        
+        try:
+            vaccinations = Vaccination.objects.filter(
+                patient=passbook.patient
+            ).order_by('-date_administered')[:10]
+            
+            return [{
+                'vaccine_name': v.vaccine_name,
+                'date_administered': v.date_administered.isoformat() if v.date_administered else None,
+                'next_due_date': v.next_due_date.isoformat() if v.next_due_date else None,
+                'certificate_number': v.certificate_number,
+                'administered_by': v.administered_by or 'Dr. A. Balasubramanan'
+            } for v in vaccinations]
+        except Exception as e:
+            print(f"Error fetching vaccinations: {e}")
+            return []
+    
+    def _get_consultations(self, passbook):
+        """Get medical records"""
+        if not passbook.is_active:
+            return []
+        
+        try:
+            records = MedicalRecord.objects.filter(
+                patient=passbook.patient
+            ).order_by('-visit_date')[:10]
+            
+            return [{
+                'visit_date': r.visit_date.isoformat() if r.visit_date else None,
+                'visit_type': r.visit_type,
+                'chief_complaint': r.chief_complaint,
+                'diagnosis': r.diagnosis,
+                'treatment_plan': r.treatment_plan,
+                'temperature': float(r.temperature) if r.temperature else None,
+                'weight': float(r.weight) if r.weight else None
+            } for r in records]
+        except Exception as e:
+            print(f"Error fetching consultations: {e}")
+            return []
