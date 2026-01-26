@@ -341,12 +341,10 @@ class PassbookViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-class PassbookPublicViewSet(viewsets.ReadOnlyModelViewSet):
+
+class PassbookPublicViewSet(viewsets.ViewSet):
     """Public passbook access (no authentication)"""
     permission_classes = [AllowAny]
-    queryset = PetPassbook.objects.select_related('patient__owner').all()
-    serializer_class = PassbookPublicSerializer
-    lookup_field = 'access_token'
     
     def retrieve(self, request, access_token=None):
         """Get passbook by access token"""
