@@ -239,7 +239,7 @@ const fetchPassbook = async () => {
   
   try {
     console.log('Fetching passbook with token:', token);
-    const apiUrl = `/passbooks/public/${token}/`
+    const apiUrl = `/passbooks-public/${token}/`
     console.log('API URL:', apiUrl)
     
     const response = await api.get(apiUrl);
