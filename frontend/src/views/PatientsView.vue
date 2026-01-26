@@ -760,26 +760,6 @@ const deletePatient = async () => {
   }
 }
 
-  photoFile.value = null
-  photoPreview.value = null
-  formData.value = {
-    pet_name: '',
-    species: '',
-    breed: '',
-    date_of_birth: '',
-    gender: '',
-    color: '',
-    owner: '',
-    microchip_id: '',
-    allergies: '',
-    chronic_conditions: '',
-    current_medications: ''
-  }
-  if (photoInput.value) {
-    photoInput.value.value = ''
-  }
-}
-
 const getPhotoUrl = (photo) => {
   if (!photo) return ''
   // If photo is already a full URL, return it
