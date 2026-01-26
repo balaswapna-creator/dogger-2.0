@@ -29,4 +29,6 @@ urlpatterns = [
     path('passbooks-public/<str:access_token>/', 
          views.passbook_public_retrieve, 
          name='passbook-public-retrieve'),
+    # Activate passbook (temporary)
+    path('passbooks/<uuid:passbook_id>/activate/', views.activate_passbook, name='activate_passbook'),
 ]

@@ -557,3 +557,29 @@ def passbook_public_retrieve(request, access_token):
         return Response({
             'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def activate_passbook(request, passbook_id):
+    """Temporary endpoint to activate a passbook subscription"""
+    try:
+        passbook = PetPassbook.objects.get(id=passbook_id)
+        passbook.activate_subscription(duration_months=12)  # Activate for 12 months
+        
+        return Response({
+            'success': True,
+            'message': f'Passbook activated for {passbook.patient.pet_name}',
+            'subscription_end': passbook.subscription_end,
+            'is_active': passbook.is_active,
+            'access_token': str(passbook.access_token)
+        })
+    except PetPassbook.DoesNotExist:
+        return Response({
+            'success': False,
+            'error': 'Passbook not found'
+        }, status=404)
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=500)
