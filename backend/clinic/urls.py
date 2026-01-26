@@ -16,7 +16,7 @@ router.register(r'prescriptions', views.PrescriptionViewSet, basename='prescript
 router.register(r'passbooks', views.PassbookViewSet, basename='passbook')
 
 urlpatterns = [
-    # Router URLs
+    # Router URLs (all CRUD endpoints)
     path('', include(router.urls)),
     
     # Custom endpoints
@@ -25,7 +25,7 @@ urlpatterns = [
     path('auth/logout/', views.LogoutView.as_view(), name='logout'),
     path('auth/user/', views.current_user, name='current-user'),
     
-    # ✅ Passbook public access - MUST be string, not UUID
+    # ✅ Passbook public access - accepts any string token
     path('passbooks-public/<str:access_token>/', 
          views.passbook_public_retrieve, 
          name='passbook-public-retrieve'),

@@ -444,3 +444,130 @@ class PassbookPublicViewSet(viewsets.ViewSet):
         except Exception as e:
             print(f"Error fetching consultations: {e}")
             return []
+
+# ============================================================================
+# PASSBOOK PUBLIC VIEW (Add this at the END of views.py)
+# ============================================================================
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def passbook_public_retrieve(request, access_token):
+    """Get passbook by access token - public access"""
+    try:
+        # Find passbook by token
+        passbook = PetPassbook.objects.select_related('patient__owner').get(
+            access_token=access_token
+        )
+        
+        # Record access
+        try:
+            passbook.record_access()
+        except:
+            pass  # Continue even if record_access fails
+        
+        # Build response with all patient data
+        patient = passbook.patient
+        owner = patient.owner if patient else None
+        
+        # Calculate age
+        age_str = 'N/A'
+        if patient and patient.date_of_birth:
+            dob = patient.date_of_birth
+            today = timezone.now().date()
+            years = today.year - dob.year
+            months = today.month - dob.month
+            if months < 0:
+                years -= 1
+                months += 12
+            age_str = f"{years} years, {months} months" if years > 0 else f"{months} months"
+        
+        # Get vaccinations
+        vaccinations = []
+        if passbook.is_active and patient:
+            try:
+                vacc_list = Vaccination.objects.filter(patient=patient).order_by('-date_administered')[:10]
+                vaccinations = [{
+                    'vaccine_name': v.vaccine_name,
+                    'date_administered': v.date_administered.isoformat() if v.date_administered else None,
+                    'next_due_date': v.next_due_date.isoformat() if v.next_due_date else None,
+                    'certificate_number': v.certificate_number,
+                    'administered_by': v.administered_by or 'Dr. A. Balasubramanan'
+                } for v in vacc_list]
+            except Exception as e:
+                print(f"Error fetching vaccinations: {e}")
+        
+        # Get medical records
+        consultations = []
+        if passbook.is_active and patient:
+            try:
+                records = MedicalRecord.objects.filter(patient=patient).order_by('-visit_date')[:10]
+                consultations = [{
+                    'visit_date': r.visit_date.isoformat() if r.visit_date else None,
+                    'visit_type': r.visit_type,
+                    'chief_complaint': r.chief_complaint,
+                    'diagnosis': r.diagnosis,
+                    'treatment_plan': r.treatment_plan,
+                    'temperature': float(r.temperature) if r.temperature else None,
+                    'weight': float(r.weight) if r.weight else None
+                } for r in records]
+            except Exception as e:
+                print(f"Error fetching consultations: {e}")
+        
+        # Build photo URL
+        photo_url = None
+        if patient and patient.photo:
+            try:
+                photo_url = request.build_absolute_uri(patient.photo.url)
+            except:
+                pass
+        
+        # Mask phone number
+        owner_phone = 'N/A'
+        if owner and owner.phone:
+            phone = owner.phone
+            if len(phone) > 4:
+                owner_phone = phone[:4] + "****" + phone[-2:]
+            else:
+                owner_phone = phone
+        
+        # Return data
+        return Response({
+            # Clinic info
+            'clinic_name': 'Sri Adithya Pet Clinic',
+            'clinic_address': 'No:16,Sriram Nagar, Theni, Tamil Nadu - 625531',
+            
+            # Patient info
+            'pet_name': patient.pet_name if patient else 'N/A',
+            'species': patient.species if patient else 'N/A',
+            'breed': patient.breed if patient else 'N/A',
+            'gender': patient.gender if patient else 'N/A',
+            'date_of_birth': patient.date_of_birth.isoformat() if patient and patient.date_of_birth else None,
+            'color': patient.color if patient else 'N/A',
+            'age': age_str,
+            'photo': photo_url,
+            
+            # Owner info (masked)
+            'owner_name': owner.name if owner else 'N/A',
+            'owner_phone': owner_phone,
+            
+            # Medical data
+            'vaccinations': vaccinations,
+            'consultations': consultations,
+            
+            # Subscription
+            'is_active': passbook.is_active,
+            'subscription_end': (timezone.now() + timedelta(days=365)).isoformat(),
+            'days_remaining': 365,
+        })
+        
+    except PetPassbook.DoesNotExist:
+        return Response({
+            'error': 'Invalid or expired passbook link'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(f"Passbook error: {e}")
+        import traceback
+        traceback.print_exc()
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
