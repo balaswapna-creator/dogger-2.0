@@ -342,28 +342,35 @@ class PassbookPublicSerializer(serializers.Serializer):
         return "No:16,Sriram Nagar, Theni, Tamil Nadu - 625531"
     
     def get_photo(self, obj):
-        """Get patient photo URL"""
+    """Get patient photo URL"""
+    try:
         if obj.patient and obj.patient.photo:
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(obj.patient.photo.url)
             return obj.patient.photo.url
-        return None
-    
-    def get_owner_name(self, obj):
-        try:
+    except Exception as e:
+        print(f"Error getting photo: {e}")
+    return None
+
+def get_owner_name(self, obj):
+    try:
+        if obj.patient and obj.patient.owner:
             return obj.patient.owner.name
-        except:
-            return "N/A"
-    
-    def get_owner_phone(self, obj):
-        try:
+    except Exception as e:
+        print(f"Error getting owner name: {e}")
+    return "N/A"
+
+def get_owner_phone(self, obj):
+    try:
+        if obj.patient and obj.patient.owner:
             phone = obj.patient.owner.phone
-            if len(phone) > 4:
+            if phone and len(phone) > 4:
                 return phone[:4] + "****" + phone[-2:]
             return phone
-        except:
-            return "N/A"
+    except Exception as e:
+        print(f"Error getting owner phone: {e}")
+    return "N/A"
     
     def get_vaccinations(self, obj):
         if not obj.is_active:

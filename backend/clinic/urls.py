@@ -71,4 +71,10 @@ urlpatterns = [
     
     # Include all ViewSet URLs
     path('', include(router.urls)),
+
+    # Custom passbook public access
+    path('passbooks/public/<uuid:access_token>/', 
+     views.PassbookPublicViewSet.as_view({'get': 'retrieve'}), 
+     name='passbook-public-detail'),
+
 ]
