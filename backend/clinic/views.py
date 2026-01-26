@@ -340,58 +340,44 @@ class PassbookViewSet(viewsets.ModelViewSet):
                 {'error': str(e)}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-
-class PassbookPublicViewSet(viewsets.ViewSet):
+class PassbookPublicViewSet(viewsets.ReadOnlyModelViewSet):
     """Public passbook access (no authentication)"""
     permission_classes = [AllowAny]
+    queryset = PetPassbook.objects.select_related('patient__owner').all()
+    serializer_class = PassbookPublicSerializer
+    lookup_field = 'access_token'
+    lookup_value_regex = '[^/]+'  # ✅ This allows any characters in the URL
     
     def retrieve(self, request, access_token=None):
         """Get passbook by access token"""
         try:
-            passbook = get_object_or_404(PetPassbook, access_token=access_token)
+            # Get the passbook using the access_token
+            passbook = PetPassbook.objects.select_related(
+                'patient__owner'
+            ).get(access_token=access_token)
+            
+            # Record the access
             passbook.record_access()
             
-            # Build response data with all required fields
-            response_data = {
-                # Clinic info
-                'clinic_name': 'Sri Adithya Pet Clinic',
-                'clinic_address': 'No:16,Sriram Nagar, Theni, Tamil Nadu - 625531',
-                
-                # Patient info
-                'pet_name': passbook.patient.pet_name if passbook.patient else 'N/A',
-                'species': passbook.patient.species if passbook.patient else 'N/A',
-                'breed': passbook.patient.breed if passbook.patient else 'N/A',
-                'gender': passbook.patient.gender if passbook.patient else 'N/A',
-                'date_of_birth': passbook.patient.date_of_birth.isoformat() if passbook.patient and passbook.patient.date_of_birth else None,
-                'color': passbook.patient.color if passbook.patient else 'N/A',
-                
-                # Owner info
-                'owner_name': passbook.patient.owner.name if passbook.patient and passbook.patient.owner else 'N/A',
-                'owner_phone': self._mask_phone(passbook.patient.owner.phone) if passbook.patient and passbook.patient.owner else 'N/A',
-                
-                # Photo
-                'photo': request.build_absolute_uri(passbook.patient.photo.url) if passbook.patient and passbook.patient.photo else None,
-                
-                # Subscription (mock for now)
-                'is_active': passbook.is_active,
-                'subscription_end': (timezone.now() + timedelta(days=365)).isoformat(),
-                'days_remaining': 365,
-                
-                # Medical data
-                'vaccinations': self._get_vaccinations(passbook),
-                'consultations': self._get_consultations(passbook),
-            }
+            # Serialize the data
+            serializer = self.get_serializer(passbook, context={'request': request})
             
-            return Response(response_data)
+            return Response({
+                'success': True,
+                'data': serializer.data
+            })
             
         except PetPassbook.DoesNotExist:
             return Response({
+                'success': False,
                 'error': 'Invalid or expired passbook link'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            print(f"Passbook error: {e}")
+            print(f"Error retrieving passbook: {e}")
+            import traceback
+            traceback.print_exc()
             return Response({
+                'success': False,
                 'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
