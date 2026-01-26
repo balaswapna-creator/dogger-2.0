@@ -315,12 +315,12 @@ class PassbookPublicSerializer(serializers.Serializer):
     clinic_address = serializers.SerializerMethodField()
     
     # Pet info  
-    pet_name = serializers.CharField(source='patient.pet_name')
-    species = serializers.CharField(source='patient.species')
-    breed = serializers.CharField(source='patient.breed')
-    gender = serializers.CharField(source='patient.gender')
-    date_of_birth = serializers.DateField(source='patient.date_of_birth')
-    color = serializers.CharField(source='patient.color')
+    pet_name = serializers.SerializerMethodField()
+    species = serializers.SerializerMethodField()
+    breed = serializers.SerializerMethodField()
+    gender = serializers.SerializerMethodField()
+    date_of_birth = serializers.SerializerMethodField()
+    color = serializers.SerializerMethodField()
     photo = serializers.SerializerMethodField()
     
     # Owner info (limited)
@@ -332,15 +332,59 @@ class PassbookPublicSerializer(serializers.Serializer):
     consultations = serializers.SerializerMethodField()
     
     # Subscription status
-    is_active = serializers.BooleanField()
-    subscription_end = serializers.DateTimeField()
-    days_remaining = serializers.IntegerField()
+    is_active = serializers.BooleanField(read_only=True)
+    subscription_end = serializers.DateTimeField(read_only=True)
+    days_remaining = serializers.IntegerField(read_only=True)
     
     def get_clinic_name(self, obj):
         return "Sri Adithya Pet Clinic"
     
     def get_clinic_address(self, obj):
         return "No:16,Sriram Nagar, Theni, Tamil Nadu - 625531"
+    
+    def get_pet_name(self, obj):
+        try:
+            return obj.patient.pet_name if obj.patient else "N/A"
+        except Exception as e:
+            print(f"Error getting pet_name: {e}")
+            return "N/A"
+    
+    def get_species(self, obj):
+        try:
+            return obj.patient.species.title() if obj.patient else "N/A"
+        except Exception as e:
+            print(f"Error getting species: {e}")
+            return "N/A"
+    
+    def get_breed(self, obj):
+        try:
+            return obj.patient.breed if obj.patient else "N/A"
+        except Exception as e:
+            print(f"Error getting breed: {e}")
+            return "N/A"
+    
+    def get_gender(self, obj):
+        try:
+            return obj.patient.gender.title() if obj.patient else "N/A"
+        except Exception as e:
+            print(f"Error getting gender: {e}")
+            return "N/A"
+    
+    def get_date_of_birth(self, obj):
+        try:
+            if obj.patient and obj.patient.date_of_birth:
+                return obj.patient.date_of_birth.isoformat()
+            return None
+        except Exception as e:
+            print(f"Error getting date_of_birth: {e}")
+            return None
+    
+    def get_color(self, obj):
+        try:
+            return obj.patient.color if obj.patient else "N/A"
+        except Exception as e:
+            print(f"Error getting color: {e}")
+            return "N/A"
     
     def get_photo(self, obj):
         """Get patient photo URL"""
@@ -353,15 +397,15 @@ class PassbookPublicSerializer(serializers.Serializer):
         except Exception as e:
             print(f"Error getting photo: {e}")
         return None
-
+    
     def get_owner_name(self, obj):
         try:
             if obj.patient and obj.patient.owner:
                 return obj.patient.owner.name
         except Exception as e:
-            print(f"Error getting owner name: {e}")
+            print(f"Error getting owner_name: {e}")
         return "N/A"
-
+    
     def get_owner_phone(self, obj):
         try:
             if obj.patient and obj.patient.owner:
@@ -370,7 +414,7 @@ class PassbookPublicSerializer(serializers.Serializer):
                     return phone[:4] + "****" + phone[-2:]
                 return phone
         except Exception as e:
-            print(f"Error getting owner phone: {e}")
+            print(f"Error getting owner_phone: {e}")
         return "N/A"
     
     def get_vaccinations(self, obj):
@@ -414,4 +458,3 @@ class PassbookPublicSerializer(serializers.Serializer):
         except Exception as e:
             print(f"Error fetching consultations: {e}")
             return []
-
