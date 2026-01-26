@@ -130,8 +130,7 @@
   </div>
 </template>
 
-// Replace the ENTIRE <script setup> section in PassbookPublicView.vue with this:
-
+<script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
@@ -188,6 +187,7 @@ const retry = () => {
 onMounted(() => {
   fetchPassbookData()
 })
+</script>
 
 <style scoped>
 .passbook-public-container {
@@ -287,6 +287,20 @@ onMounted(() => {
   border-bottom: 2px solid #f3f4f6;
 }
 
+.patient-photo {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.patient-photo img {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #7C3AED;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
+}
+
 .info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -309,6 +323,7 @@ onMounted(() => {
   font-size: 15px;
   color: #1a1a1a;
   font-weight: 500;
+  text-transform: capitalize;
 }
 
 .empty-state {
@@ -351,13 +366,22 @@ onMounted(() => {
   font-size: 14px;
 }
 
+.record-vitals {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
 .vacc-name {
   font-weight: 600;
   color: #1a1a1a;
   margin-bottom: 4px;
 }
 
-.vacc-next {
+.vacc-next,
+.vacc-admin {
   font-size: 13px;
   color: #6b7280;
   margin-top: 4px;
@@ -398,34 +422,5 @@ onMounted(() => {
   .passbook-header h1 {
     font-size: 24px;
   }
-/* Add this to the existing <style scoped> section */
-
-.patient-photo {
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.patient-photo img {
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 4px solid #7C3AED;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
-}
-
-.vacc-admin {
-  font-size: 13px;
-  color: #6b7280;
-  margin-top: 4px;
-}
-
-.record-vitals {
-  display: flex;
-  gap: 16px;
-  margin-top: 8px;
-  font-size: 13px;
-  color: #6b7280;
-}
 }
 </style>
