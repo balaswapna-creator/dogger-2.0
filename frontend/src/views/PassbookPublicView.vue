@@ -15,7 +15,7 @@
     </div>
 
     <!-- Passbook Content -->
-    <div v-else-if="passbook" class="passbook-content">
+    <div v-else-if="passbookData" class="passbook-content">
       <!-- Header -->
       <div class="passbook-header">
         <div class="clinic-logo">
@@ -23,61 +23,58 @@
             <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
           </svg>
         </div>
-        <h1>Sri Adithya Pet Clinic</h1>
+        <h1>{{ passbookData.clinic_name || 'Sri Adithya Pet Clinic' }}</h1>
         <p class="subtitle">Digital Health Passbook</p>
       </div>
 
-      <!-- Patient Info -->
+      <!-- Patient Info with Photo -->
       <div class="info-card patient-card">
         <h2>🐾 Patient Information</h2>
+        
+        <!-- Photo -->
+        <div v-if="passbookData.photo" class="patient-photo">
+          <img :src="passbookData.photo" :alt="passbookData.pet_name" />
+        </div>
+        
         <div class="info-grid">
           <div class="info-item">
             <span class="label">Pet Name:</span>
-            <span class="value">{{ patient?.pet_name || 'N/A' }}</span>
+            <span class="value">{{ passbookData.pet_name || 'N/A' }}</span>
           </div>
           <div class="info-item">
             <span class="label">Species:</span>
-            <span class="value">{{ patient?.species || 'N/A' }}</span>
+            <span class="value">{{ passbookData.species || 'N/A' }}</span>
           </div>
           <div class="info-item">
             <span class="label">Breed:</span>
-            <span class="value">{{ patient?.breed || 'N/A' }}</span>
+            <span class="value">{{ passbookData.breed || 'N/A' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Gender:</span>
+            <span class="value">{{ passbookData.gender || 'N/A' }}</span>
           </div>
           <div class="info-item">
             <span class="label">Age:</span>
-            <span class="value">{{ patient?.age || 'N/A' }} years</span>
+            <span class="value">{{ passbookData.age || 'N/A' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Color:</span>
+            <span class="value">{{ passbookData.color || 'N/A' }}</span>
           </div>
         </div>
       </div>
 
       <!-- Owner Info -->
-      <div class="info-card owner-card" v-if="owner">
+      <div class="info-card owner-card">
         <h2>👤 Owner Information</h2>
         <div class="info-grid">
           <div class="info-item">
             <span class="label">Name:</span>
-            <span class="value">{{ owner.name }}</span>
+            <span class="value">{{ passbookData.owner_name || 'N/A' }}</span>
           </div>
           <div class="info-item">
             <span class="label">Phone:</span>
-            <span class="value">{{ owner.phone }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Medical Records -->
-      <div class="info-card">
-        <h2>🏥 Medical History</h2>
-        <div v-if="medicalRecords.length === 0" class="empty-state">
-          <p>No medical records found</p>
-        </div>
-        <div v-else class="records-list">
-          <div v-for="record in medicalRecords" :key="record.id" class="record-item">
-            <div class="record-date">{{ formatDate(record.visit_date) }}</div>
-            <div class="record-details">
-              <strong>{{ record.chief_complaint }}</strong>
-              <p>{{ record.diagnosis }}</p>
-            </div>
+            <span class="value">{{ passbookData.owner_phone || 'N/A' }}</span>
           </div>
         </div>
       </div>
@@ -85,21 +82,46 @@
       <!-- Vaccinations -->
       <div class="info-card">
         <h2>💉 Vaccination Records</h2>
-        <div v-if="vaccinations.length === 0" class="empty-state">
-          <p>No vaccinations recorded</p>
+        <div v-if="!passbookData.vaccinations || passbookData.vaccinations.length === 0" class="empty-state">
+          <p>No vaccination records found</p>
         </div>
         <div v-else class="vaccination-list">
-          <div v-for="vacc in vaccinations" :key="vacc.id" class="vaccination-item">
+          <div v-for="(vacc, index) in passbookData.vaccinations" :key="index" class="vaccination-item">
             <div class="vacc-name">{{ vacc.vaccine_name }}</div>
-            <div class="vacc-date">{{ formatDate(vacc.vaccination_date) }}</div>
+            <div class="vacc-date">{{ formatDate(vacc.date_administered) }}</div>
             <div class="vacc-next" v-if="vacc.next_due_date">
-              Next: {{ formatDate(vacc.next_due_date) }}
+              Next Due: {{ formatDate(vacc.next_due_date) }}
+            </div>
+            <div class="vacc-admin" v-if="vacc.administered_by">
+              By: {{ vacc.administered_by }}
             </div>
           </div>
         </div>
       </div>
 
-      <!-- QR Code -->
+      <!-- Medical History -->
+      <div class="info-card">
+        <h2>🏥 Medical History</h2>
+        <div v-if="!passbookData.consultations || passbookData.consultations.length === 0" class="empty-state">
+          <p>No medical records found</p>
+        </div>
+        <div v-else class="records-list">
+          <div v-for="(record, index) in passbookData.consultations" :key="index" class="record-item">
+            <div class="record-date">{{ formatDate(record.visit_date) }} • {{ record.visit_type }}</div>
+            <div class="record-details">
+              <strong>{{ record.chief_complaint }}</strong>
+              <p v-if="record.diagnosis">Diagnosis: {{ record.diagnosis }}</p>
+              <p v-if="record.treatment_plan">Treatment: {{ record.treatment_plan }}</p>
+              <div class="record-vitals" v-if="record.weight || record.temperature">
+                <span v-if="record.weight">Weight: {{ record.weight }}kg</span>
+                <span v-if="record.temperature">Temp: {{ record.temperature }}°F</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
       <div class="qr-code-section">
         <p class="qr-text">Share this passbook URL to give access to medical records</p>
         <div class="passbook-url">{{ currentUrl }}</div>
@@ -108,7 +130,8 @@
   </div>
 </template>
 
-<script setup>
+// Replace the ENTIRE <script setup> section in PassbookPublicView.vue with this:
+
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
@@ -116,11 +139,7 @@ import axios from 'axios'
 const route = useRoute()
 const API_BASE_URL = 'https://dogger2-backend.onrender.com/api'
 
-const passbook = ref(null)
-const patient = ref(null)
-const owner = ref(null)
-const medicalRecords = ref([])
-const vaccinations = ref([])
+const passbookData = ref(null)
 const loading = ref(true)
 const error = ref(null)
 
@@ -144,52 +163,19 @@ const fetchPassbookData = async () => {
     const token = route.params.token
     console.log('Fetching passbook with token:', token)
 
-    // Fetch passbook data
-    const passbookResponse = await axios.get(`${API_BASE_URL}/passbooks-public/${token}/`)
-    passbook.value = passbookResponse.data
-    console.log('Passbook data:', passbook.value)
-
-    // Extract patient ID
-    const patientId = passbook.value.patient?.id || passbook.value.patient
-
-    if (patientId) {
-      // Fetch patient details
-      const patientResponse = await axios.get(`${API_BASE_URL}/patients/${patientId}/`)
-      patient.value = patientResponse.data
-
-      // Fetch owner if available
-      const ownerId = patient.value.owner?.id || patient.value.owner
-      if (ownerId) {
-        const ownerResponse = await axios.get(`${API_BASE_URL}/owners/${ownerId}/`)
-        owner.value = ownerResponse.data
-      }
-
-      // Fetch medical records for this patient
-      const recordsResponse = await axios.get(`${API_BASE_URL}/medical-records/`)
-      const allRecords = Array.isArray(recordsResponse.data) 
-        ? recordsResponse.data 
-        : (recordsResponse.data.results || [])
-      
-      medicalRecords.value = allRecords.filter(r => {
-        const recordPatientId = r.patient?.id || r.patient
-        return String(recordPatientId) === String(patientId)
-      })
-
-      // Fetch vaccinations for this patient
-      const vaccinationsResponse = await axios.get(`${API_BASE_URL}/vaccinations/`)
-      const allVaccinations = Array.isArray(vaccinationsResponse.data)
-        ? vaccinationsResponse.data
-        : (vaccinationsResponse.data.results || [])
-      
-      vaccinations.value = allVaccinations.filter(v => {
-        const vaccPatientId = v.patient?.id || v.patient
-        return String(vaccPatientId) === String(patientId)
-      })
-    }
+    // Fetch passbook data - backend returns data directly
+    const response = await axios.get(`${API_BASE_URL}/passbooks-public/${token}/`)
+    
+    console.log('Backend response:', response.data)
+    
+    // Backend returns the data directly (not nested)
+    passbookData.value = response.data
+    
+    console.log('Passbook data set:', passbookData.value)
 
   } catch (err) {
     console.error('Error fetching passbook:', err)
-    error.value = err.response?.data?.detail || 'Failed to load passbook. Please check the URL and try again.'
+    error.value = err.response?.data?.error || 'Failed to load passbook. Please check the URL and try again.'
   } finally {
     loading.value = false
   }
@@ -202,7 +188,6 @@ const retry = () => {
 onMounted(() => {
   fetchPassbookData()
 })
-</script>
 
 <style scoped>
 .passbook-public-container {
@@ -413,5 +398,34 @@ onMounted(() => {
   .passbook-header h1 {
     font-size: 24px;
   }
+/* Add this to the existing <style scoped> section */
+
+.patient-photo {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.patient-photo img {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #7C3AED;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
+}
+
+.vacc-admin {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.record-vitals {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #6b7280;
+}
 }
 </style>
