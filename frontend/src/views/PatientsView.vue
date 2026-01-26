@@ -760,9 +760,6 @@ const deletePatient = async () => {
   }
 }
 
-const closeModal = () => {
-  showAddModal.value = false
-  showEditModal.value = false
   photoFile.value = null
   photoPreview.value = null
   formData.value = {
