@@ -129,53 +129,77 @@
         </div>
 
         <form @submit.prevent="savePatient" class="modal-body">
-          <!-- Photo Upload Section -->
-          <div class="photo-upload-section">
-            <label>Pet Photo</label>
-            <div class="photo-upload-area">
-              <div v-if="photoPreview" class="photo-preview">
-                <img :src="photoPreview" alt="Pet photo preview" />
-                <button type="button" @click="removePhoto" class="btn-remove-photo">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
-              </div>
-              <div v-else class="photo-placeholder">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                  <polyline points="21 15 16 10 5 21"></polyline>
-                </svg>
-                <p>Click to upload or drag photo here</p>
-              </div>
-              <input
-                ref="photoInput"
-                type="file"
-                accept="image/*"
-                @change="handlePhotoSelect"
-                class="photo-input-hidden"
-              />
-            </div>
-            <div class="photo-buttons">
-              <button type="button" @click="triggerPhotoUpload" class="btn-upload">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="17 8 12 3 7 8"></polyline>
-                  <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-                Choose File
-              </button>
-              <button type="button" @click="capturePhoto" class="btn-camera">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                  <circle cx="12" cy="13" r="4"></circle>
-                </svg>
-                Take Photo
-              </button>
-            </div>
-          </div>
+          
+          <!-- Replace the photo upload section in PatientsView.vue -->
+<!-- Find the section starting with "<!-- Photo Upload Section -->" and replace with this: -->
+
+<!-- Photo Upload Section -->
+<div class="photo-upload-section">
+  <label>Pet Photo</label>
+  
+  <!-- Camera View (shown when camera is active) -->
+  <div v-if="showCamera" class="camera-container">
+    <video ref="videoElement" autoplay playsinline class="camera-video"></video>
+    <canvas ref="canvasElement" style="display: none;"></canvas>
+    <div class="camera-controls">
+      <button type="button" @click="captureFromCamera" class="btn-capture">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+        </svg>
+        Capture
+      </button>
+      <button type="button" @click="stopCamera" class="btn-cancel-camera">
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <!-- Photo Upload Area (shown when camera is off) -->
+  <div v-else class="photo-upload-area" @click="triggerPhotoUpload">
+    <div v-if="photoPreview" class="photo-preview">
+      <img :src="photoPreview" alt="Pet photo preview" />
+      <button type="button" @click.stop="removePhoto" class="btn-remove-photo">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div v-else class="photo-placeholder">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+        <polyline points="21 15 16 10 5 21"></polyline>
+      </svg>
+      <p>Click to upload or drag photo here</p>
+    </div>
+    <input
+      ref="photoInput"
+      type="file"
+      accept="image/*"
+      @change="handlePhotoSelect"
+      class="photo-input-hidden"
+    />
+  </div>
+  
+  <div class="photo-buttons" v-if="!showCamera">
+    <button type="button" @click="triggerPhotoUpload" class="btn-upload">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="17 8 12 3 7 8"></polyline>
+        <line x1="12" y1="3" x2="12" y2="15"></line>
+      </svg>
+      Choose File
+    </button>
+    <button type="button" @click="openCamera" class="btn-camera">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+        <circle cx="12" cy="13" r="4"></circle>
+      </svg>
+      Take Photo
+    </button>
+  </div>
+</div>
 
           <div class="form-grid">
             <div class="form-group full-width">
@@ -323,6 +347,140 @@ const showDeleteModal = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
 const patientToDelete = ref(null)
+// Add these to the script setup section (after the existing ref declarations)
+
+const videoElement = ref(null)
+const canvasElement = ref(null)
+const showCamera = ref(false)
+const mediaStream = ref(null)
+
+// ✅ NEW: Open camera
+const openCamera = async () => {
+  try {
+    showCamera.value = true
+    
+    // Request camera access
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { 
+        facingMode: 'environment', // Use back camera on mobile
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    })
+    
+    mediaStream.value = stream
+    
+    // Wait for video element to be ready
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    if (videoElement.value) {
+      videoElement.value.srcObject = stream
+      console.log('Camera started successfully')
+    }
+  } catch (error) {
+    console.error('Camera error:', error)
+    showCamera.value = false
+    
+    let errorMsg = 'Cannot access camera. '
+    if (error.name === 'NotAllowedError') {
+      errorMsg += 'Please allow camera access in your browser settings.'
+    } else if (error.name === 'NotFoundError') {
+      errorMsg += 'No camera found on your device.'
+    } else {
+      errorMsg += error.message
+    }
+    
+    alert(errorMsg)
+  }
+}
+
+// ✅ NEW: Stop camera
+const stopCamera = () => {
+  if (mediaStream.value) {
+    mediaStream.value.getTracks().forEach(track => {
+      track.stop()
+      console.log('Camera track stopped')
+    })
+    mediaStream.value = null
+  }
+  showCamera.value = false
+}
+
+// ✅ NEW: Capture photo from camera
+const captureFromCamera = () => {
+  if (!videoElement.value || !canvasElement.value) {
+    console.error('Video or canvas element not found')
+    return
+  }
+  
+  const video = videoElement.value
+  const canvas = canvasElement.value
+  
+  // Set canvas size to video size
+  canvas.width = video.videoWidth
+  canvas.height = video.videoHeight
+  
+  // Draw video frame to canvas
+  const context = canvas.getContext('2d')
+  context.drawImage(video, 0, 0, canvas.width, canvas.height)
+  
+  // Convert canvas to blob then to file
+  canvas.toBlob((blob) => {
+    if (!blob) {
+      alert('Failed to capture photo')
+      return
+    }
+    
+    const timestamp = new Date().getTime()
+    const file = new File([blob], `pet-photo-${timestamp}.jpg`, { type: 'image/jpeg' })
+    
+    // Set photo file
+    photoFile.value = file
+    
+    // Create preview
+    photoPreview.value = canvas.toDataURL('image/jpeg', 0.9)
+    
+    console.log('Photo captured:', file.name, file.size, 'bytes')
+    
+    // Stop camera
+    stopCamera()
+  }, 'image/jpeg', 0.9)
+}
+
+// ✅ UPDATED: Close modal cleanup
+// Find the existing closeModal function and UPDATE it to include camera cleanup:
+const closeModal = () => {
+  showAddModal.value = false
+  showEditModal.value = false
+  photoFile.value = null
+  photoPreview.value = null
+  
+  // Stop camera if running
+  stopCamera()
+  
+  formData.value = {
+    pet_name: '',
+    species: '',
+    breed: '',
+    date_of_birth: '',
+    gender: '',
+    color: '',
+    owner: '',
+    microchip_id: '',
+    allergies: '',
+    chronic_conditions: '',
+    current_medications: ''
+  }
+  if (photoInput.value) {
+    photoInput.value.value = ''
+  }
+}
+
+// ✅ UPDATE: Keep existing capturePhoto function but rename/replace it
+// Remove or comment out the old capturePhoto function and keep this new one
+
+// The triggerPhotoUpload, handlePhotoSelect, and removePhoto functions stay the same
 
 const formData = ref({
   pet_name: '',
@@ -1260,5 +1418,65 @@ onMounted(() => {
     align-items: flex-start;
     gap: 16px;
   }
+/* Add these to the existing <style scoped> section */
+
+.camera-container {
+  margin-bottom: 16px;
+}
+
+.camera-video {
+  width: 100%;
+  max-height: 400px;
+  border-radius: 12px;
+  border: 3px solid #7C3AED;
+  background: #000;
+  object-fit: cover;
+}
+
+.camera-controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.btn-capture {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.btn-capture:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+}
+
+.btn-cancel-camera {
+  padding: 14px 24px;
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.btn-cancel-camera:hover {
+  background: #e5e7eb;
+}
+
 }
 </style>
