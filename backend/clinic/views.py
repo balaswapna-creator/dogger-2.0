@@ -300,46 +300,38 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
 # ============================================================================
 
 class PassbookViewSet(viewsets.ModelViewSet):
-    queryset = PetPassbook.objects.all()
     serializer_class = PassbookSerializer
     permission_classes = [permissions.IsAuthenticated]
     
+    def get_queryset(self):
+        """Optimize query with select_related to avoid N+1 queries"""
+        return PetPassbook.objects.select_related(
+            'patient',
+            'patient__owner'
+        ).all()
+    
     def create(self, request, *args, **kwargs):
-        try:
-            patient_id = request.data.get('patient_id')
-            if not patient_id:
-                return Response(
-                    {'error': 'patient_id is required'}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Check if patient exists
-            try:
-                patient = Patient.objects.get(id=patient_id)
-            except Patient.DoesNotExist:
-                return Response(
-                    {'error': 'Patient not found'}, 
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            
-            # Check if passbook already exists
-            passbook = PetPassbook.objects.filter(patient=patient).first()
-            if passbook:
-                serializer = self.get_serializer(passbook)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            
-            # Create new passbook
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-            
-        except Exception as e:
+        patient_id = request.data.get('patient_id')
+        
+        if not patient_id:
             return Response(
-                {'error': str(e)}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {'error': 'patient_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
             )
+        
+        # Check if passbook already exists
+        passbook = PetPassbook.objects.filter(patient_id=patient_id).first()
+        if passbook:
+            serializer = self.get_serializer(passbook, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        # Create new passbook
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 class PassbookPublicViewSet(viewsets.ReadOnlyModelViewSet):
     """Public passbook access (no authentication)"""
     permission_classes = [AllowAny]

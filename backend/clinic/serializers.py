@@ -285,26 +285,90 @@ class AuditLogSerializer(serializers.ModelSerializer):
 # PASSBOOK SERIALIZERS
 # ============================================================================
 class PassbookSerializer(serializers.ModelSerializer):
-    patient_id = serializers.UUIDField(write_only=True)
+    patient_id = serializers.UUIDField(write_only=True, required=False)
+    
+    # Add nested patient and owner info for display
+    patient_name = serializers.CharField(source='patient.pet_name', read_only=True)
+    patient_species = serializers.CharField(source='patient.species', read_only=True)
+    patient_breed = serializers.CharField(source='patient.breed', read_only=True)
+    patient_photo = serializers.SerializerMethodField()
+    
+    owner_name = serializers.CharField(source='patient.owner.name', read_only=True)
+    owner_phone = serializers.CharField(source='patient.owner.phone', read_only=True)
+    
+    # Keep existing fields
+    is_active = serializers.BooleanField(read_only=True)
+    days_remaining = serializers.IntegerField(read_only=True)
+    public_url = serializers.SerializerMethodField()
     
     class Meta:
         model = PetPassbook
-        fields = ['id', 'patient', 'patient_id', 'access_token', 'is_active']
-        read_only_fields = ['patient', 'access_token', 'is_active']
+        fields = [
+            'id',
+            'patient',
+            'patient_id',
+            'patient_name',
+            'patient_species', 
+            'patient_breed',
+            'patient_photo',
+            'owner_name',
+            'owner_phone',
+            'access_token',
+            'is_enabled',
+            'is_active',
+            'subscription_start',
+            'subscription_end',
+            'subscription_type',
+            'access_count',
+            'days_remaining',
+            'public_url',
+            'created_at'
+        ]
+        read_only_fields = ['patient', 'access_token', 'is_active', 'created_at']
+    
+    def get_patient_photo(self, obj):
+        """Get patient photo URL"""
+        try:
+            if obj.patient and obj.patient.photo:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(obj.patient.photo.url)
+                return obj.patient.photo.url
+        except Exception as e:
+            print(f"Error getting patient photo: {e}")
+        return None
+    
+    def get_public_url(self, obj):
+        """Generate the public passbook URL"""
+        request = self.context.get('request')
+        if request:
+            base_url = request.build_absolute_uri('/').rstrip('/')
+            # Remove /api from base URL if present
+            base_url = base_url.replace('/api', '')
+            frontend_url = base_url.replace('dogger2-backend', 'dogger2-frontend')
+            return f"{frontend_url}/passbook/public/{obj.access_token}"
+        return f"/passbook/public/{obj.access_token}"
     
     def create(self, validated_data):
-        patient_id = validated_data.pop('patient_id')
-        patient = Patient.objects.get(id=patient_id)
+        patient_id = validated_data.pop('patient_id', None)
+        
+        if not patient_id:
+            raise serializers.ValidationError("patient_id is required")
+        
+        try:
+            patient = Patient.objects.get(id=patient_id)
+        except Patient.DoesNotExist:
+            raise serializers.ValidationError("Patient not found")
+        
+        # Check if passbook already exists
+        passbook = PetPassbook.objects.filter(patient=patient).first()
+        if passbook:
+            return passbook
+        
+        # Create new passbook and auto-activate for 12 months
         passbook = PetPassbook.objects.create(patient=patient)
-        return passbook
+        passbook.activate_subscription(duration_months=12)
         
-        # Check if passbook already exists for this patient
-        existing_passbook = PetPassbook.objects.filter(patient_id=patient_id).first()
-        if existing_passbook:
-            return existing_passbook
-        
-        # Create new passbook
-        passbook = PetPassbook.objects.create(patient_id=patient_id)
         return passbook
 
 class PassbookPublicSerializer(serializers.Serializer):
