@@ -102,12 +102,6 @@
                       <circle cx="12" cy="12" r="3"></circle>
                     </svg>
                   </button>
-                  <button @click="openModal(prescription)" class="btn-edit" title="Edit">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                  </button>
                   <button @click="printPrescription(prescription)" class="btn-print" title="Print">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <polyline points="6 9 6 2 18 2 18 9"></polyline>
@@ -129,7 +123,7 @@
       </div>
     </div>
 
-    <!-- Add/Edit Modal -->
+    <!-- Add/Edit Modal with Multiple Medicines -->
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal-container">
         <div class="modal-header">
@@ -144,52 +138,116 @@
         
         <div class="modal-body">
           <form @submit.prevent="savePrescription">
-            <div class="form-grid">
-              <div class="form-group full-width">
-                <label>Select Consultation *</label>
-                <select v-model="form.medical_record" required>
-                  <option value="">Choose Consultation</option>
-                  <option v-for="consultation in consultations" :key="consultation.id" :value="consultation.id">
-                    {{ consultation.patient_name }} - {{ formatDate(consultation.visit_date) }} - {{ consultation.diagnosis || consultation.chief_complaint }}
-                  </option>
-                </select>
-                <p class="field-hint">Prescription will be linked to this consultation</p>
+            <!-- Patient Selection -->
+            <div class="form-group full-width">
+              <label>Select Consultation *</label>
+              <select v-model="form.medical_record" required>
+                <option value="">Choose Consultation</option>
+                <option v-for="consultation in consultations" :key="consultation.id" :value="consultation.id">
+                  {{ consultation.patient_name }} - {{ formatDate(consultation.visit_date) }} - {{ consultation.diagnosis || consultation.chief_complaint }}
+                </option>
+              </select>
+              <p class="field-hint">Prescription will be linked to this consultation</p>
+            </div>
+
+            <!-- MULTIPLE MEDICINES SECTION -->
+            <div class="medicines-section">
+              <div class="medicines-header">
+                <h3>💊 Medicines</h3>
+                <button 
+                  type="button" 
+                  class="btn-add-medicine"
+                  @click="addMedicine"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                  </svg>
+                  Add Medicine
+                </button>
               </div>
 
-              <div class="form-group full-width">
-                <label>Medication Name *</label>
-                <input v-model="form.medication_name" type="text" required placeholder="e.g., Amoxicillin"/>
-              </div>
+              <!-- Medicine Cards -->
+              <div class="medicines-list">
+                <div 
+                  v-for="(medicine, index) in form.medicines" 
+                  :key="index"
+                  class="medicine-card"
+                >
+                  <div class="medicine-card-header">
+                    <span class="medicine-number">Medicine #{{ index + 1 }}</span>
+                    <button 
+                      v-if="form.medicines.length > 1"
+                      type="button" 
+                      class="btn-remove-medicine"
+                      @click="removeMedicine(index)"
+                      title="Remove medicine"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
 
-              <div class="form-group">
-                <label>Dosage *</label>
-                <input v-model="form.dosage" type="text" required placeholder="e.g., 250mg, 1 tablet"/>
-              </div>
+                  <div class="medicine-fields">
+                    <div class="form-group">
+                      <label>Medication Name *</label>
+                      <input 
+                        v-model="medicine.medication_name" 
+                        type="text" 
+                        required 
+                        placeholder="e.g., Amoxicillin"
+                      />
+                    </div>
 
-              <div class="form-group">
-                <label>Frequency *</label>
-                <select v-model="form.frequency" required>
-                  <option value="">Select Frequency</option>
-                  <option value="Once daily">Once daily</option>
-                  <option value="Twice daily">Twice daily</option>
-                  <option value="Three times daily">Three times daily</option>
-                  <option value="Four times daily">Four times daily</option>
-                  <option value="Every 8 hours">Every 8 hours</option>
-                  <option value="Every 12 hours">Every 12 hours</option>
-                  <option value="As needed">As needed</option>
-                  <option value="Before meals">Before meals</option>
-                  <option value="After meals">After meals</option>
-                </select>
-              </div>
+                    <div class="form-group">
+                      <label>Dosage *</label>
+                      <input 
+                        v-model="medicine.dosage" 
+                        type="text" 
+                        required 
+                        placeholder="e.g., 250mg, 1 tablet"
+                      />
+                    </div>
 
-              <div class="form-group full-width">
-                <label>Duration *</label>
-                <input v-model="form.duration" type="text" required placeholder="e.g., 7 days, 2 weeks"/>
-              </div>
+                    <div class="form-group">
+                      <label>Frequency *</label>
+                      <select v-model="medicine.frequency" required>
+                        <option value="">Select Frequency</option>
+                        <option value="Once daily">Once daily</option>
+                        <option value="Twice daily">Twice daily</option>
+                        <option value="Three times daily">Three times daily</option>
+                        <option value="Four times daily">Four times daily</option>
+                        <option value="Every 8 hours">Every 8 hours</option>
+                        <option value="Every 12 hours">Every 12 hours</option>
+                        <option value="As needed">As needed</option>
+                        <option value="Before meals">Before meals</option>
+                        <option value="After meals">After meals</option>
+                      </select>
+                    </div>
 
-              <div class="form-group full-width">
-                <label>Instructions</label>
-                <textarea v-model="form.instructions" rows="3" placeholder="Additional instructions for pet owner..."></textarea>
+                    <div class="form-group">
+                      <label>Duration *</label>
+                      <input 
+                        v-model="medicine.duration" 
+                        type="text" 
+                        required 
+                        placeholder="e.g., 7 days, 2 weeks"
+                      />
+                    </div>
+
+                    <div class="form-group full-width">
+                      <label>Instructions</label>
+                      <textarea 
+                        v-model="medicine.instructions" 
+                        rows="2" 
+                        placeholder="Additional instructions for this medicine..."
+                      ></textarea>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -201,191 +259,13 @@
                   <polyline points="17 21 17 13 7 13 7 21"></polyline>
                   <polyline points="7 3 7 8 15 8"></polyline>
                 </svg>
-                {{ editMode ? 'Update' : 'Create' }} Prescription
+                Create Prescription
               </button>
             </div>
           </form>
         </div>
       </div>
     </div>
-
-    <!-- Date -->
-      <div class="form-group">
-        <label for="date">Date *</label>
-        <input 
-          type="date" 
-          id="date" 
-          v-model="form.date" 
-          required
-        />
-      </div>
-
-      <!-- Diagnosis -->
-      <div class="form-group">
-        <label for="diagnosis">Diagnosis *</label>
-        <textarea 
-          id="diagnosis" 
-          v-model="form.diagnosis" 
-          rows="3"
-          placeholder="Enter diagnosis details..."
-          required
-        ></textarea>
-      </div>
-
-      <!-- MEDICINES SECTION - Dynamic List -->
-      <div class="medicines-section">
-        <div class="section-header">
-          <h3>💊 Medicines</h3>
-          <button 
-            type="button" 
-            class="btn-add-medicine"
-            @click="addMedicine"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="16"></line>
-              <line x1="8" y1="12" x2="16" y2="12"></line>
-            </svg>
-            Add Another Medicine
-          </button>
-        </div>
-
-        <!-- List of Medicines -->
-        <div v-if="form.medicines.length === 0" class="empty-state">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path>
-          </svg>
-          <p>No medicines added yet</p>
-          <button type="button" class="btn-add-first" @click="addMedicine">
-            Add First Medicine
-          </button>
-        </div>
-
-        <div v-else class="medicines-list">
-          <div 
-            v-for="(medicine, index) in form.medicines" 
-            :key="index"
-            class="medicine-card"
-          >
-            <div class="card-header">
-              <span class="medicine-number">Medicine #{{ index + 1 }}</span>
-              <button 
-                v-if="form.medicines.length > 1"
-                type="button" 
-                class="btn-remove"
-                @click="removeMedicine(index)"
-                title="Remove this medicine"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="3 6 5 6 21 6"></polyline>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                </svg>
-              </button>
-            </div>
-
-            <div class="medicine-fields">
-              <!-- Medicine Name -->
-              <div class="form-group">
-                <label :for="`medicine-name-${index}`">Medicine Name *</label>
-                <input 
-                  :id="`medicine-name-${index}`"
-                  type="text" 
-                  v-model="medicine.name"
-                  placeholder="e.g., Amoxicillin"
-                  required
-                />
-              </div>
-
-              <!-- Dosage -->
-              <div class="form-group">
-                <label :for="`dosage-${index}`">Dosage *</label>
-                <input 
-                  :id="`dosage-${index}`"
-                  type="text" 
-                  v-model="medicine.dosage"
-                  placeholder="e.g., 500mg"
-                  required
-                />
-              </div>
-
-              <!-- Frequency -->
-              <div class="form-group">
-                <label :for="`frequency-${index}`">Frequency *</label>
-                <select :id="`frequency-${index}`" v-model="medicine.frequency" required>
-                  <option value="">Select frequency</option>
-                  <option value="Once daily">Once daily</option>
-                  <option value="Twice daily">Twice daily (BID)</option>
-                  <option value="Three times daily">Three times daily (TID)</option>
-                  <option value="Four times daily">Four times daily (QID)</option>
-                  <option value="Every 6 hours">Every 6 hours</option>
-                  <option value="Every 8 hours">Every 8 hours</option>
-                  <option value="Every 12 hours">Every 12 hours</option>
-                  <option value="As needed">As needed (PRN)</option>
-                </select>
-              </div>
-
-              <!-- Duration -->
-              <div class="form-group">
-                <label :for="`duration-${index}`">Duration *</label>
-                <div class="duration-input">
-                  <input 
-                    :id="`duration-${index}`"
-                    type="number" 
-                    v-model="medicine.duration_value"
-                    min="1"
-                    placeholder="7"
-                    required
-                  />
-                  <select v-model="medicine.duration_unit" required>
-                    <option value="days">Days</option>
-                    <option value="weeks">Weeks</option>
-                    <option value="months">Months</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Instructions -->
-              <div class="form-group full-width">
-                <label :for="`instructions-${index}`">Instructions</label>
-                <textarea 
-                  :id="`instructions-${index}`"
-                  v-model="medicine.instructions"
-                  rows="2"
-                  placeholder="e.g., Take with food, avoid dairy products..."
-                ></textarea>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Notes -->
-      <div class="form-group">
-        <label for="notes">Additional Notes</label>
-        <textarea 
-          id="notes" 
-          v-model="form.notes" 
-          rows="3"
-          placeholder="Any additional instructions or notes..."
-        ></textarea>
-      </div>
-
-      <!-- Form Actions -->
-      <div class="form-actions">
-        <button type="button" class="btn-cancel" @click="handleCancel">
-          Cancel
-        </button>
-        <button type="submit" class="btn-submit" :disabled="form.medicines.length === 0">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-            <polyline points="17 21 17 13 7 13 7 21"></polyline>
-            <polyline points="7 3 7 8 15 8"></polyline>
-          </svg>
-          Create Prescription
-        </button>
-      </div>
-    </form>
-  </div>
 
     <!-- View Modal -->
     <div v-if="showViewModal" class="modal-overlay" @click.self="closeViewModal">
@@ -436,11 +316,6 @@
             <h3>Instructions</h3>
             <p>{{ selectedPrescription.instructions }}</p>
           </div>
-          
-          <div class="doctor-section">
-            <span class="doctor-label">Prescribed by:</span>
-            <span class="doctor-name">Dr. {{ selectedPrescription.doctor_name }}</span>
-          </div>
 
           <div class="view-actions">
             <button @click="printPrescription(selectedPrescription)" class="btn-print-action">
@@ -473,6 +348,11 @@ const selectedPrescription = ref(null)
 
 const form = ref({
   medical_record: '',
+  medicines: []
+})
+
+// Create empty medicine template
+const createEmptyMedicine = () => ({
   medication_name: '',
   dosage: '',
   frequency: '',
@@ -507,21 +387,19 @@ const openModal = (prescription = null) => {
     form.value = {
       id: prescription.id,
       medical_record: prescription.medical_record,
-      medication_name: prescription.medication_name,
-      dosage: prescription.dosage,
-      frequency: prescription.frequency,
-      duration: prescription.duration,
-      instructions: prescription.instructions || ''
+      medicines: [{
+        medication_name: prescription.medication_name,
+        dosage: prescription.dosage,
+        frequency: prescription.frequency,
+        duration: prescription.duration,
+        instructions: prescription.instructions || ''
+      }]
     }
   } else {
     editMode.value = false
     form.value = {
       medical_record: '',
-      medication_name: '',
-      dosage: '',
-      frequency: '',
-      duration: '',
-      instructions: ''
+      medicines: [createEmptyMedicine()]
     }
   }
   showModal.value = true
@@ -531,19 +409,55 @@ const closeModal = () => {
   showModal.value = false
 }
 
+const addMedicine = () => {
+  form.value.medicines.push(createEmptyMedicine())
+}
+
+const removeMedicine = (index) => {
+  if (form.value.medicines.length > 1) {
+    if (confirm('Remove this medicine?')) {
+      form.value.medicines.splice(index, 1)
+    }
+  } else {
+    alert('At least one medicine is required')
+  }
+}
+
 const savePrescription = async () => {
   try {
+    if (form.value.medicines.length === 0) {
+      alert('Please add at least one medicine')
+      return
+    }
+
+    // For now, save the first medicine (backend needs update to support multiple)
+    const firstMedicine = form.value.medicines[0]
     const payload = {
-      ...form.value,
-      medical_record: form.value.medical_record || null
+      medical_record: form.value.medical_record || null,
+      medication_name: firstMedicine.medication_name,
+      dosage: firstMedicine.dosage,
+      frequency: firstMedicine.frequency,
+      duration: firstMedicine.duration,
+      instructions: firstMedicine.instructions
     }
     
     if (editMode.value) {
       await api.put(`/prescriptions/${form.value.id}/`, payload)
       alert('Prescription updated successfully!')
     } else {
-      await api.post('/prescriptions/', payload)
-      alert('Prescription created successfully!')
+      // Save each medicine as separate prescription
+      for (const medicine of form.value.medicines) {
+        const medicinePayload = {
+          medical_record: form.value.medical_record || null,
+          medication_name: medicine.medication_name,
+          dosage: medicine.dosage,
+          frequency: medicine.frequency,
+          duration: medicine.duration,
+          instructions: medicine.instructions
+        }
+        await api.post('/prescriptions/', medicinePayload)
+      }
+      alert(`${form.value.medicines.length} prescription(s) created successfully!`)
     }
     
     closeModal()
@@ -655,29 +569,6 @@ const formatDate = (dateString) => {
   })
 }
 
-{
-  patient: "patient-uuid",
-  date: "2026-01-27",
-  diagnosis: "Respiratory infection",
-  medicines: [
-    {
-      name: "Amoxicillin",
-      dosage: "500mg",
-      frequency: "Twice daily",
-      duration: "7 days",
-      instructions: "Take with food"
-    },
-    {
-      name: "Cough Syrup",
-      dosage: "10ml",
-      frequency: "Three times daily",
-      duration: "5 days",
-      instructions: "Before meals"
-    }
-  ],
-  notes: "Follow up in 1 week"
-}
-
 onMounted(() => {
   fetchPrescriptions()
   fetchConsultations()
@@ -685,6 +576,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Existing styles remain the same... */
 .prescriptions-wrapper {
   padding: 24px;
   max-width: 1400px;
@@ -875,14 +767,7 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   background: #EEF2FF;
-  color: #4338CA;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
+  color: #4338
 .patient-info {
   display: flex;
   align-items: center;
