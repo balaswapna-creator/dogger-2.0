@@ -288,6 +288,20 @@ onMounted(() => {
   }
 }
 
+/* Make passbook a standalone page */
+.public-passbook-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 0;
+  margin: 0;
+}
+
+/* Remove any default margins/padding */
+body {
+  margin: 0;
+  padding: 0;
+}
+
 /* Tailwind CSS classes used (make sure Tailwind is configured) */
 .min-h-screen { min-height: 100vh; }
 .bg-gradient-to-br { background-image: linear-gradient(to bottom right, var(--tw-gradient-stops)); }

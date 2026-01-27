@@ -376,6 +376,32 @@ body {
   animation: dropdownFade 0.2s ease;
 }
 
+/* === FULL HEIGHT PAGE CONTENT === */
+.content-area > div {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 32px;
+}
+
+.dashboard-view,
+.patients-view,
+.owners-view,
+.medical-records-view,
+.vaccinations-view,
+.payments-view,
+.passbooks-view,
+.prescriptions-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.page-content {
+  flex: 1;
+}
+
 @keyframes dropdownFade {
   from {
     opacity: 0;

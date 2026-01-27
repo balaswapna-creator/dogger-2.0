@@ -312,6 +312,14 @@ onMounted(() => {
   margin: 0 auto;
 }
 
+.dashboard-view {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
