@@ -1,7 +1,9 @@
 <template>
   <div id="app">
-    <!-- Navigation Header (shown on all pages except login) -->
-    <nav v-if="showNavigation" class="navbar">
+    <!-- Hide navigation on public passbook routes -->
+    <Navigation v-if="!isPublicPassbook" />
+    <router-view />
+  </div>
       <div class="navbar-content">
         <!-- Logo and Title -->
         <div class="navbar-brand" @click="navigateTo('/dashboard')">
@@ -119,6 +121,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from './services/api'
+import Navigation from './components/Navigation.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -152,6 +155,11 @@ const navigateTo = (path) => {
 const loadUser = () => {
   currentUser.value = api.getUserProfile()
 }
+
+// Check if current route is the public passbook
+const isPublicPassbook = computed(() => {
+  return route.path.includes('/passbook/public/')
+})
 
 const handleClickOutside = (event) => {
   if (!event.target.closest('.user-section')) {
