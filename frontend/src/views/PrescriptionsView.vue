@@ -762,12 +762,19 @@ onMounted(() => {
   background: #F9FAFB;
 }
 
+/* FIX: Complete the .date-badge rule */
 .date-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   background: #EEF2FF;
-  color: #4338
+  color: #4338CA;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .patient-info {
   display: flex;
   align-items: center;
@@ -975,6 +982,98 @@ onMounted(() => {
   color: #6B7280;
 }
 
+/* NEW: Medicines Section Styles */
+.medicines-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 2px solid #E5E7EB;
+}
+
+.medicines-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.medicines-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #1F2937;
+}
+
+.btn-add-medicine {
+  background: #10B981;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s;
+}
+
+.btn-add-medicine:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.medicines-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.medicine-card {
+  background: #F9FAFB;
+  border: 2px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.medicine-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.medicine-number {
+  font-weight: 700;
+  color: #6366F1;
+  font-size: 14px;
+}
+
+.btn-remove-medicine {
+  background: #FEE2E2;
+  color: #EF4444;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.btn-remove-medicine:hover {
+  background: #FCA5A5;
+}
+
+.medicine-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
 .modal-actions {
   display: flex;
   gap: 12px;
@@ -1166,7 +1265,8 @@ onMounted(() => {
     padding: 16px;
   }
   
-  .form-grid {
+  .form-grid,
+  .medicine-fields {
     grid-template-columns: 1fr;
   }
   
