@@ -762,523 +762,451 @@ onMounted(() => {
   background: #F9FAFB;
 }
 
-/* FIX: Complete the .date-badge rule */
 .date-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   background: #EEF2FF;
-  color: #4338CA;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
+  color: #4338
+<function_calls>
+<invoke name="artifacts">
+<parameter name="command">update</parameter>
+<parameter name="id">prescriptions_view_multiple_medicines</parameter>
+<parameter name="new_str">.date-badge {
+display: inline-flex;
+align-items: center;
+gap: 6px;
+background: #EEF2FF;
+color: #4338CA;
+padding: 6px 12px;
+border-radius: 8px;
+font-size: 13px;
+font-weight: 600;
+white-space: nowrap;
 }
-
 .patient-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+display: flex;
+align-items: center;
+gap: 12px;
 }
-
 .patient-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #6366F1, #4F46E5);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 16px;
+width: 36px;
+height: 36px;
+border-radius: 8px;
+background: linear-gradient(135deg, #6366F1, #4F46E5);
+color: white;
+display: flex;
+align-items: center;
+justify-content: center;
+font-weight: 700;
+font-size: 16px;
 }
-
 .medication-badge {
-  background: #DBEAFE;
-  color: #1E40AF;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+background: #DBEAFE;
+color: #1E40AF;
+padding: 6px 12px;
+border-radius: 8px;
+font-size: 13px;
+font-weight: 600;
 }
-
 .frequency-badge {
-  background: #D1FAE5;
-  color: #065F46;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
+background: #D1FAE5;
+color: #065F46;
+padding: 6px 12px;
+border-radius: 8px;
+font-size: 13px;
+font-weight: 500;
 }
-
 .action-buttons {
-  display: flex;
-  gap: 8px;
+display: flex;
+gap: 8px;
 }
-
 .btn-view, .btn-edit, .btn-print, .btn-delete {
-  background: #F3F4F6;
-  border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s;
+background: #F3F4F6;
+border: none;
+width: 32px;
+height: 32px;
+border-radius: 8px;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.3s;
 }
-
 .btn-view {
-  color: #6366F1;
+color: #6366F1;
 }
-
 .btn-view:hover {
-  background: #EEF2FF;
+background: #EEF2FF;
 }
-
 .btn-edit {
-  color: #F59E0B;
+color: #F59E0B;
 }
-
 .btn-edit:hover {
-  background: #FEF3C7;
+background: #FEF3C7;
 }
-
 .btn-print {
-  color: #14B8A6;
+color: #14B8A6;
 }
-
 .btn-print:hover {
-  background: #CCFBF1;
+background: #CCFBF1;
 }
-
 .btn-delete {
-  color: #EF4444;
+color: #EF4444;
 }
-
 .btn-delete:hover {
-  background: #FEE2E2;
+background: #FEE2E2;
 }
-
-.no-data {
-  text-align: center;
-  padding: 60px 20px !important;
-}
-
 /* Modal Styles */
 .modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-  overflow-y: auto;
+position: fixed;
+inset: 0;
+background: rgba(0, 0, 0, 0.6);
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 1000;
+padding: 20px;
+overflow-y: auto;
 }
-
 .modal-container, .view-modal {
-  background: white;
-  border-radius: 20px;
-  max-width: 700px;
-  width: 100%;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+background: white;
+border-radius: 20px;
+max-width: 800px;
+width: 100%;
+max-height: 90vh;
+display: flex;
+flex-direction: column;
+box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
-
 .modal-header, .view-header {
-  background: linear-gradient(135deg, #6366F1, #4F46E5);
-  color: white;
-  padding: 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-radius: 20px 20px 0 0;
+background: linear-gradient(135deg, #6366F1, #4F46E5);
+color: white;
+padding: 24px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+border-radius: 20px 20px 0 0;
 }
-
 .modal-header h2, .view-header h2 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 700;
+margin: 0;
+font-size: 24px;
+font-weight: 700;
 }
-
 .btn-close {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s;
+background: rgba(255, 255, 255, 0.2);
+border: none;
+color: white;
+width: 36px;
+height: 36px;
+border-radius: 8px;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.3s;
 }
-
 .btn-close:hover {
-  background: rgba(255, 255, 255, 0.3);
+background: rgba(255, 255, 255, 0.3);
 }
-
 .modal-body, .view-body {
-  padding: 24px;
-  overflow-y: auto;
+padding: 24px;
+overflow-y: auto;
 }
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+/* Multiple Medicines Section */
+.medicines-section {
+background: #F9FAFB;
+border-radius: 12px;
+padding: 20px;
+margin: 20px 0;
 }
-
+.medicines-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 20px;
+}
+.medicines-header h3 {
+margin: 0;
+font-size: 18px;
+font-weight: 700;
+color: #1F2937;
+}
+.btn-add-medicine {
+display: flex;
+align-items: center;
+gap: 6px;
+padding: 8px 16px;
+background: #10B981;
+color: white;
+border: none;
+border-radius: 8px;
+font-size: 14px;
+font-weight: 600;
+cursor: pointer;
+transition: all 0.2s;
+}
+.btn-add-medicine:hover {
+background: #059669;
+transform: translateY(-1px);
+box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+.medicines-list {
+display: flex;
+flex-direction: column;
+gap: 16px;
+}
+.medicine-card {
+background: white;
+border: 2px solid #E5E7EB;
+border-radius: 12px;
+padding: 16px;
+transition: all 0.2s;
+}
+.medicine-card:hover {
+border-color: #6366F1;
+box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+}
+.medicine-card-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 16px;
+padding-bottom: 12px;
+border-bottom: 1px solid #E5E7EB;
+}
+.medicine-number {
+font-weight: 700;
+color: #6366F1;
+font-size: 14px;
+}
+.btn-remove-medicine {
+background: #FEE2E2;
+color: #EF4444;
+border: none;
+width: 28px;
+height: 28px;
+border-radius: 6px;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.2s;
+}
+.btn-remove-medicine:hover {
+background: #FECACA;
+transform: scale(1.1);
+}
+.medicine-fields {
+display: grid;
+grid-template-columns: repeat(2, 1fr);
+gap: 16px;
+}
 .form-group {
-  display: flex;
-  flex-direction: column;
+display: flex;
+flex-direction: column;
 }
-
 .form-group.full-width {
-  grid-column: 1 / -1;
+grid-column: 1 / -1;
 }
-
 .form-group label {
-  font-size: 14px;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 8px;
+font-size: 14px;
+font-weight: 600;
+color: #374151;
+margin-bottom: 8px;
 }
-
 .form-group input,
 .form-group select,
 .form-group textarea {
-  padding: 12px 16px;
-  border: 2px solid #E5E7EB;
-  border-radius: 10px;
-  font-size: 15px;
-  color: #1F2937;
-  transition: all 0.3s;
-  font-family: inherit;
+padding: 10px 14px;
+border: 2px solid #E5E7EB;
+border-radius: 8px;
+font-size: 14px;
+color: #1F2937;
+transition: all 0.3s;
+font-family: inherit;
 }
-
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-  outline: none;
-  border-color: #6366F1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+outline: none;
+border-color: #6366F1;
+box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
-
 .form-group textarea {
-  resize: vertical;
+resize: vertical;
 }
-
 .field-hint {
-  margin: 4px 0 0 0;
-  font-size: 12px;
-  color: #6B7280;
+margin: 4px 0 0 0;
+font-size: 12px;
+color: #6B7280;
 }
-
-/* NEW: Medicines Section Styles */
-.medicines-section {
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 2px solid #E5E7EB;
-}
-
-.medicines-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.medicines-header h3 {
-  margin: 0;
-  font-size: 18px;
-  color: #1F2937;
-}
-
-.btn-add-medicine {
-  background: #10B981;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.3s;
-}
-
-.btn-add-medicine:hover {
-  background: #059669;
-  transform: translateY(-1px);
-}
-
-.medicines-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.medicine-card {
-  background: #F9FAFB;
-  border: 2px solid #E5E7EB;
-  border-radius: 12px;
-  padding: 16px;
-}
-
-.medicine-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #E5E7EB;
-}
-
-.medicine-number {
-  font-weight: 700;
-  color: #6366F1;
-  font-size: 14px;
-}
-
-.btn-remove-medicine {
-  background: #FEE2E2;
-  color: #EF4444;
-  border: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s;
-}
-
-.btn-remove-medicine:hover {
-  background: #FCA5A5;
-}
-
-.medicine-fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
 .modal-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid #E5E7EB;
+display: flex;
+gap: 12px;
+margin-top: 24px;
+padding-top: 24px;
+border-top: 1px solid #E5E7EB;
 }
-
 .btn-cancel {
-  flex: 1;
-  background: #F3F4F6;
-  color: #4B5563;
-  border: none;
-  padding: 14px 24px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
+flex: 1;
+background: #F3F4F6;
+color: #4B5563;
+border: none;
+padding: 14px 24px;
+border-radius: 12px;
+font-size: 15px;
+font-weight: 600;
+cursor: pointer;
+transition: all 0.3s;
 }
-
 .btn-cancel:hover {
-  background: #E5E7EB;
+background: #E5E7EB;
 }
-
 .btn-save {
-  flex: 2;
-  background: linear-gradient(135deg, #6366F1, #4F46E5);
-  color: white;
-  border: none;
-  padding: 14px 24px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+flex: 2;
+background: linear-gradient(135deg, #6366F1, #4F46E5);
+color: white;
+border: none;
+padding: 14px 24px;
+border-radius: 12px;
+font-size: 15px;
+font-weight: 600;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+transition: all 0.3s;
+box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
-
 .btn-save:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+transform: translateY(-2px);
+box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
 }
-
 /* View Modal Styles */
 .detail-section {
-  background: #F9FAFB;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 20px;
+background: #F9FAFB;
+border-radius: 12px;
+padding: 16px;
+margin-bottom: 20px;
 }
-
 .detail-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
+display: flex;
+justify-content: space-between;
+padding: 8px 0;
 }
-
 .detail-label {
-  font-weight: 600;
-  color: #6B7280;
+font-weight: 600;
+color: #6B7280;
 }
-
 .detail-value {
-  color: #1F2937;
+color: #1F2937;
 }
-
 .medication-section {
-  margin-bottom: 20px;
+margin-bottom: 20px;
 }
-
 .medication-section h3 {
-  margin: 0 0 12px 0;
-  color: #6366F1;
-  font-size: 16px;
+margin: 0 0 12px 0;
+color: #6366F1;
+font-size: 16px;
 }
-
 .medication-name {
-  background: linear-gradient(135deg, #6366F1, #4F46E5);
-  color: white;
-  padding: 16px 20px;
-  border-radius: 12px;
-  font-size: 20px;
-  font-weight: 700;
+background: linear-gradient(135deg, #6366F1, #4F46E5);
+color: white;
+padding: 16px 20px;
+border-radius: 12px;
+font-size: 20px;
+font-weight: 700;
 }
-
 .dosage-section {
-  background: #EEF2FF;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
+background: #EEF2FF;
+border-radius: 12px;
+padding: 20px;
+margin-bottom: 20px;
 }
-
 .dosage-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #C7D2FE;
+display: flex;
+justify-content: space-between;
+padding: 8px 0;
+border-bottom: 1px solid #C7D2FE;
 }
-
 .dosage-item:last-child {
-  border-bottom: none;
+border-bottom: none;
 }
-
 .dosage-label {
-  font-weight: 600;
-  color: #4338CA;
+font-weight: 600;
+color: #4338CA;
 }
-
 .dosage-value {
-  color: #1F2937;
-  font-weight: 500;
+color: #1F2937;
+font-weight: 500;
 }
-
 .instructions-section {
-  background: #FFFBEB;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-left: 4px solid #F59E0B;
+background: #FFFBEB;
+border-radius: 12px;
+padding: 20px;
+margin-bottom: 20px;
+border-left: 4px solid #F59E0B;
 }
-
 .instructions-section h3 {
-  margin: 0 0 12px 0;
-  color: #92400E;
-  font-size: 16px;
+margin: 0 0 12px 0;
+color: #92400E;
+font-size: 16px;
 }
-
 .instructions-section p {
-  margin: 0;
-  color: #374151;
-  line-height: 1.6;
+margin: 0;
+color: #374151;
+line-height: 1.6;
 }
-
-.doctor-section {
-  text-align: center;
-  padding-top: 20px;
-  border-top: 2px solid #E5E7EB;
-  margin-top: 20px;
-}
-
-.doctor-label {
-  display: block;
-  font-size: 14px;
-  color: #6B7280;
-  margin-bottom: 4px;
-}
-
-.doctor-name {
-  font-size: 18px;
-  font-weight: 700;
-  color: #1F2937;
-}
-
 .view-actions {
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid #E5E7EB;
+margin-top: 24px;
+padding-top: 24px;
+border-top: 1px solid #E5E7EB;
 }
-
 .btn-print-action {
-  width: 100%;
-  background: linear-gradient(135deg, #14B8A6, #0D9488);
-  color: white;
-  border: none;
-  padding: 14px 24px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.3s;
+width: 100%;
+background: linear-gradient(135deg, #14B8A6, #0D9488);
+color: white;
+border: none;
+padding: 14px 24px;
+border-radius: 12px;
+font-size: 15px;
+font-weight: 600;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+transition: all 0.3s;
 }
-
 .btn-print-action:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(20, 184, 166, 0.4);
+transform: translateY(-2px);
+box-shadow: 0 6px 20px rgba(20, 184, 166, 0.4);
 }
-
 @media (max-width: 768px) {
-  .prescriptions-wrapper {
-    padding: 16px;
-  }
-  
-  .form-grid,
-  .medicine-fields {
-    grid-template-columns: 1fr;
-  }
-  
-  .header-content {
-    flex-direction: column;
-    gap: 16px;
-    align-items: stretch;
-  }
-  
-  .btn-add {
-    width: 100%;
-    justify-content: center;
-  }
+.prescriptions-wrapper {
+padding: 16px;
+}
+.medicine-fields {
+grid-template-columns: 1fr;
+}
+.header-content {
+flex-direction: column;
+gap: 16px;
+align-items: stretch;
+}
+.btn-add {
+width: 100%;
+justify-content: center;
+}
+}
+</style></parameter>
+<parameter name="old_str">.date-badge {
+display: inline-flex;
+align-items: center;
+gap: 6px;
+background: #EEF2FF;
+color: #4338</parameter>
 }
 </style>
