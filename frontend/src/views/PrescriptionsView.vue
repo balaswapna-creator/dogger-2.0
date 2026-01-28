@@ -123,11 +123,11 @@
       </div>
     </div>
 
-    <!-- Add/Edit Modal with Multiple Medicines -->
+    <!-- Add/Edit Modal -->
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal-container">
         <div class="modal-header">
-          <h2>{{ editMode ? 'Edit Prescription' : 'New Prescription' }}</h2>
+          <h2>New Prescription</h2>
           <button @click="closeModal" class="btn-close">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -138,7 +138,6 @@
         
         <div class="modal-body">
           <form @submit.prevent="savePrescription">
-            <!-- Patient Selection -->
             <div class="form-group full-width">
               <label>Select Consultation *</label>
               <select v-model="form.medical_record" required>
@@ -150,15 +149,11 @@
               <p class="field-hint">Prescription will be linked to this consultation</p>
             </div>
 
-            <!-- MULTIPLE MEDICINES SECTION -->
+            <!-- Multiple Medicines Section -->
             <div class="medicines-section">
               <div class="medicines-header">
                 <h3>💊 Medicines</h3>
-                <button 
-                  type="button" 
-                  class="btn-add-medicine"
-                  @click="addMedicine"
-                >
+                <button type="button" class="btn-add-medicine" @click="addMedicine">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="12" y1="8" x2="12" y2="16"></line>
@@ -168,22 +163,11 @@
                 </button>
               </div>
 
-              <!-- Medicine Cards -->
               <div class="medicines-list">
-                <div 
-                  v-for="(medicine, index) in form.medicines" 
-                  :key="index"
-                  class="medicine-card"
-                >
+                <div v-for="(medicine, index) in form.medicines" :key="index" class="medicine-card">
                   <div class="medicine-card-header">
                     <span class="medicine-number">Medicine #{{ index + 1 }}</span>
-                    <button 
-                      v-if="form.medicines.length > 1"
-                      type="button" 
-                      class="btn-remove-medicine"
-                      @click="removeMedicine(index)"
-                      title="Remove medicine"
-                    >
+                    <button v-if="form.medicines.length > 1" type="button" class="btn-remove-medicine" @click="removeMedicine(index)">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -194,22 +178,12 @@
                   <div class="medicine-fields">
                     <div class="form-group">
                       <label>Medication Name *</label>
-                      <input 
-                        v-model="medicine.medication_name" 
-                        type="text" 
-                        required 
-                        placeholder="e.g., Amoxicillin"
-                      />
+                      <input v-model="medicine.medication_name" type="text" required placeholder="e.g., Amoxicillin" />
                     </div>
 
                     <div class="form-group">
                       <label>Dosage *</label>
-                      <input 
-                        v-model="medicine.dosage" 
-                        type="text" 
-                        required 
-                        placeholder="e.g., 250mg, 1 tablet"
-                      />
+                      <input v-model="medicine.dosage" type="text" required placeholder="e.g., 250mg" />
                     </div>
 
                     <div class="form-group">
@@ -230,21 +204,12 @@
 
                     <div class="form-group">
                       <label>Duration *</label>
-                      <input 
-                        v-model="medicine.duration" 
-                        type="text" 
-                        required 
-                        placeholder="e.g., 7 days, 2 weeks"
-                      />
+                      <input v-model="medicine.duration" type="text" required placeholder="e.g., 7 days" />
                     </div>
 
                     <div class="form-group full-width">
                       <label>Instructions</label>
-                      <textarea 
-                        v-model="medicine.instructions" 
-                        rows="2" 
-                        placeholder="Additional instructions for this medicine..."
-                      ></textarea>
+                      <textarea v-model="medicine.instructions" rows="2" placeholder="Instructions for this medicine..."></textarea>
                     </div>
                   </div>
                 </div>
@@ -342,7 +307,6 @@ const consultations = ref([])
 const loading = ref(true)
 const showModal = ref(false)
 const showViewModal = ref(false)
-const editMode = ref(false)
 const searchQuery = ref('')
 const selectedPrescription = ref(null)
 
@@ -351,7 +315,6 @@ const form = ref({
   medicines: []
 })
 
-// Create empty medicine template
 const createEmptyMedicine = () => ({
   medication_name: '',
   dosage: '',
@@ -381,26 +344,10 @@ const fetchConsultations = async () => {
   }
 }
 
-const openModal = (prescription = null) => {
-  if (prescription) {
-    editMode.value = true
-    form.value = {
-      id: prescription.id,
-      medical_record: prescription.medical_record,
-      medicines: [{
-        medication_name: prescription.medication_name,
-        dosage: prescription.dosage,
-        frequency: prescription.frequency,
-        duration: prescription.duration,
-        instructions: prescription.instructions || ''
-      }]
-    }
-  } else {
-    editMode.value = false
-    form.value = {
-      medical_record: '',
-      medicines: [createEmptyMedicine()]
-    }
+const openModal = () => {
+  form.value = {
+    medical_record: '',
+    medicines: [createEmptyMedicine()]
   }
   showModal.value = true
 }
@@ -430,36 +377,19 @@ const savePrescription = async () => {
       return
     }
 
-    // For now, save the first medicine (backend needs update to support multiple)
-    const firstMedicine = form.value.medicines[0]
-    const payload = {
-      medical_record: form.value.medical_record || null,
-      medication_name: firstMedicine.medication_name,
-      dosage: firstMedicine.dosage,
-      frequency: firstMedicine.frequency,
-      duration: firstMedicine.duration,
-      instructions: firstMedicine.instructions
-    }
-    
-    if (editMode.value) {
-      await api.put(`/prescriptions/${form.value.id}/`, payload)
-      alert('Prescription updated successfully!')
-    } else {
-      // Save each medicine as separate prescription
-      for (const medicine of form.value.medicines) {
-        const medicinePayload = {
-          medical_record: form.value.medical_record || null,
-          medication_name: medicine.medication_name,
-          dosage: medicine.dosage,
-          frequency: medicine.frequency,
-          duration: medicine.duration,
-          instructions: medicine.instructions
-        }
-        await api.post('/prescriptions/', medicinePayload)
+    for (const medicine of form.value.medicines) {
+      const payload = {
+        medical_record: form.value.medical_record || null,
+        medication_name: medicine.medication_name,
+        dosage: medicine.dosage,
+        frequency: medicine.frequency,
+        duration: medicine.duration,
+        instructions: medicine.instructions
       }
-      alert(`${form.value.medicines.length} prescription(s) created successfully!`)
+      await api.post('/prescriptions/', payload)
     }
     
+    alert(`${form.value.medicines.length} prescription(s) created successfully!`)
     closeModal()
     fetchPrescriptions()
   } catch (error) {
@@ -576,7 +506,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Existing styles remain the same... */
 .prescriptions-wrapper {
   padding: 24px;
   max-width: 1400px;
@@ -767,87 +696,81 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   background: #EEF2FF;
-  color: #4338
-<function_calls>
-<invoke name="artifacts">
-<parameter name="command">update</parameter>
-<parameter name="id">prescriptions_view_multiple_medicines</parameter>
-<parameter name="new_str">.date-badge {
-display: inline-flex;
-align-items: center;
-gap: 6px;
-background: #EEF2FF;
-color: #4338CA;
-padding: 6px 12px;
-border-radius: 8px;
-font-size: 13px;
-font-weight: 600;
-white-space: nowrap;
+  color: #4338CA;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
 }
+
 .patient-info {
-display: flex;
-align-items: center;
-gap: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
+
 .patient-avatar {
-width: 36px;
-height: 36px;
-border-radius: 8px;
-background: linear-gradient(135deg, #6366F1, #4F46E5);
-color: white;
-display: flex;
-align-items: center;
-justify-content: center;
-font-weight: 700;
-font-size: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6366F1, #4F46E5);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
 }
+
 .medication-badge {
-background: #DBEAFE;
-color: #1E40AF;
-padding: 6px 12px;
-border-radius: 8px;
-font-size: 13px;
-font-weight: 600;
+  background: #DBEAFE;
+  color: #1E40AF;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
 }
+
 .frequency-badge {
-background: #D1FAE5;
-color: #065F46;
-padding: 6px 12px;
-border-radius: 8px;
-font-size: 13px;
-font-weight: 500;
+  background: #D1FAE5;
+  color: #065F46;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
 }
+
 .action-buttons {
-display: flex;
-gap: 8px;
+  display: flex;
+  gap: 8px;
 }
-.btn-view, .btn-edit, .btn-print, .btn-delete {
-background: #F3F4F6;
-border: none;
-width: 32px;
-height: 32px;
-border-radius: 8px;
-cursor: pointer;
-display: flex;
-align-items: center;
-justify-content: center;
-transition: all 0.3s;
+
+.btn-view, .btn-print, .btn-delete {
+  background: #F3F4F6;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
 }
+
 .btn-view {
-color: #6366F1;
+  color: #6366F1;
 }
+
 .btn-view:hover {
-background: #EEF2FF;
+  background: #EEF2FF;
 }
-.btn-edit {
-color: #F59E0B;
-}
-.btn-edit:hover {
-background: #FEF3C7;
-}
+
 .btn-print {
-color: #14B8A6;
+  color: #14B8A6;
 }
+
 .btn-print:hover {
 background: #CCFBF1;
 }
@@ -1200,13 +1123,5 @@ align-items: stretch;
 width: 100%;
 justify-content: center;
 }
-}
-</style></parameter>
-<parameter name="old_str">.date-badge {
-display: inline-flex;
-align-items: center;
-gap: 6px;
-background: #EEF2FF;
-color: #4338</parameter>
 }
 </style>
