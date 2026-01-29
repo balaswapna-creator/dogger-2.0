@@ -110,29 +110,62 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
 # ============================================================================
 
 class PrescriptionSerializer(serializers.ModelSerializer):
-    patient_name = serializers.SerializerMethodField()
-    doctor_name = serializers.SerializerMethodField()
+    patient_name = serializers.CharField(source='patient_name', read_only=True)
+    medicine_count = serializers.IntegerField(source='medicine_count', read_only=True)
     
     class Meta:
         model = Prescription
         fields = [
-            'id', 'medical_record', 
-            'medication_name', 'dosage', 'frequency', 'duration', 
-            'instructions', 'quantity', 'price',
-            'patient_name', 'doctor_name',
-            'created_at'
+            'id',
+            'medical_record',
+            'medicines',  # NEW: Array of medicines
+            'patient_name',
+            'medicine_count',
+            # Keep old fields for backward compatibility
+            'medication_name',
+            'dosage',
+            'frequency',
+            'duration',
+            'instructions',
+            'created_at',
+            'updated_at'
         ]
-        read_only_fields = ['created_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
     
-    def get_patient_name(self, obj):
-        if obj.medical_record and obj.medical_record.patient:
-            return obj.medical_record.patient.pet_name
-        return None
+    def validate_medicines(self, value):
+        """Validate medicines array"""
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Medicines must be a list")
+        
+        if len(value) == 0:
+            raise serializers.ValidationError("At least one medicine is required")
+        
+        for idx, medicine in enumerate(value):
+            required_fields = ['medication_name', 'dosage', 'frequency', 'duration']
+            for field in required_fields:
+                if field not in medicine or not medicine[field]:
+                    raise serializers.ValidationError(
+                        f"Medicine #{idx + 1}: {field} is required"
+                    )
+        
+        return value
     
-    def get_doctor_name(self, obj):
-        if obj.medical_record and obj.medical_record.doctor:
-            return obj.medical_record.doctor.get_full_name()
-        return None
+    def create(self, validated_data):
+        """Create prescription with multiple medicines"""
+        medicines = validated_data.get('medicines', [])
+        
+        # For backward compatibility: if medicines array is empty but old fields exist
+        if not medicines and validated_data.get('medication_name'):
+            medicines = [{
+                'medication_name': validated_data.get('medication_name', ''),
+                'dosage': validated_data.get('dosage', ''),
+                'frequency': validated_data.get('frequency', ''),
+                'duration': validated_data.get('duration', ''),
+                'instructions': validated_data.get('instructions', '')
+            }]
+            validated_data['medicines'] = medicines
+        
+        return super().create(validated_data)
 
 
 # ============================================================================

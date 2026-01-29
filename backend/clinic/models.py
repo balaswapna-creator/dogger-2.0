@@ -229,25 +229,52 @@ class MedicalRecord(models.Model):
 # PRESCRIPTION
 # ============================================================================
 
+from django.db import models
+import uuid
+
 class Prescription(models.Model):
-    """Prescription linked to a medical record"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    medical_record = models.ForeignKey(MedicalRecord, on_delete=models.CASCADE, related_name='prescriptions')
-    medication_name = models.CharField(max_length=200)
-    dosage = models.CharField(max_length=100)
-    frequency = models.CharField(max_length=100)
-    duration = models.CharField(max_length=100)
+    medical_record = models.ForeignKey(
+        'MedicalRecord', 
+        on_delete=models.CASCADE, 
+        related_name='prescriptions',
+        null=True,
+        blank=True
+    )
+    
+    # NEW: Store multiple medicines as JSON
+    medicines = models.JSONField(
+        default=list,
+        help_text="List of medicines with dosage, frequency, duration, instructions"
+    )
+    
+    # Keep these for backward compatibility (optional)
+    medication_name = models.CharField(max_length=200, blank=True)
+    dosage = models.CharField(max_length=100, blank=True)
+    frequency = models.CharField(max_length=100, blank=True)
+    duration = models.CharField(max_length=100, blank=True)
     instructions = models.TextField(blank=True)
-    quantity = models.IntegerField(default=1)
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
     created_at = models.DateTimeField(auto_now_add=True)
-
+    updated_at = models.DateTimeField(auto_now=True)
+    
     class Meta:
-        db_table = 'dogger_prescriptions'
-        ordering = ['medication_name']
-
+        ordering = ['-created_at']
+    
     def __str__(self):
-        return f"{self.medication_name} - {self.dosage}"
+        patient_name = self.medical_record.patient.pet_name if self.medical_record else "Unknown"
+        medicine_count = len(self.medicines) if self.medicines else 0
+        return f"Prescription for {patient_name} - {medicine_count} medicine(s)"
+    
+    @property
+    def patient_name(self):
+        if self.medical_record and self.medical_record.patient:
+            return self.medical_record.patient.pet_name
+        return "Unknown Patient"
+    
+    @property
+    def medicine_count(self):
+        return len(self.medicines) if self.medicines else 0
 
 
 # ============================================================================

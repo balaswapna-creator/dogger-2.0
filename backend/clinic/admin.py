@@ -64,19 +64,64 @@ class MedicalRecordAdmin(admin.ModelAdmin):
 # PRESCRIPTION ADMIN (SINGLE REGISTRATION)
 # ============================================================================
 
+# File: backend/clinic/admin.py
+# Update the PrescriptionAdmin class
+
+from django.contrib import admin
+from .models import Prescription
+
 @admin.register(Prescription)
 class PrescriptionAdmin(admin.ModelAdmin):
-    list_display = ['medication_name', 'dosage', 'get_patient_name', 'frequency', 'price', 'created_at']
-    list_filter = ['created_at']
-    search_fields = ['medication_name', 'medical_record__patient__pet_name']
-    ordering = ['-created_at']
+    list_display = [
+        'id',
+        'patient_name',
+        'medicine_count',
+        'created_at',
+        'updated_at'
+    ]
     
-    def get_patient_name(self, obj):
-        if obj.medical_record and obj.medical_record.patient:
-            return obj.medical_record.patient.pet_name
-        return 'N/A'
-    get_patient_name.short_description = 'Patient'
-
+    list_filter = ['created_at', 'updated_at']
+    
+    search_fields = [
+        'medical_record__patient__pet_name',
+        'medication_name',
+        'medicines'
+    ]
+    
+    readonly_fields = ['id', 'created_at', 'updated_at']
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('id', 'medical_record')
+        }),
+        ('Medicines', {
+            'fields': ('medicines',),
+            'description': 'List of medicines in JSON format'
+        }),
+        ('Legacy Fields (Backward Compatibility)', {
+            'fields': (
+                'medication_name',
+                'dosage',
+                'frequency',
+                'duration',
+                'instructions'
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at')
+        })
+    )
+    
+    def patient_name(self, obj):
+        """Display patient name"""
+        return obj.patient_name
+    patient_name.short_description = 'Patient'
+    
+    def medicine_count(self, obj):
+        """Display number of medicines"""
+        return obj.medicine_count
+    medicine_count.short_description = '# Medicines'
 
 # ============================================================================
 # VACCINATION ADMIN
