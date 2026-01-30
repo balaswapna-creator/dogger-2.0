@@ -109,118 +109,92 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
 # PRESCRIPTION SERIALIZER
 # ============================================================================
 
-# FILE: backend/clinic/serializers.py
-# Replace your PrescriptionSerializer with this fixed version
+# File: backend/clinic/serializers.py
+# Replace the PrescriptionSerializer with this corrected version
 
-class PrescriptionItemSerializer(serializers.ModelSerializer):
-    """Serializer for individual medications in a prescription"""
-    
-    class Meta:
-        model = PrescriptionItem
-        fields = [
-            'id', 
-            'medication_name', 
-            'dosage', 
-            'frequency', 
-            'duration', 
-            'instructions',
-            'created_at'
-        ]
-        read_only_fields = ['id', 'created_at']
-
+from rest_framework import serializers
+from .models import Prescription
 
 class PrescriptionSerializer(serializers.ModelSerializer):
-    """Serializer for prescription with multiple medications"""
-    items = PrescriptionItemSerializer(many=True)
-    
-    # FIX: Use SerializerMethodField instead of CharField with source
+    # Use SerializerMethodField (not CharField with source)
     patient_name = serializers.SerializerMethodField()
-    medication_count = serializers.SerializerMethodField()
-    
-    medical_record_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
-    patient_id = serializers.UUIDField(write_only=True)
+    medicine_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Prescription
         fields = [
             'id',
-            'patient',
-            'patient_id',
-            'patient_name',
             'medical_record',
-            'medical_record_id',
-            'notes',
-            'items',
-            'medication_count',
+            'medicines',
+            'patient_name',
+            'medicine_count',
+            'medication_name',
+            'dosage',
+            'frequency',
+            'duration',
+            'instructions',
             'created_at',
             'updated_at'
         ]
-        read_only_fields = ['id', 'patient', 'medical_record', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
     
     def get_patient_name(self, obj):
-        """Get patient name from the prescription's patient"""
-        return obj.patient.pet_name if obj.patient else "N/A"
+        """Get patient name safely"""
+        try:
+            if obj.medical_record and obj.medical_record.patient:
+                return obj.medical_record.patient.pet_name
+        except Exception as e:
+            print(f"Error getting patient_name: {e}")
+        return "Unknown Patient"
     
-    def get_medication_count(self, obj):
-        """Get count of medications in this prescription"""
-        return obj.items.count()
+    def get_medicine_count(self, obj):
+        """Get medicine count"""
+        try:
+            if obj.medicines and isinstance(obj.medicines, list):
+                return len(obj.medicines)
+        except Exception:
+            pass
+        return 0
+    
+    def validate(self, data):
+        """Validate prescription data"""
+        if 'medicines' in data and data['medicines']:
+            if not isinstance(data['medicines'], list):
+                raise serializers.ValidationError({"medicines": "Must be a list"})
+            
+            for idx, medicine in enumerate(data['medicines']):
+                if not isinstance(medicine, dict):
+                    raise serializers.ValidationError({
+                        "medicines": f"Medicine #{idx + 1} must be an object"
+                    })
+                
+                required_fields = ['medication_name', 'dosage', 'frequency', 'duration']
+                for field in required_fields:
+                    if field not in medicine or not medicine[field]:
+                        raise serializers.ValidationError({
+                            "medicines": f"Medicine #{idx + 1}: {field} is required"
+                        })
+        
+        return data
     
     def create(self, validated_data):
-        items_data = validated_data.pop('items')
-        patient_id = validated_data.pop('patient_id')
-        medical_record_id = validated_data.pop('medical_record_id', None)
+        """Create prescription with medicines array"""
+        # Ensure medicines is a list
+        if 'medicines' not in validated_data or not validated_data['medicines']:
+            validated_data['medicines'] = []
         
-        # Get patient
-        try:
-            patient = Patient.objects.get(id=patient_id)
-        except Patient.DoesNotExist:
-            raise serializers.ValidationError({"patient_id": "Patient not found"})
+        # Backward compatibility: convert old format to new
+        if (not validated_data['medicines'] and 
+            validated_data.get('medication_name')):
+            validated_data['medicines'] = [{
+                'medication_name': validated_data.get('medication_name', ''),
+                'dosage': validated_data.get('dosage', ''),
+                'frequency': validated_data.get('frequency', ''),
+                'duration': validated_data.get('duration', ''),
+                'instructions': validated_data.get('instructions', '')
+            }]
         
-        # Get medical record if provided
-        medical_record = None
-        if medical_record_id:
-            try:
-                medical_record = MedicalRecord.objects.get(id=medical_record_id)
-            except MedicalRecord.DoesNotExist:
-                raise serializers.ValidationError({"medical_record_id": "Medical record not found"})
-        
-        # Create prescription
-        prescription = Prescription.objects.create(
-            patient=patient,
-            medical_record=medical_record,
-            notes=validated_data.get('notes', '')
-        )
-        
-        # Create prescription items (medications)
-        for item_data in items_data:
-            PrescriptionItem.objects.create(
-                prescription=prescription,
-                **item_data
-            )
-        
-        return prescription
-    
-    def update(self, instance, validated_data):
-        items_data = validated_data.pop('items', None)
-        
-        # Update prescription fields
-        instance.notes = validated_data.get('notes', instance.notes)
-        instance.save()
-        
-        # If items provided, replace all items
-        if items_data is not None:
-            # Delete old items
-            instance.items.all().delete()
-            
-            # Create new items
-            for item_data in items_data:
-                PrescriptionItem.objects.create(
-                    prescription=instance,
-                    **item_data
-                )
-        
-        return instance
-
+        return super().create(validated_data)
 
 class PrescriptionListSerializer(serializers.ModelSerializer):
     """Simplified serializer for listing prescriptions"""
