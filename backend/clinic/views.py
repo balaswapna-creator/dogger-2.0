@@ -273,13 +273,19 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
 
 # FILE: backend/clinic/views.py
-# Replace your PrescriptionViewSet with this
+# At the TOP of the file, make sure you have these imports:
 
-from rest_framework import viewsets, permissions, filters
+from rest_framework import viewsets, permissions, filters, serializers  # ✅ Add serializers here!
 from rest_framework.response import Response
+from rest_framework.decorators import action
+
+# ... other imports ...
+
 from .models import Prescription
 from .serializers import PrescriptionSerializer, PrescriptionListSerializer
 
+
+# Then your ViewSet (REPLACE the existing PrescriptionViewSet):
 
 class PrescriptionViewSet(viewsets.ModelViewSet):
     """ViewSet for prescriptions"""
@@ -316,7 +322,7 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(queryset, many=True)
             return Response(serializer.data)
         except Exception as e:
-            print(f"Error in prescription list: {e}")
+            print(f"❌ Error in prescription list: {e}")
             import traceback
             traceback.print_exc()
             return Response({
@@ -327,12 +333,20 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         """Create a new prescription"""
         try:
+            print(f"📝 Creating prescription with data: {request.data}")
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
+            print(f"✅ Prescription created successfully: {serializer.data.get('id')}")
             return Response(serializer.data, status=201)
+        except serializers.ValidationError as e:
+            print(f"❌ Validation error: {e.detail}")
+            return Response({
+                'error': 'Validation failed',
+                'detail': e.detail
+            }, status=400)
         except Exception as e:
-            print(f"Error creating prescription: {e}")
+            print(f"❌ Error creating prescription: {e}")
             import traceback
             traceback.print_exc()
             return Response({
@@ -347,7 +361,7 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(instance)
             return Response(serializer.data)
         except Exception as e:
-            print(f"Error retrieving prescription: {e}")
+            print(f"❌ Error retrieving prescription: {e}")
             import traceback
             traceback.print_exc()
             return Response({

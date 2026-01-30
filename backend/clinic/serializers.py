@@ -110,7 +110,7 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
 # ============================================================================
 
 # FILE: backend/clinic/serializers.py
-# Add/Replace the Prescription serializers with these
+# Find and REPLACE your PrescriptionSerializer
 
 from rest_framework import serializers
 from .models import Prescription, PrescriptionItem, Patient, MedicalRecord
@@ -212,9 +212,9 @@ class PrescriptionSerializer(serializers.ModelSerializer):
             'medical_record',
             'medical_record_id',
             'notes',
-            'items',
+            'items',  # ✅ NOT 'medicines' - use 'items'!
             'medication_count',
-            # Legacy fields
+            # Legacy fields for backward compatibility
             'medication_name',
             'dosage',
             'frequency',
@@ -224,7 +224,7 @@ class PrescriptionSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at'
         ]
-        read_only_fields = ['id', 'patient', 'medical_record', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'patient', 'medical_record', 'patient_name', 'medication_count', 'created_at', 'updated_at']
     
     def get_patient_name(self, obj):
         """Safely get patient name"""
