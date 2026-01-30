@@ -330,15 +330,14 @@ const createEmptyMedicine = () => ({
   instructions: ''
 })
 
-const fetchPrescriptions = async () => {
+const patients = ref([])
+
+const fetchPatients = async () => {
   try {
-    loading.value = true
-    const response = await api.get('/prescriptions/')
-    prescriptions.value = response.data?.results || response.data || []
+    const response = await api.get('/patients/')
+    patients.value = response.data?.results || response.data || []
   } catch (error) {
-    console.error('Error fetching prescriptions:', error)
-  } finally {
-    loading.value = false
+    console.error('Error fetching patients:', error)
   }
 }
 
@@ -377,26 +376,94 @@ const removeMedicine = (index) => {
 
 const savePrescription = async () => {
   try {
-    if (form.value.medicines.length === 0) {
+    // Validate that we have at least one medication
+    if (!form.value.items || form.value.items.length === 0) {
       alert('Please add at least one medicine')
       return
     }
 
-    const payload = {
-      medical_record: form.value.medical_record || null,
-      medicines: form.value.medicines
+    // Validate all medicines have required fields
+    for (let i = 0; i < form.value.items.length; i++) {
+      const item = form.value.items[i]
+      if (!item.medication_name || !item.dosage || !item.frequency || !item.duration) {
+        alert(`Please fill all required fields for Medicine #${i + 1}`)
+        return
+      }
     }
 
-    await api.post('/prescriptions/', payload)
-    alert(`Prescription with ${form.value.medicines.length} medicine(s) created successfully!`)
+    // Validate we have a patient
+    if (!form.value.patient_id) {
+      alert('Please select a patient')
+      return
+    }
+
+    // ✅ NEW FORMAT: Build payload matching backend expectations
+    const payload = {
+      patient_id: form.value.patient_id,                          // Required
+      medical_record_id: form.value.medical_record_id || null,    // Optional
+      notes: form.value.notes || '',                              // General prescription notes
+      items: form.value.items                                     // Array of medications
+    }
+    
+    console.log('📤 Sending prescription data:', payload)
+    
+    if (editMode.value) {
+      // Update existing prescription
+      await api.put(`/prescriptions/${form.value.id}/`, payload)
+      alert('Prescription updated successfully!')
+    } else {
+      // Create new prescription
+      const response = await api.post('/prescriptions/', payload)
+      console.log('✅ Prescription created:', response.data)
+      alert(`Prescription created with ${form.value.items.length} medication(s)!`)
+    }
     
     closeModal()
     fetchPrescriptions()
   } catch (error) {
-    console.error('Error saving prescription:', error)
-    alert('Failed to save prescription')
+    console.error('❌ Error saving prescription:', error)
+    console.error('Error response:', error.response?.data)
+    
+    // Show detailed error message
+    if (error.response?.data) {
+      const errorDetail = JSON.stringify(error.response.data, null, 2)
+      alert(`Failed to save prescription:\n\n${errorDetail}`)
+    } else {
+      alert('Failed to save prescription: ' + error.message)
+    }
   }
 }
+
+// Also UPDATE the openModal function to use patient_id instead of medical_record
+const openModal = (prescription = null) => {
+  if (prescription) {
+    editMode.value = true
+    form.value = {
+      id: prescription.id,
+      patient_id: prescription.patient?.id || '',
+      medical_record_id: prescription.medical_record?.id || null,
+      notes: prescription.notes || '',
+      items: prescription.items || []
+    }
+  } else {
+    editMode.value = false
+    form.value = {
+      patient_id: '',
+      medical_record_id: null,
+      notes: '',
+      items: [createEmptyMedicine()]
+    }
+  }
+  showModal.value = true
+}
+
+// UPDATE the form ref at the top of the script
+const form = ref({
+  patient_id: '',           // ✅ Changed from 'medical_record'
+  medical_record_id: null,  // ✅ Added as optional
+  notes: '',                // ✅ General prescription notes
+  items: []                 // ✅ Array of medications (was 'medicines')
+})
 
 const deletePrescription = async (id) => {
   if (!confirm('Delete this prescription?')) return
@@ -509,6 +576,7 @@ const formatDate = (dateString) => {
 
 onMounted(() => {
   fetchPrescriptions()
+  fetchPatients()        // ← Add this!
   fetchConsultations()
 })
 </script>
