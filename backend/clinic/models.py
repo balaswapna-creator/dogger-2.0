@@ -229,11 +229,15 @@ class MedicalRecord(models.Model):
 # PRESCRIPTION
 # ============================================================================
 
-from django.db import models
-import uuid
+# ============================================================================
+# PRESCRIPTION - FIXED VERSION
+# ============================================================================
 
 class Prescription(models.Model):
+    """Prescription for a patient - supports multiple medications"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Relationships
     medical_record = models.ForeignKey(
         'MedicalRecord', 
         on_delete=models.CASCADE, 
@@ -241,41 +245,82 @@ class Prescription(models.Model):
         null=True,
         blank=True
     )
-    
-    # NEW: Store multiple medicines as JSON
-    medicines = models.JSONField(
-        default=list,
-        help_text="List of medicines with dosage, frequency, duration, instructions"
+    patient = models.ForeignKey(
+        'Patient',
+        on_delete=models.CASCADE,
+        related_name='prescriptions',
+        null=True,
+        blank=True
     )
     
-    # Keep these for backward compatibility (optional)
-    medication_name = models.CharField(max_length=200, blank=True)
-    dosage = models.CharField(max_length=100, blank=True)
-    frequency = models.CharField(max_length=100, blank=True)
-    duration = models.CharField(max_length=100, blank=True)
-    instructions = models.TextField(blank=True)
+    # General prescription notes
+    notes = models.TextField(blank=True, null=True)
     
+    # Legacy fields - keep for backward compatibility with old single-drug prescriptions
+    medication_name = models.CharField(max_length=200, blank=True, null=True)
+    dosage = models.CharField(max_length=100, blank=True, null=True)
+    frequency = models.CharField(max_length=100, blank=True, null=True)
+    duration = models.CharField(max_length=100, blank=True, null=True)
+    instructions = models.TextField(blank=True, null=True)
+    
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
+        db_table = 'dogger_prescriptions'
         ordering = ['-created_at']
     
     def __str__(self):
-        patient_name = self.medical_record.patient.pet_name if self.medical_record else "Unknown"
-        medicine_count = len(self.medicines) if self.medicines else 0
-        return f"Prescription for {patient_name} - {medicine_count} medicine(s)"
+        try:
+            return f"Prescription for {self.patient_name} - {self.medication_count} med(s)"
+        except:
+            return f"Prescription {self.id}"
     
     @property
     def patient_name(self):
-        if self.medical_record and self.medical_record.patient:
-            return self.medical_record.patient.pet_name
-        return "Unknown Patient"
+        """Get patient name from either patient or medical_record"""
+        try:
+            if self.patient:
+                return self.patient.pet_name
+            elif self.medical_record and self.medical_record.patient:
+                return self.medical_record.patient.pet_name
+        except:
+            pass
+        return "Unknown"
     
     @property
-    def medicine_count(self):
-        return len(self.medicines) if self.medicines else 0
+    def medication_count(self):
+        """Count of medications in this prescription"""
+        try:
+            return self.items.count()
+        except:
+            return 0
 
+
+class PrescriptionItem(models.Model):
+    """Individual medication in a prescription"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    prescription = models.ForeignKey(
+        Prescription, 
+        on_delete=models.CASCADE, 
+        related_name='items'
+    )
+    medication_name = models.CharField(max_length=200)
+    dosage = models.CharField(max_length=100)
+    frequency = models.CharField(max_length=100)
+    duration = models.CharField(max_length=100)
+    instructions = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'dogger_prescription_items'
+        ordering = ['created_at']
+        verbose_name = 'Prescription Item'
+        verbose_name_plural = 'Prescription Items'
+    
+    def __str__(self):
+        return f"{self.medication_name} - {self.dosage}"
 
 # ============================================================================
 # VACCINATIONS

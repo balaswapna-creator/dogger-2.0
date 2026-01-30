@@ -272,27 +272,60 @@ class PaymentViewSet(viewsets.ModelViewSet):
         return queryset
 
 
+from rest_framework import viewsets, permissions, status
+from rest_framework.response import Response
+from .models import Prescription
+from .serializers import PrescriptionSerializer
+
 class PrescriptionViewSet(viewsets.ModelViewSet):
-    queryset = Prescription.objects.all().select_related(
-        'medical_record__patient', 'medical_record__doctor'
-    ).order_by('-created_at')
     serializer_class = PrescriptionSerializer
-    permission_classes = [AllowAny]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['medication_name', 'medical_record__patient__pet_name', 'instructions']
-    ordering_fields = ['created_at']
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        queryset = super().get_queryset()
-        patient_id = self.request.query_params.get('patient', None)
-        medical_record_id = self.request.query_params.get('medical_record', None)
-        
-        if patient_id:
-            queryset = queryset.filter(medical_record__patient_id=patient_id)
-        if medical_record_id:
-            queryset = queryset.filter(medical_record_id=medical_record_id)
-            
-        return queryset
+        """Get prescriptions with related data"""
+        try:
+            return Prescription.objects.select_related(
+                'medical_record',
+                'medical_record__patient',
+                'medical_record__patient__owner'
+            ).all()
+        except Exception as e:
+            print(f"Error in get_queryset: {e}")
+            return Prescription.objects.none()
+    
+    def list(self, request, *args, **kwargs):
+        """List all prescriptions with error handling"""
+        try:
+            queryset = self.get_queryset()
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            print(f"Error listing prescriptions: {e}")
+            return Response(
+                {'error': 'Failed to load prescriptions', 'detail': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def create(self, request, *args, **kwargs):
+        """Create prescription with error handling"""
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except serializers.ValidationError as e:
+            return Response(
+                {'error': 'Validation error', 'detail': e.detail},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            print(f"Error creating prescription: {e}")
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {'error': 'Failed to create prescription', 'detail': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 # ============================================================================

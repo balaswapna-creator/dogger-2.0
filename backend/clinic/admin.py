@@ -64,18 +64,28 @@ class MedicalRecordAdmin(admin.ModelAdmin):
 # PRESCRIPTION ADMIN (SINGLE REGISTRATION)
 # ============================================================================
 
-# File: backend/clinic/admin.py
-# Update the PrescriptionAdmin class
-
 from django.contrib import admin
-from .models import Prescription
+from .models import Prescription, PrescriptionItem
 
+# Inline for multiple medications
+class PrescriptionItemInline(admin.TabularInline):
+    """Inline admin for prescription items (multiple medications)"""
+    model = PrescriptionItem
+    extra = 1
+    fields = ['medication_name', 'dosage', 'frequency', 'duration', 'instructions']
+    verbose_name = "Medication"
+    verbose_name_plural = "Medications"
+
+
+# ✅ ONLY ONE @admin.register(Prescription) - This is the complete one
 @admin.register(Prescription)
 class PrescriptionAdmin(admin.ModelAdmin):
+    """Admin for prescriptions with multiple medications"""
+    
     list_display = [
         'id',
-        'patient_name',
-        'medicine_count',
+        'get_patient_name',
+        'get_medication_count',
         'created_at',
         'updated_at'
     ]
@@ -83,22 +93,27 @@ class PrescriptionAdmin(admin.ModelAdmin):
     list_filter = ['created_at', 'updated_at']
     
     search_fields = [
+        'patient__pet_name',
         'medical_record__patient__pet_name',
-        'medication_name',
-        'medicines'
+        'items__medication_name',
+        'notes',
+        'medication_name'  # Legacy field
     ]
     
     readonly_fields = ['id', 'created_at', 'updated_at']
     
+    # ✅ Include the inline for multiple medications
+    inlines = [PrescriptionItemInline]
+    
     fieldsets = (
         ('Basic Information', {
-            'fields': ('id', 'medical_record')
+            'fields': ('id', 'patient', 'medical_record')
         }),
-        ('Medicines', {
-            'fields': ('medicines',),
-            'description': 'List of medicines in JSON format'
+        ('General Notes', {
+            'fields': ('notes',),
+            'description': 'General instructions for the entire prescription'
         }),
-        ('Legacy Fields (Backward Compatibility)', {
+        ('Legacy Fields (Old Single-Drug Format)', {
             'fields': (
                 'medication_name',
                 'dosage',
@@ -106,23 +121,76 @@ class PrescriptionAdmin(admin.ModelAdmin):
                 'duration',
                 'instructions'
             ),
-            'classes': ('collapse',)
+            'classes': ('collapse',),
+            'description': 'These fields are for backward compatibility only. Use the Medications section below for new prescriptions.'
         }),
         ('Timestamps', {
-            'fields': ('created_at', 'updated_at')
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
         })
     )
     
-    def patient_name(self, obj):
+    def get_patient_name(self, obj):
         """Display patient name"""
         return obj.patient_name
-    patient_name.short_description = 'Patient'
+    get_patient_name.short_description = 'Patient'
+    get_patient_name.admin_order_field = 'patient__pet_name'
     
-    def medicine_count(self, obj):
+    def get_medication_count(self, obj):
         """Display number of medicines"""
-        return obj.medicine_count
-    medicine_count.short_description = '# Medicines'
+        count = obj.medication_count
+        if count > 0:
+            return f"✅ {count} medication(s)"
+        # Check legacy single drug
+        if obj.medication_name:
+            return "⚠️ 1 (legacy format)"
+        return "❌ No medications"
+    get_medication_count.short_description = 'Medications'
 
+
+# ✅ Optional: Separate admin for PrescriptionItem
+@admin.register(PrescriptionItem)
+class PrescriptionItemAdmin(admin.ModelAdmin):
+    """Admin for individual prescription items"""
+    list_display = [
+        'get_prescription_info',
+        'medication_name',
+        'dosage',
+        'frequency',
+        'duration',
+        'created_at'
+    ]
+    
+    list_filter = ['created_at', 'frequency']
+    
+    search_fields = [
+        'medication_name',
+        'prescription__patient__pet_name',
+        'prescription__medical_record__patient__pet_name'
+    ]
+    
+    readonly_fields = ['id', 'created_at']
+    
+    fieldsets = (
+        ('Prescription', {
+            'fields': ('prescription',)
+        }),
+        ('Medication Details', {
+            'fields': ('medication_name', 'dosage', 'frequency', 'duration', 'instructions')
+        }),
+        ('Metadata', {
+            'fields': ('id', 'created_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_prescription_info(self, obj):
+        """Display prescription info"""
+        try:
+            return f"Rx for {obj.prescription.patient_name}"
+        except:
+            return f"Prescription {obj.prescription.id}"
+    get_prescription_info.short_description = 'Prescription'
 # ============================================================================
 # VACCINATION ADMIN
 # ============================================================================
