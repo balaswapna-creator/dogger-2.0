@@ -317,11 +317,6 @@ const showViewModal = ref(false)
 const searchQuery = ref('')
 const selectedPrescription = ref(null)
 
-const form = ref({
-  medical_record: '',
-  medicines: []
-})
-
 const createEmptyMedicine = () => ({
   medication_name: '',
   dosage: '',
@@ -348,14 +343,6 @@ const fetchConsultations = async () => {
   } catch (error) {
     console.error('Error fetching consultations:', error)
   }
-}
-
-const openModal = () => {
-  form.value = {
-    medical_record: '',
-    medicines: [createEmptyMedicine()]
-  }
-  showModal.value = true
 }
 
 const closeModal = () => {
@@ -538,7 +525,7 @@ const printPrescription = (prescription) => {
         ${medicinesHTML}
         <div class="footer">
           <p>_________________________</p>
-          <p>Dr. A. Balasubramanan</p>
+          <p>Dr. A. Balasubramanian</p>
         </div>
       </body>
     </html>
