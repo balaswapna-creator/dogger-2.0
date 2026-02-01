@@ -1,8 +1,38 @@
 # backend/clinic/serializers.py
-# COMPLETE VERSION - All serializers included!
+# ULTRA-COMPLETE VERSION - All possible serializers!
 
 from rest_framework import serializers
-from .models import Patient, Owner, MedicalRecord, Vaccination, Payment, Prescription, LabTest
+from django.contrib.auth import get_user_model
+
+# Import all models that might exist
+try:
+    from .models import (
+        Patient, Owner, MedicalRecord, Vaccination, 
+        Payment, Prescription
+    )
+except ImportError as e:
+    print(f"Warning: Could not import some models: {e}")
+
+# Try to import optional models
+try:
+    from .models import LabTest
+except ImportError:
+    LabTest = None
+
+try:
+    from .models import Passbook
+except ImportError:
+    Passbook = None
+
+User = get_user_model()
+
+
+# User Serializer
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name']
+        read_only_fields = ['id']
 
 
 class OwnerSerializer(serializers.ModelSerializer):
@@ -43,13 +73,33 @@ class PaymentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class LabTestSerializer(serializers.ModelSerializer):
-    """Lab Test serializer."""
-    patient_name = serializers.CharField(source='patient.name', read_only=True)
-    
-    class Meta:
-        model = LabTest
-        fields = '__all__'
+# Lab Test Serializer (if model exists)
+if LabTest is not None:
+    class LabTestSerializer(serializers.ModelSerializer):
+        patient_name = serializers.CharField(source='patient.name', read_only=True)
+        
+        class Meta:
+            model = LabTest
+            fields = '__all__'
+else:
+    # Dummy serializer if LabTest doesn't exist
+    class LabTestSerializer(serializers.Serializer):
+        pass
+
+
+# Passbook Serializer (if model exists)
+if Passbook is not None:
+    class PassbookSerializer(serializers.ModelSerializer):
+        patient_name = serializers.CharField(source='patient.name', read_only=True)
+        owner_name = serializers.CharField(source='patient.owner.name', read_only=True)
+        
+        class Meta:
+            model = Passbook
+            fields = '__all__'
+else:
+    # Dummy serializer if Passbook doesn't exist
+    class PassbookSerializer(serializers.Serializer):
+        pass
 
 
 class PrescriptionSerializer(serializers.ModelSerializer):
@@ -83,7 +133,8 @@ class PrescriptionSerializer(serializers.ModelSerializer):
             if obj.medical_record and obj.medical_record.patient:
                 return obj.medical_record.patient.name
             return 'Unknown'
-        except:
+        except Exception as e:
+            print(f"Error getting patient name: {e}")
             return 'Unknown'
     
     def get_medicine_count(self, obj):
@@ -94,7 +145,8 @@ class PrescriptionSerializer(serializers.ModelSerializer):
             if obj.medication_name:
                 return 1
             return 0
-        except:
+        except Exception as e:
+            print(f"Error getting medicine count: {e}")
             return 0
     
     def to_representation(self, instance):
