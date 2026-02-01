@@ -1,11 +1,21 @@
 # backend/clinic/serializers.py
-# FIXED VERSION - Removed Passbook import, fixed prescription fields
+# FIXED VERSION - All required serializers included
 
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
 from .models import (
     Patient, Owner, MedicalRecord, Vaccination, 
-    Payment, Prescription
+    Payment, Prescription, LabTest, PetPassbook
 )
+
+User = get_user_model()
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'phone']
+        read_only_fields = ['id']
 
 
 class OwnerSerializer(serializers.ModelSerializer):
@@ -35,6 +45,14 @@ class VaccinationSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Vaccination
+        fields = '__all__'
+
+
+class LabTestSerializer(serializers.ModelSerializer):
+    patient_name = serializers.CharField(source='patient.name', read_only=True)
+    
+    class Meta:
+        model = LabTest
         fields = '__all__'
 
 
@@ -175,3 +193,50 @@ class PrescriptionSerializer(serializers.ModelSerializer):
         print(f"   Type: {type(representation['medicines'])}")
         
         return representation
+
+
+# List serializer for prescriptions (lighter version for list views)
+class PrescriptionListSerializer(serializers.ModelSerializer):
+    patient_name = serializers.SerializerMethodField()
+    medicine_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Prescription
+        fields = ['id', 'patient_name', 'medicine_count', 'created_at']
+        read_only_fields = ['id', 'created_at', 'patient_name', 'medicine_count']
+    
+    def get_patient_name(self, obj):
+        try:
+            if obj.medical_record and obj.medical_record.patient:
+                return obj.medical_record.patient.name
+            return 'Unknown'
+        except:
+            return 'Unknown'
+    
+    def get_medicine_count(self, obj):
+        try:
+            if obj.medicines and isinstance(obj.medicines, list):
+                return len(obj.medicines)
+            return 1
+        except:
+            return 1
+
+
+# Passbook serializers
+class PassbookSerializer(serializers.ModelSerializer):
+    patient_name = serializers.CharField(source='patient.name', read_only=True)
+    owner_name = serializers.CharField(source='patient.owner.name', read_only=True)
+    
+    class Meta:
+        model = PetPassbook
+        fields = '__all__'
+
+
+class PassbookPublicSerializer(serializers.ModelSerializer):
+    """Public serializer for passbook - includes nested data"""
+    patient = PatientSerializer(read_only=True)
+    
+    class Meta:
+        model = PetPassbook
+        fields = ['id', 'patient', 'qr_code', 'is_active', 'created_at']
+        read_only_fields = ['id', 'created_at']
