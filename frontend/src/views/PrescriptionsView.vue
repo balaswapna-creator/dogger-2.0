@@ -25,7 +25,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="prescription in prescriptions.filter(p => p && p.id)" :key="prescription.id">
+          <tr v-for="prescription in (Array.isArray(prescriptions) ? prescriptions : []).filter(p => p && p.id)" :key="prescription.id">
             <td>{{ formatDate(prescription.created_at) }}</td>
             <td>{{ prescription.patient_name || 'Unknown' }}</td>
             <td>
@@ -83,7 +83,7 @@
               <select v-model="form.medical_record" required :disabled="isEditMode">
                 <option value="">Select consultation</option>
                 <option 
-                  v-for="record in medicalRecords.filter(r => r && r.id)" 
+                  v-for="record in (Array.isArray(medicalRecords) ? medicalRecords : []).filter(r => r && r.id)" 
                   :key="record.id" 
                   :value="record.id"
                 >
@@ -297,7 +297,8 @@ export default {
       loading.value = true;
       try {
         const data = await apiRequest('GET', '/prescriptions/');
-        prescriptions.value = data;
+        // Handle paginated response
+        prescriptions.value = Array.isArray(data) ? data : (data.results || []);
       } catch (error) {
         console.error('Error fetching prescriptions:', error);
         alert('Failed to load prescriptions');
@@ -310,7 +311,8 @@ export default {
     const fetchMedicalRecords = async () => {
       try {
         const data = await apiRequest('GET', '/medical-records/');
-        medicalRecords.value = data;
+        // Handle paginated response
+        medicalRecords.value = Array.isArray(data) ? data : (data.results || []);
       } catch (error) {
         console.error('Error fetching medical records:', error);
       }
