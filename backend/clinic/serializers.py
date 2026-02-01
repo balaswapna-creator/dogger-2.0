@@ -134,7 +134,47 @@ else:
         pass
 
 
-# ==================== PRESCRIPTION SERIALIZER ====================
+# ==================== PRESCRIPTION SERIALIZERS ====================
+
+# List serializer (lightweight for list views)
+class PrescriptionListSerializer(serializers.ModelSerializer):
+    """
+    Lightweight serializer for listing prescriptions.
+    """
+    patient_name = serializers.SerializerMethodField()
+    medicine_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Prescription
+        fields = [
+            'id',
+            'medical_record',
+            'patient_name',
+            'medicine_count',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'patient_name', 'medicine_count']
+    
+    def get_patient_name(self, obj):
+        try:
+            if obj.medical_record and obj.medical_record.patient:
+                return obj.medical_record.patient.name
+            return 'Unknown'
+        except:
+            return 'Unknown'
+    
+    def get_medicine_count(self, obj):
+        try:
+            if obj.medicines and isinstance(obj.medicines, list):
+                return len(obj.medicines)
+            if obj.medication_name:
+                return 1
+            return 0
+        except:
+            return 0
+
+
+# Full serializer (with all medicine details)
 class PrescriptionSerializer(serializers.ModelSerializer):
     """
     Prescription serializer with multiple medicines support.
