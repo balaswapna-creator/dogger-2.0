@@ -1,33 +1,25 @@
 # backend/clinic/serializers.py
-# ULTRA-COMPLETE VERSION - All possible serializers!
+# FINAL COMPLETE VERSION - Every possible serializer!
 
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
-# Import all models that might exist
+# Import all models
 try:
     from .models import (
         Patient, Owner, MedicalRecord, Vaccination, 
-        Payment, Prescription
+        Payment, Prescription, LabTest, Passbook
     )
 except ImportError as e:
     print(f"Warning: Could not import some models: {e}")
-
-# Try to import optional models
-try:
-    from .models import LabTest
-except ImportError:
+    # Set to None if not found
     LabTest = None
-
-try:
-    from .models import Passbook
-except ImportError:
     Passbook = None
 
 User = get_user_model()
 
 
-# User Serializer
+# ==================== USER SERIALIZER ====================
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -35,12 +27,14 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 
+# ==================== OWNER SERIALIZER ====================
 class OwnerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Owner
         fields = '__all__'
 
 
+# ==================== PATIENT SERIALIZER ====================
 class PatientSerializer(serializers.ModelSerializer):
     owner_name = serializers.CharField(source='owner.name', read_only=True)
     
@@ -49,6 +43,7 @@ class PatientSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+# ==================== MEDICAL RECORD SERIALIZER ====================
 class MedicalRecordSerializer(serializers.ModelSerializer):
     patient_name = serializers.CharField(source='patient.name', read_only=True)
     
@@ -57,6 +52,7 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+# ==================== VACCINATION SERIALIZER ====================
 class VaccinationSerializer(serializers.ModelSerializer):
     patient_name = serializers.CharField(source='patient.name', read_only=True)
     
@@ -65,6 +61,7 @@ class VaccinationSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+# ==================== PAYMENT SERIALIZER ====================
 class PaymentSerializer(serializers.ModelSerializer):
     patient_name = serializers.CharField(source='patient.name', read_only=True)
     
@@ -73,7 +70,7 @@ class PaymentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# Lab Test Serializer (if model exists)
+# ==================== LAB TEST SERIALIZER ====================
 if LabTest is not None:
     class LabTestSerializer(serializers.ModelSerializer):
         patient_name = serializers.CharField(source='patient.name', read_only=True)
@@ -82,12 +79,11 @@ if LabTest is not None:
             model = LabTest
             fields = '__all__'
 else:
-    # Dummy serializer if LabTest doesn't exist
     class LabTestSerializer(serializers.Serializer):
         pass
 
 
-# Passbook Serializer (if model exists)
+# ==================== PASSBOOK SERIALIZERS ====================
 if Passbook is not None:
     class PassbookSerializer(serializers.ModelSerializer):
         patient_name = serializers.CharField(source='patient.name', read_only=True)
@@ -96,15 +92,53 @@ if Passbook is not None:
         class Meta:
             model = Passbook
             fields = '__all__'
+    
+    # Public version (for public viewing without authentication)
+    class PassbookPublicSerializer(serializers.ModelSerializer):
+        patient_name = serializers.CharField(source='patient.name', read_only=True)
+        owner_name = serializers.CharField(source='patient.owner.name', read_only=True)
+        patient_details = serializers.SerializerMethodField()
+        owner_details = serializers.SerializerMethodField()
+        
+        class Meta:
+            model = Passbook
+            fields = [
+                'id', 'patient', 'patient_name', 'owner_name',
+                'patient_details', 'owner_details', 'qr_code',
+                'created_at', 'is_active'
+            ]
+        
+        def get_patient_details(self, obj):
+            if obj.patient:
+                return {
+                    'name': obj.patient.name,
+                    'species': obj.patient.species,
+                    'breed': obj.patient.breed,
+                    'age': obj.patient.age,
+                }
+            return None
+        
+        def get_owner_details(self, obj):
+            if obj.patient and obj.patient.owner:
+                return {
+                    'name': obj.patient.owner.name,
+                    'phone': obj.patient.owner.phone,
+                    'address': obj.patient.owner.address,
+                }
+            return None
 else:
-    # Dummy serializer if Passbook doesn't exist
     class PassbookSerializer(serializers.Serializer):
+        pass
+    
+    class PassbookPublicSerializer(serializers.Serializer):
         pass
 
 
+# ==================== PRESCRIPTION SERIALIZER ====================
 class PrescriptionSerializer(serializers.ModelSerializer):
     """
     Prescription serializer with multiple medicines support.
+    🔥 This is the critical one for your prescription feature!
     """
     patient_name = serializers.SerializerMethodField()
     medicine_count = serializers.SerializerMethodField()
@@ -116,9 +150,10 @@ class PrescriptionSerializer(serializers.ModelSerializer):
             'medical_record',
             'patient_name',
             'medicine_count',
-            'medicines',  # 🔥 CRITICAL!
+            'medicines',  # 🔥 CRITICAL - The JSONField with medicines array!
             'created_at',
             'updated_at',
+            # Old single-medicine fields (backward compatibility)
             'medication_name',
             'dosage',
             'frequency',
@@ -128,17 +163,17 @@ class PrescriptionSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at', 'patient_name', 'medicine_count']
     
     def get_patient_name(self, obj):
-        """Get patient name safely."""
+        """Get patient name safely with error handling."""
         try:
             if obj.medical_record and obj.medical_record.patient:
                 return obj.medical_record.patient.name
             return 'Unknown'
         except Exception as e:
-            print(f"Error getting patient name: {e}")
+            print(f"❌ Error getting patient name: {e}")
             return 'Unknown'
     
     def get_medicine_count(self, obj):
-        """Get medicine count."""
+        """Get count of medicines."""
         try:
             if obj.medicines and isinstance(obj.medicines, list):
                 return len(obj.medicines)
@@ -146,28 +181,38 @@ class PrescriptionSerializer(serializers.ModelSerializer):
                 return 1
             return 0
         except Exception as e:
-            print(f"Error getting medicine count: {e}")
+            print(f"❌ Error getting medicine count: {e}")
             return 0
     
     def to_representation(self, instance):
         """
-        🔥 CRITICAL: Ensures medicines is always returned as a list.
+        🔥 CRITICAL: This method ensures medicines is ALWAYS returned as a proper list.
+        Without this, the frontend gets 'undefined' instead of the medicines array!
         """
+        # Get the base representation from parent class
         representation = super().to_representation(instance)
         
-        # Ensure medicines is always a list
+        # Get the medicines field
         medicines = representation.get('medicines')
+        
+        # Ensure it's always a list
         if medicines is None:
+            # If None, set to empty list
             representation['medicines'] = []
         elif isinstance(medicines, str):
+            # If it's a string (shouldn't happen but just in case), parse it
             try:
                 import json
                 representation['medicines'] = json.loads(medicines)
-            except:
+            except Exception as e:
+                print(f"❌ Failed to parse medicines string: {e}")
                 representation['medicines'] = []
         elif not isinstance(medicines, list):
+            # If it's not a list, convert to empty list
+            print(f"⚠️ medicines is type {type(medicines)}, converting to list")
             representation['medicines'] = []
         
-        print(f"📤 Prescription {instance.id}: {len(representation['medicines'])} medicines")
+        # Debug log
+        print(f"📤 Prescription {instance.id}: Returning {len(representation['medicines'])} medicines")
         
         return representation
