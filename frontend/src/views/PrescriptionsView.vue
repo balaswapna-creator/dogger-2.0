@@ -374,7 +374,7 @@ export default {
 
         // 🔥 FIX: Backend expects 'medical_record' (not medical_record_id)
         const payload = {
-          medical_record: form.value.medical_record_id, // Map medical_record_id → medical_record
+          medical_record_id: form.value.medical_record_id,  // ✅ Has _id
           medicines: form.value.medicines
         };
 
