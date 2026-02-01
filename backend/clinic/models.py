@@ -236,6 +236,16 @@ class MedicalRecord(models.Model):
 class Prescription(models.Model):
     """Prescription for a patient - supports multiple medications"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    medicines = models.JSONField(default=list, blank=True)
+    medication_name = models.CharField(max_length=200, blank=True, default='')
+    dosage = models.CharField(max_length=100, blank=True, default='')
+    frequency = models.CharField(max_length=100, blank=True, default='')
+    duration = models.CharField(max_length=100, blank=True, default='')
+    instructions = models.TextField(blank=True, default='')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
     # Relationships
     medical_record = models.ForeignKey(
