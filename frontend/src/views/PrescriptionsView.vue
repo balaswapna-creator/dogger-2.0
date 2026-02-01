@@ -79,24 +79,23 @@
           <form @submit.prevent="savePrescription">
             <!-- Medical Record Selection -->
             <div class="form-group">
-              <label class="required">Patient/Consultation *</label>
-              <select v-model="form.medical_record_id" required :disabled="isEditMode">
+              <label>Patient/Consultation *</label>
+              <select v-model="form.medical_record" required :disabled="isEditMode">
                 <option value="">Select consultation</option>
                 <option 
                   v-for="record in (Array.isArray(medicalRecords) ? medicalRecords : []).filter(r => r && r.id)" 
                   :key="record.id" 
                   :value="record.id"
                 >
-                  {{ record.patient_name || 'Unknown' }} - {{ formatDate(record.visit_date) }} - {{ record.diagnosis || 'General' }}
+                  {{ record.patient_name || 'Unknown' }} - {{ formatDate(record.visit_date) }}
                 </option>
               </select>
-              <small class="form-hint">Select the consultation/visit this prescription is for</small>
             </div>
 
             <!-- Medicines Section -->
             <div class="medicines-section">
               <div class="section-header">
-                <h3>💊 Medicines</h3>
+                <h3>Medicines</h3>
                 <button type="button" @click="addMedicine" class="btn-add-medicine">
                   <i class="fas fa-plus"></i> Add Medicine
                 </button>
@@ -111,7 +110,7 @@
                     @click="removeMedicine(index)" 
                     class="btn-remove-medicine"
                   >
-                    <i class="fas fa-times"></i> Remove
+                    <i class="fas fa-times"></i>
                   </button>
                 </div>
 
@@ -121,7 +120,7 @@
                     <input 
                       v-model="medicine.medication_name" 
                       type="text" 
-                      placeholder="e.g., Syrup Soft coat, Tab. Minmate"
+                      placeholder="e.g., Syrup Soft coat"
                       required
                     />
                   </div>
@@ -142,7 +141,7 @@
                       <input 
                         v-model="medicine.frequency" 
                         type="text" 
-                        placeholder="e.g., Twice daily, Once daily"
+                        placeholder="e.g., Twice daily"
                         required
                       />
                     </div>
@@ -152,7 +151,7 @@
                       <input 
                         v-model="medicine.duration" 
                         type="text" 
-                        placeholder="e.g., 7 days, 2 weeks"
+                        placeholder="e.g., 7 days"
                         required
                       />
                     </div>
@@ -163,7 +162,7 @@
                     <textarea 
                       v-model="medicine.instructions" 
                       rows="2"
-                      placeholder="e.g., After meals, Before bedtime, With food"
+                      placeholder="e.g., After meals, Before bedtime"
                     ></textarea>
                   </div>
                 </div>
@@ -231,7 +230,7 @@
               </div>
             </div>
 
-            <!-- Single Medicine (Old Format - Backward Compatibility) -->
+            <!-- Single Medicine (Old Format) -->
             <div v-else class="medicine-detail-card">
               <div class="medicine-number-badge">1</div>
               <div class="medicine-details">
@@ -281,7 +280,7 @@ export default {
 
     // Form data
     const form = ref({
-      medical_record_id: '', // 🔥 CHANGED: was 'medical_record', now 'medical_record_id'
+      medical_record: '',
       medicines: [
         {
           medication_name: '',
@@ -300,9 +299,8 @@ export default {
         const data = await apiRequest('GET', '/prescriptions/');
         // Handle paginated response
         prescriptions.value = Array.isArray(data) ? data : (data.results || []);
-        console.log('✅ Prescriptions loaded:', prescriptions.value.length);
       } catch (error) {
-        console.error('❌ Error fetching prescriptions:', error);
+        console.error('Error fetching prescriptions:', error);
         alert('Failed to load prescriptions');
       } finally {
         loading.value = false;
@@ -315,10 +313,8 @@ export default {
         const data = await apiRequest('GET', '/medical-records/');
         // Handle paginated response
         medicalRecords.value = Array.isArray(data) ? data : (data.results || []);
-        console.log('✅ Medical records loaded:', medicalRecords.value.length);
       } catch (error) {
-        console.error('❌ Error fetching medical records:', error);
-        alert('Failed to load consultations. Please refresh the page.');
+        console.error('Error fetching medical records:', error);
       }
     };
 
@@ -326,7 +322,7 @@ export default {
     const openNewPrescriptionModal = async () => {
       isEditMode.value = false;
       resetForm();
-      await fetchMedicalRecords(); // Load consultations when opening modal
+      await fetchMedicalRecords();
       showModal.value = true;
     };
 
@@ -351,53 +347,24 @@ export default {
     // Save prescription
     const savePrescription = async () => {
       try {
-        // 🔥 VALIDATION: Ensure medical_record_id is selected
-        if (!form.value.medical_record_id) {
-          alert('❌ Please select a consultation/patient');
-          return;
-        }
-
-        // 🔥 VALIDATION: Ensure at least one medicine
-        if (!form.value.medicines || form.value.medicines.length === 0) {
-          alert('❌ Please add at least one medicine');
-          return;
-        }
-
-        // 🔥 VALIDATION: Ensure all medicines have required fields
-        const incompleteMedicines = form.value.medicines.some(med => 
-          !med.medication_name || !med.dosage || !med.frequency || !med.duration
-        );
-        if (incompleteMedicines) {
-          alert('❌ Please fill in all required fields for each medicine');
-          return;
-        }
-
-        // 🔥 FIX: Backend expects 'medical_record' (not medical_record_id)
         const payload = {
-          medical_record_id: form.value.medical_record_id,  // ✅ Has _id
+          medical_record: form.value.medical_record,
           medicines: form.value.medicines
         };
 
-        console.log('📤 Sending prescription data:', payload);
-
         if (isEditMode.value) {
           await apiRequest('PUT', `/prescriptions/${selectedPrescription.value.id}/`, payload);
-          alert('✅ Prescription updated successfully');
+          alert('Prescription updated successfully');
         } else {
-          const response = await apiRequest('POST', '/prescriptions/', payload);
-          console.log('✅ Prescription created:', response);
-          alert('✅ Prescription created successfully');
+          await apiRequest('POST', '/prescriptions/', payload);
+          alert('Prescription created successfully');
         }
 
         closeModal();
         fetchPrescriptions();
       } catch (error) {
-        console.error('❌ Error saving prescription:', error);
-        const errorMessage = error.response?.data?.error || 
-                           error.response?.data?.message || 
-                           error.message || 
-                           'Unknown error';
-        alert('❌ Failed to save prescription: ' + errorMessage);
+        console.error('Error saving prescription:', error);
+        alert('Failed to save prescription: ' + (error.message || 'Unknown error'));
       }
     };
 
@@ -409,33 +376,57 @@ export default {
 
     // Print prescription
     const printPrescription = (prescription) => {
+      console.log('Printing prescription:', prescription);
+      console.log('Medicines array:', prescription.medicines);
+      console.log('Old format fields:', {
+        medication_name: prescription.medication_name,
+        dosage: prescription.dosage,
+        frequency: prescription.frequency,
+        duration: prescription.duration
+      });
+      
       const printWindow = window.open('', '_blank');
       
       let medicinesHtml = '';
       
-      // Handle new format (medicines array)
-      if (prescription.medicines && prescription.medicines.length > 0) {
+      // Check if medicines array exists and has data
+      if (prescription.medicines && Array.isArray(prescription.medicines) && prescription.medicines.length > 0) {
+        console.log('Using medicines array format');
         medicinesHtml = prescription.medicines.map((med, index) => `
           <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-left: 3px solid #4CAF50;">
-            <div style="font-weight: bold; margin-bottom: 5px;">${index + 1}. ${med.medication_name}</div>
+            <div style="font-weight: bold; margin-bottom: 5px;">${index + 1}. ${med.medication_name || 'Not specified'}</div>
             <div style="margin-left: 20px;">
-              <div><strong>Dosage:</strong> ${med.dosage}</div>
-              <div><strong>Frequency:</strong> ${med.frequency}</div>
-              <div><strong>Duration:</strong> ${med.duration}</div>
-              ${med.instructions ? `<div><strong>Instructions:</strong> ${med.instructions}</div>` : ''}
+              <div>Dosage: ${med.dosage || 'Not specified'}</div>
+              <div>Frequency: ${med.frequency || 'Not specified'}</div>
+              <div>Duration: ${med.duration || 'Not specified'}</div>
+              ${med.instructions ? `<div>Instructions: ${med.instructions}</div>` : ''}
             </div>
           </div>
         `).join('');
-      } else {
-        // Handle old format (single medicine fields)
+      } 
+      // Check if old format fields exist
+      else if (prescription.medication_name || prescription.dosage || prescription.frequency) {
+        console.log('Using old single-medicine format');
         medicinesHtml = `
           <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-left: 3px solid #4CAF50;">
-            <div style="font-weight: bold; margin-bottom: 5px;">1. ${prescription.medication_name}</div>
+            <div style="font-weight: bold; margin-bottom: 5px;">1. ${prescription.medication_name || 'Not specified'}</div>
             <div style="margin-left: 20px;">
-              <div><strong>Dosage:</strong> ${prescription.dosage}</div>
-              <div><strong>Frequency:</strong> ${prescription.frequency}</div>
-              <div><strong>Duration:</strong> ${prescription.duration}</div>
-              ${prescription.instructions ? `<div><strong>Instructions:</strong> ${prescription.instructions}</div>` : ''}
+              <div>Dosage: ${prescription.dosage || 'Not specified'}</div>
+              <div>Frequency: ${prescription.frequency || 'Not specified'}</div>
+              <div>Duration: ${prescription.duration || 'Not specified'}</div>
+              ${prescription.instructions ? `<div>Instructions: ${prescription.instructions}</div>` : ''}
+            </div>
+          </div>
+        `;
+      } 
+      // No medicine data found
+      else {
+        console.error('No medicine data found in prescription!');
+        medicinesHtml = `
+          <div style="margin-bottom: 15px; padding: 10px; background: #fff3cd; border-left: 3px solid #ffc107;">
+            <div style="font-weight: bold; color: #856404;">No medicine information available</div>
+            <div style="margin-top: 10px; font-size: 12px; color: #856404;">
+              This prescription may have been created with incomplete data.
             </div>
           </div>
         `;
@@ -445,7 +436,7 @@ export default {
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Prescription - ${prescription.patient_name}</title>
+          <title>Prescription - ${prescription.patient_name || 'Unknown Patient'}</title>
           <style>
             body {
               font-family: Arial, sans-serif;
@@ -486,13 +477,12 @@ export default {
         </head>
         <body>
           <div class="header">
-            <div class="clinic-name">🏥 Sri Adithya Pet Clinic</div>
+            <div class="clinic-name">Sri Adithya Pet Clinic</div>
             <div>Veterinary Care & Services</div>
-            <div style="font-size: 12px; color: #666; margin-top: 5px;">Cumbum, Tamil Nadu</div>
           </div>
           
           <div class="patient-info">
-            <div><strong>Patient:</strong> ${prescription.patient_name}</div>
+            <div><strong>Patient:</strong> ${prescription.patient_name || 'Unknown'}</div>
             <div><strong>Date:</strong> ${formatDate(prescription.created_at)}</div>
           </div>
           
@@ -504,8 +494,7 @@ export default {
           
           <div class="signature">
             <div style="margin-top: 40px; border-top: 1px solid #333; display: inline-block; padding-top: 5px;">
-              Dr. Balasubramani<br>
-              Veterinary Surgeon
+              Doctor's Signature
             </div>
           </div>
         </body>
@@ -518,17 +507,17 @@ export default {
 
     // Delete prescription
     const deletePrescription = async (id) => {
-      if (!confirm('⚠️ Are you sure you want to delete this prescription?')) {
+      if (!confirm('Are you sure you want to delete this prescription?')) {
         return;
       }
 
       try {
         await apiRequest('DELETE', `/prescriptions/${id}/`);
-        alert('✅ Prescription deleted successfully');
+        alert('Prescription deleted successfully');
         fetchPrescriptions();
       } catch (error) {
-        console.error('❌ Error deleting prescription:', error);
-        alert('❌ Failed to delete prescription');
+        console.error('Error deleting prescription:', error);
+        alert('Failed to delete prescription');
       }
     };
 
@@ -546,7 +535,7 @@ export default {
     // Reset form
     const resetForm = () => {
       form.value = {
-        medical_record_id: '', // 🔥 Reset to empty
+        medical_record: '',
         medicines: [
           {
             medication_name: '',
@@ -625,7 +614,6 @@ export default {
   border-radius: 5px;
   cursor: pointer;
   font-size: 14px;
-  transition: background 0.3s;
 }
 
 .btn-primary:hover {
@@ -707,7 +695,6 @@ td {
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-  transition: opacity 0.3s;
 }
 
 .btn-view {
@@ -715,26 +702,14 @@ td {
   color: white;
 }
 
-.btn-view:hover {
-  opacity: 0.8;
-}
-
 .btn-print {
   background: #FF9800;
   color: white;
 }
 
-.btn-print:hover {
-  opacity: 0.8;
-}
-
 .btn-delete {
   background: #f44336;
   color: white;
-}
-
-.btn-delete:hover {
-  opacity: 0.8;
 }
 
 .modal-overlay {
@@ -765,7 +740,6 @@ td {
   align-items: center;
   padding: 20px;
   border-bottom: 1px solid #dee2e6;
-  background: #f8f9fa;
 }
 
 .modal-header h2 {
@@ -780,11 +754,6 @@ td {
   font-size: 28px;
   cursor: pointer;
   color: #7f8c8d;
-  transition: color 0.3s;
-}
-
-.close-btn:hover {
-  color: #2c3e50;
 }
 
 .modal-body {
@@ -802,11 +771,6 @@ td {
   color: #2c3e50;
 }
 
-.form-group label.required::after {
-  content: ' *';
-  color: #f44336;
-}
-
 .form-group input,
 .form-group select,
 .form-group textarea {
@@ -815,23 +779,6 @@ td {
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
-  font-family: inherit;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: #4CAF50;
-  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
-}
-
-.form-hint {
-  display: block;
-  margin-top: 4px;
-  font-size: 12px;
-  color: #7f8c8d;
-  font-style: italic;
 }
 
 .form-row {
@@ -865,11 +812,6 @@ td {
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-  transition: background 0.3s;
-}
-
-.btn-add-medicine:hover {
-  background: #1976D2;
 }
 
 .medicine-card {
@@ -897,15 +839,9 @@ td {
   background: #f44336;
   color: white;
   border: none;
-  padding: 6px 12px;
+  padding: 4px 8px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 12px;
-  transition: background 0.3s;
-}
-
-.btn-remove-medicine:hover {
-  background: #d32f2f;
 }
 
 .form-actions {
@@ -924,11 +860,6 @@ td {
   padding: 10px 20px;
   border-radius: 5px;
   cursor: pointer;
-  transition: background 0.3s;
-}
-
-.btn-secondary:hover {
-  background: #5a6268;
 }
 
 .prescription-info {
@@ -1005,17 +936,5 @@ td {
   font-size: 14px;
   color: #2c3e50;
   font-weight: 500;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .form-row,
-  .detail-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .actions {
-    flex-wrap: wrap;
-  }
 }
 </style>
