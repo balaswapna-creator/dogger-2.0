@@ -25,7 +25,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="prescription in prescriptions" :key="prescription.id">
+          <tr v-for="prescription in prescriptions.filter(p => p && p.id)" :key="prescription.id">
             <td>{{ formatDate(prescription.created_at) }}</td>
             <td>{{ prescription.patient_name || 'Unknown' }}</td>
             <td>
@@ -82,8 +82,12 @@
               <label>Patient/Consultation *</label>
               <select v-model="form.medical_record" required :disabled="isEditMode">
                 <option value="">Select consultation</option>
-                <option v-for="record in medicalRecords" :key="record.id" :value="record.id">
-                  {{ record.patient_name }} - {{ formatDate(record.visit_date) }}
+                <option 
+                  v-for="record in medicalRecords.filter(r => r && r.id)" 
+                  :key="record.id" 
+                  :value="record.id"
+                >
+                  {{ record.patient_name || 'Unknown' }} - {{ formatDate(record.visit_date) }}
                 </option>
               </select>
             </div>
