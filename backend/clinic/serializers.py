@@ -120,22 +120,28 @@ class PrescriptionSerializer(serializers.ModelSerializer):
         """
         medical_record_id = data.pop('medical_record_id', None)
         
-        if medical_record_id and not data.get('medical_record'):
-            # Convert medical_record_id to medical_record object
+        # If medical_record_id is provided, convert it
+        if medical_record_id:
             try:
-                medical_record = MedicalRecord.objects.get(id=medical_record_id)
+                from django.core.exceptions import ObjectDoesNotExist
+                medical_record = MedicalRecord.objects.select_related('patient').get(id=medical_record_id)
                 data['medical_record'] = medical_record
+                print(f"✅ Found medical record: {medical_record.id} for patient: {medical_record.patient.name if medical_record.patient else 'None'}")
             except MedicalRecord.DoesNotExist:
                 raise serializers.ValidationError({
                     'medical_record_id': 'Medical record not found.'
                 })
-        
-        # Ensure we have either medical_record or valid medicines
-        if not data.get('medical_record'):
-            if not data.get('medicines') or len(data.get('medicines', [])) == 0:
+            except Exception as e:
+                print(f"❌ Error fetching medical record: {e}")
                 raise serializers.ValidationError({
-                    'medical_record': 'Either medical_record or medical_record_id is required.'
+                    'medical_record_id': f'Error: {str(e)}'
                 })
+        
+        # Ensure we have medical_record
+        if not data.get('medical_record'):
+            raise serializers.ValidationError({
+                'medical_record': 'Either medical_record or medical_record_id is required.'
+            })
         
         # Validate medicines array
         medicines = data.get('medicines', [])
@@ -169,6 +175,12 @@ class PrescriptionSerializer(serializers.ModelSerializer):
         CRITICAL: This ensures medicines is always returned as a proper list!
         Without this, medicines might come back as undefined or empty string.
         """
+        # Refresh instance with related data
+        try:
+            instance = Prescription.objects.select_related('medical_record__patient').get(pk=instance.pk)
+        except:
+            pass
+        
         representation = super().to_representation(instance)
         
         # Get the medicines field
@@ -189,6 +201,7 @@ class PrescriptionSerializer(serializers.ModelSerializer):
         
         # Debug logging
         print(f"📤 Serializing prescription {instance.id}")
+        print(f"   Patient name: {representation.get('patient_name')}")
         print(f"   Medicines: {representation['medicines']}")
         print(f"   Type: {type(representation['medicines'])}")
         
