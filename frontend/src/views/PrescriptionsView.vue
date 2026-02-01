@@ -348,7 +348,7 @@ export default {
     const savePrescription = async () => {
       try {
         const payload = {
-          medical_record: form.value.medical_record,
+          medical_record_id: form.value.medical_record,  // Changed from medical_record to medical_record_id
           medicines: form.value.medicines
         };
 
