@@ -289,7 +289,7 @@ from .serializers import PrescriptionSerializer, PrescriptionListSerializer
 
 class PrescriptionViewSet(viewsets.ModelViewSet):
     """ViewSet for prescriptions"""
-    queryset = Prescription.objects.all()
+    queryset = Prescription.objects.select_related('medical_record__patient').all()
     serializer_class = PrescriptionSerializer  # ✅ CORRECT - has medicines!
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
