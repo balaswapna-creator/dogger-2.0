@@ -289,6 +289,8 @@ from .serializers import PrescriptionSerializer, PrescriptionListSerializer
 
 class PrescriptionViewSet(viewsets.ModelViewSet):
     """ViewSet for prescriptions"""
+    queryset = Prescription.objects.all()
+    serializer_class = PrescriptionSerializer  # ✅ CORRECT - has medicines!
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = [
@@ -310,10 +312,13 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
         ).prefetch_related('items').all()
     
     def get_serializer_class(self):
-        """Use different serializers for list vs detail"""
+        """
+        Use lightweight serializer for list view,
+        full serializer for detail view and create/update.
+        """
         if self.action == 'list':
-            return PrescriptionListSerializer
-        return PrescriptionSerializer
+            return PrescriptionListSerializer  # Lightweight for listing
+        return PrescriptionSerializer  # Full with medicines for detail/create
     
     def list(self, request, *args, **kwargs):
         """List all prescriptions"""
