@@ -45,7 +45,7 @@ class PatientSerializer(serializers.ModelSerializer):
 
 # ==================== MEDICAL RECORD SERIALIZER ====================
 class MedicalRecordSerializer(serializers.ModelSerializer):
-    patient_name = serializers.CharField(source='patient.name', read_only=True)
+    patient_name = serializers.CharField(source='patient.pet_name', read_only=True)
     
     class Meta:
         model = MedicalRecord
@@ -54,7 +54,7 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
 
 # ==================== VACCINATION SERIALIZER ====================
 class VaccinationSerializer(serializers.ModelSerializer):
-    patient_name = serializers.CharField(source='patient.name', read_only=True)
+    patient_name = serializers.CharField(source='patient.pet_name', read_only=True)
     
     class Meta:
         model = Vaccination
@@ -63,7 +63,7 @@ class VaccinationSerializer(serializers.ModelSerializer):
 
 # ==================== PAYMENT SERIALIZER ====================
 class PaymentSerializer(serializers.ModelSerializer):
-    patient_name = serializers.CharField(source='patient.name', read_only=True)
+    patient_name = serializers.CharField(source='patient.pet_name', read_only=True)
     
     class Meta:
         model = Payment
@@ -73,7 +73,7 @@ class PaymentSerializer(serializers.ModelSerializer):
 # ==================== LAB TEST SERIALIZER ====================
 if LabTest is not None:
     class LabTestSerializer(serializers.ModelSerializer):
-        patient_name = serializers.CharField(source='patient.name', read_only=True)
+        patient_name = serializers.CharField(source='patient.pet_name', read_only=True)
         
         class Meta:
             model = LabTest
@@ -86,7 +86,7 @@ else:
 # ==================== PASSBOOK SERIALIZERS ====================
 if Passbook is not None:
     class PassbookSerializer(serializers.ModelSerializer):
-        patient_name = serializers.CharField(source='patient.name', read_only=True)
+        patient_name = serializers.CharField(source='patient.pet_name', read_only=True)
         owner_name = serializers.CharField(source='patient.owner.name', read_only=True)
         
         class Meta:
@@ -95,7 +95,7 @@ if Passbook is not None:
     
     # Public version (for public viewing without authentication)
     class PassbookPublicSerializer(serializers.ModelSerializer):
-        patient_name = serializers.CharField(source='patient.name', read_only=True)
+        patient_name = serializers.CharField(source='patient.pet_name', read_only=True)
         owner_name = serializers.CharField(source='patient.owner.name', read_only=True)
         patient_details = serializers.SerializerMethodField()
         owner_details = serializers.SerializerMethodField()
@@ -111,7 +111,7 @@ if Passbook is not None:
         def get_patient_details(self, obj):
             if obj.patient:
                 return {
-                    'name': obj.patient.name,
+                    'name': obj.patient.pet_name,
                     'species': obj.patient.species,
                     'breed': obj.patient.breed,
                     'age': obj.patient.age,
@@ -158,7 +158,7 @@ class PrescriptionListSerializer(serializers.ModelSerializer):
     def get_patient_name(self, obj):
         try:
             if obj.medical_record and obj.medical_record.patient:
-                return obj.medical_record.patient.name
+                return obj.medical_record.patient.pet_name
             return 'Unknown'
         except:
             return 'Unknown'
@@ -206,7 +206,7 @@ class PrescriptionSerializer(serializers.ModelSerializer):
         """Get patient name safely with error handling."""
         try:
             if obj.medical_record and obj.medical_record.patient:
-                return obj.medical_record.patient.name
+                return obj.medical_record.patient.pet_name
             return 'Unknown'
         except Exception as e:
             print(f"❌ Error getting patient name: {e}")
