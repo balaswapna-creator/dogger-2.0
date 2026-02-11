@@ -101,79 +101,80 @@
                 </button>
               </div>
 
-              <div v-for="(medicine, index) in form.medicines" :key="index" class="medicine-card">
+              <div v-for="(medicine, index) in form.medicines" :key="index" class="medicine-form">
                 <div class="medicine-header">
-                  <span class="medicine-number">Medicine #{{ index + 1 }}</span>
+                  <span class="medicine-number">Medicine {{ index + 1 }}</span>
                   <button 
                     v-if="form.medicines.length > 1" 
                     type="button" 
                     @click="removeMedicine(index)" 
-                    class="btn-remove-medicine"
+                    class="btn-remove"
                   >
                     <i class="fas fa-times"></i>
                   </button>
                 </div>
 
-                <div class="medicine-fields">
+                <div class="form-row">
                   <div class="form-group">
-                    <label>Medication Name *</label>
+                    <label>Medicine Name *</label>
                     <input 
                       v-model="medicine.medication_name" 
                       type="text" 
-                      placeholder="e.g., Syrup Soft coat"
-                      required
+                      required 
+                      placeholder="e.g., Amoxicillin"
                     />
                   </div>
 
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label>Dosage *</label>
-                      <input 
-                        v-model="medicine.dosage" 
-                        type="text" 
-                        placeholder="e.g., 10ml, 2 tablets"
-                        required
-                      />
-                    </div>
+                  <div class="form-group">
+                    <label>Dosage *</label>
+                    <input 
+                      v-model="medicine.dosage" 
+                      type="text" 
+                      required 
+                      placeholder="e.g., 500mg"
+                    />
+                  </div>
+                </div>
 
-                    <div class="form-group">
-                      <label>Frequency *</label>
-                      <input 
-                        v-model="medicine.frequency" 
-                        type="text" 
-                        placeholder="e.g., Twice daily"
-                        required
-                      />
-                    </div>
-
-                    <div class="form-group">
-                      <label>Duration *</label>
-                      <input 
-                        v-model="medicine.duration" 
-                        type="text" 
-                        placeholder="e.g., 7 days"
-                        required
-                      />
-                    </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Frequency *</label>
+                    <input 
+                      v-model="medicine.frequency" 
+                      type="text" 
+                      required 
+                      placeholder="e.g., Twice daily"
+                    />
                   </div>
 
                   <div class="form-group">
-                    <label>Instructions</label>
-                    <textarea 
-                      v-model="medicine.instructions" 
-                      rows="2"
-                      placeholder="e.g., After meals, Before bedtime"
-                    ></textarea>
+                    <label>Duration *</label>
+                    <input 
+                      v-model="medicine.duration" 
+                      type="text" 
+                      required 
+                      placeholder="e.g., 7 days"
+                    />
                   </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Instructions (Optional)</label>
+                  <textarea 
+                    v-model="medicine.instructions" 
+                    placeholder="Special instructions..."
+                    rows="2"
+                  ></textarea>
                 </div>
               </div>
             </div>
 
-            <!-- Form Actions -->
-            <div class="form-actions">
-              <button type="button" @click="closeModal" class="btn-secondary">Cancel</button>
+            <div class="modal-footer">
+              <button type="button" @click="closeModal" class="btn-secondary">
+                Cancel
+              </button>
               <button type="submit" class="btn-primary">
-                {{ isEditMode ? 'Update' : 'Create' }} Prescription
+                <i class="fas fa-save"></i> {{ isEditMode ? 'Update' : 'Create' }} Prescription
               </button>
             </div>
           </form>
@@ -192,10 +193,12 @@
         <div class="modal-body" v-if="selectedPrescription">
           <div class="prescription-info">
             <div class="info-row">
-              <strong>Patient:</strong> {{ selectedPrescription.patient_name }}
+              <span class="label">Patient:</span>
+              <span class="value">{{ selectedPrescription.patient_name || 'Unknown' }}</span>
             </div>
             <div class="info-row">
-              <strong>Date:</strong> {{ formatDate(selectedPrescription.created_at) }}
+              <span class="label">Date:</span>
+              <span class="value">{{ formatDate(selectedPrescription.created_at) }}</span>
             </div>
           </div>
 
@@ -299,8 +302,9 @@ export default {
         const data = await apiRequest('GET', '/prescriptions/');
         // Handle paginated response
         prescriptions.value = Array.isArray(data) ? data : (data.results || []);
+        console.log('✅ Loaded prescriptions:', prescriptions.value.length);
       } catch (error) {
-        console.error('Error fetching prescriptions:', error);
+        console.error('❌ Error fetching prescriptions:', error);
         alert('Failed to load prescriptions');
       } finally {
         loading.value = false;
@@ -313,8 +317,10 @@ export default {
         const data = await apiRequest('GET', '/medical-records/');
         // Handle paginated response
         medicalRecords.value = Array.isArray(data) ? data : (data.results || []);
+        console.log('✅ Loaded medical records:', medicalRecords.value.length);
       } catch (error) {
-        console.error('Error fetching medical records:', error);
+        console.error('❌ Error fetching medical records:', error);
+        alert('Failed to load medical records');
       }
     };
 
@@ -328,6 +334,15 @@ export default {
 
     // Add medicine to form
     const addMedicine = () => {
+      // Validate last medicine before adding new one
+      const lastMedicine = form.value.medicines[form.value.medicines.length - 1];
+      
+      if (!lastMedicine.medication_name || !lastMedicine.dosage || 
+          !lastMedicine.frequency || !lastMedicine.duration) {
+        alert('Please complete the current medicine before adding another');
+        return;
+      }
+
       form.value.medicines.push({
         medication_name: '',
         dosage: '',
@@ -341,32 +356,86 @@ export default {
     const removeMedicine = (index) => {
       if (form.value.medicines.length > 1) {
         form.value.medicines.splice(index, 1);
+      } else {
+        alert('Prescription must have at least one medicine');
       }
     };
 
     // Save prescription
     const savePrescription = async () => {
       try {
+        // Validate form data
+        if (!form.value.medical_record) {
+          alert('Please select a consultation');
+          return;
+        }
+
+        // Validate medicines
+        if (!form.value.medicines || form.value.medicines.length === 0) {
+          alert('Please add at least one medicine');
+          return;
+        }
+
+        // Validate each medicine has required fields
+        const invalidMedicines = form.value.medicines.filter(med => 
+          !med.medication_name || !med.dosage || !med.frequency || !med.duration
+        );
+
+        if (invalidMedicines.length > 0) {
+          alert('Please fill all required fields for each medicine');
+          return;
+        }
+
+        // 🔥 CRITICAL FIX: Use 'medical_record' NOT 'medical_record_id'
         const payload = {
-          medical_record_id: form.value.medical_record,  // Send medical_record_id
-          medicines: form.value.medicines
+          medical_record: form.value.medical_record,  // ✅ Correct field name
+          medicines: form.value.medicines.map(med => ({
+            medication_name: med.medication_name.trim(),
+            dosage: med.dosage.trim(),
+            frequency: med.frequency.trim(),
+            duration: med.duration.trim(),
+            instructions: med.instructions ? med.instructions.trim() : ''
+          }))
         };
 
-        console.log('Saving prescription with payload:', payload);
+        console.log('📤 Sending prescription payload:', payload);
 
         if (isEditMode.value) {
-          await apiRequest('PUT', `/prescriptions/${selectedPrescription.value.id}/`, payload);
+          const response = await apiRequest('PUT', `/prescriptions/${selectedPrescription.value.id}/`, payload);
+          console.log('✅ Prescription updated:', response);
           alert('Prescription updated successfully');
         } else {
-          await apiRequest('POST', '/prescriptions/', payload);
+          const response = await apiRequest('POST', '/prescriptions/', payload);
+          console.log('✅ Prescription created:', response);
           alert('Prescription created successfully');
         }
 
         closeModal();
-        fetchPrescriptions();
+        await fetchPrescriptions();
       } catch (error) {
-        console.error('Error saving prescription:', error);
-        alert('Failed to save prescription: ' + (error.message || 'Unknown error'));
+        console.error('❌ Error saving prescription:', error);
+        
+        // Handle validation errors
+        if (error.response && error.response.data) {
+          const errorData = error.response.data;
+          console.error('Validation errors:', errorData);
+          
+          // Display specific error messages
+          let errorMessage = 'Failed to save prescription:\n\n';
+          if (typeof errorData === 'object') {
+            Object.keys(errorData).forEach(key => {
+              const message = Array.isArray(errorData[key]) 
+                ? errorData[key].join(', ') 
+                : errorData[key];
+              errorMessage += `${key}: ${message}\n`;
+            });
+          } else {
+            errorMessage += errorData;
+          }
+          alert(errorMessage);
+        } else {
+          alert('Failed to save prescription: ' + (error.message || 'Unknown error'));
+        }
       }
     };
 
@@ -378,14 +447,8 @@ export default {
 
     // Print prescription
     const printPrescription = (prescription) => {
-      console.log('Printing prescription:', prescription);
+      console.log('🖨️ Printing prescription:', prescription);
       console.log('Medicines array:', prescription.medicines);
-      console.log('Old format fields:', {
-        medication_name: prescription.medication_name,
-        dosage: prescription.dosage,
-        frequency: prescription.frequency,
-        duration: prescription.duration
-      });
       
       const printWindow = window.open('', '_blank');
       
@@ -420,91 +483,75 @@ export default {
             </div>
           </div>
         `;
-      } 
-      // No medicine data found
-      else {
-        console.error('No medicine data found in prescription!');
-        medicinesHtml = `
-          <div style="margin-bottom: 15px; padding: 10px; background: #fff3cd; border-left: 3px solid #ffc107;">
-            <div style="font-weight: bold; color: #856404;">No medicine information available</div>
-            <div style="margin-top: 10px; font-size: 12px; color: #856404;">
-              This prescription may have been created with incomplete data.
-            </div>
-          </div>
-        `;
+      } else {
+        console.warn('⚠️ No medicine data found in prescription!');
+        medicinesHtml = '<div style="color: #666; font-style: italic;">No medicines prescribed</div>';
       }
-
+      
       printWindow.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Prescription - ${prescription.patient_name || 'Unknown Patient'}</title>
+          <title>Prescription - ${prescription.patient_name || 'Unknown'}</title>
           <style>
             body {
               font-family: Arial, sans-serif;
-              padding: 40px;
+              padding: 20px;
               max-width: 800px;
               margin: 0 auto;
             }
             .header {
               text-align: center;
               border-bottom: 2px solid #333;
-              padding-bottom: 20px;
-              margin-bottom: 30px;
+              padding-bottom: 10px;
+              margin-bottom: 20px;
             }
-            .clinic-name {
-              font-size: 24px;
+            .info {
+              margin-bottom: 20px;
+            }
+            .info-row {
+              margin-bottom: 10px;
+            }
+            .label {
               font-weight: bold;
-              color: #2c3e50;
-            }
-            .rx-symbol {
-              font-size: 36px;
-              color: #4CAF50;
-              margin: 20px 0;
-            }
-            .patient-info {
-              margin-bottom: 30px;
-            }
-            .patient-info div {
-              margin: 5px 0;
-            }
-            .signature {
-              margin-top: 60px;
-              text-align: right;
+              display: inline-block;
+              width: 100px;
             }
             @media print {
-              body { padding: 20px; }
+              .no-print {
+                display: none;
+              }
             }
           </style>
         </head>
         <body>
           <div class="header">
-            <div class="clinic-name">Sri Adithya Pet Clinic</div>
-            <div>Veterinary Care & Services</div>
+            <h1>Prescription</h1>
           </div>
           
-          <div class="patient-info">
-            <div><strong>Patient:</strong> ${prescription.patient_name || 'Unknown'}</div>
-            <div><strong>Date:</strong> ${formatDate(prescription.created_at)}</div>
-          </div>
-          
-          <div class="rx-symbol">℞</div>
-          
-          <div class="medicines">
-            ${medicinesHtml}
-          </div>
-          
-          <div class="signature">
-            <div style="margin-top: 40px; border-top: 1px solid #333; display: inline-block; padding-top: 5px;">
-              Doctor's Signature
+          <div class="info">
+            <div class="info-row">
+              <span class="label">Patient:</span>
+              <span>${prescription.patient_name || 'Unknown'}</span>
             </div>
+            <div class="info-row">
+              <span class="label">Date:</span>
+              <span>${new Date(prescription.created_at).toLocaleDateString()}</span>
+            </div>
+          </div>
+          
+          <h2>Prescribed Medicines</h2>
+          ${medicinesHtml}
+          
+          <div style="margin-top: 40px; text-align: center;" class="no-print">
+            <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px;">
+              Print Prescription
+            </button>
           </div>
         </body>
         </html>
       `);
-      
       printWindow.document.close();
-      printWindow.print();
     };
 
     // Delete prescription
@@ -518,17 +565,18 @@ export default {
         alert('Prescription deleted successfully');
         fetchPrescriptions();
       } catch (error) {
-        console.error('Error deleting prescription:', error);
+        console.error('❌ Error deleting prescription:', error);
         alert('Failed to delete prescription');
       }
     };
 
-    // Close modals
+    // Close modal
     const closeModal = () => {
       showModal.value = false;
       resetForm();
     };
 
+    // Close view modal
     const closeViewModal = () => {
       showViewModal.value = false;
       selectedPrescription.value = null;
@@ -554,7 +602,7 @@ export default {
     const formatDate = (dateString) => {
       if (!dateString) return 'N/A';
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-IN', {
+      return date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric'
@@ -575,7 +623,6 @@ export default {
       isEditMode,
       selectedPrescription,
       form,
-      fetchPrescriptions,
       openNewPrescriptionModal,
       addMedicine,
       removeMedicine,
@@ -592,10 +639,12 @@ export default {
 </script>
 
 <style scoped>
+/* Main Container */
 .prescriptions-view {
   padding: 20px;
 }
 
+/* Page Header */
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -604,47 +653,92 @@ export default {
 }
 
 .page-header h1 {
-  font-size: 24px;
-  color: #2c3e50;
+  margin: 0;
+  color: #333;
 }
 
+/* Buttons */
 .btn-primary {
-  background: #4CAF50;
+  background-color: #4CAF50;
   color: white;
   border: none;
   padding: 10px 20px;
-  border-radius: 5px;
+  border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .btn-primary:hover {
-  background: #45a049;
+  background-color: #45a049;
 }
 
-.loading-state,
-.empty-state {
+.btn-secondary {
+  background-color: #757575;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: #616161;
+}
+
+.btn-view, .btn-print, .btn-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px 10px;
+  font-size: 16px;
+  transition: color 0.2s;
+}
+
+.btn-view {
+  color: #2196F3;
+}
+
+.btn-view:hover {
+  color: #1976D2;
+}
+
+.btn-print {
+  color: #FF9800;
+}
+
+.btn-print:hover {
+  color: #F57C00;
+}
+
+.btn-delete {
+  color: #f44336;
+}
+
+.btn-delete:hover {
+  color: #d32f2f;
+}
+
+/* Loading State */
+.loading-state {
   text-align: center;
-  padding: 60px 20px;
-  color: #7f8c8d;
+  padding: 40px;
+  color: #666;
 }
 
 .loading-state i {
-  font-size: 36px;
-  margin-bottom: 10px;
+  font-size: 24px;
+  margin-right: 10px;
 }
 
-.empty-state i {
-  font-size: 64px;
-  margin-bottom: 20px;
-  color: #bdc3c7;
-}
-
+/* Table */
 .prescriptions-table {
   background: white;
   border-radius: 8px;
-  overflow: hidden;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  overflow: hidden;
 }
 
 table {
@@ -653,33 +747,37 @@ table {
 }
 
 thead {
-  background: #f8f9fa;
+  background-color: #f5f5f5;
 }
 
 th {
   padding: 12px;
   text-align: left;
   font-weight: 600;
-  color: #2c3e50;
-  border-bottom: 2px solid #dee2e6;
+  color: #333;
+  border-bottom: 2px solid #ddd;
 }
 
 td {
   padding: 12px;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid #eee;
+}
+
+tbody tr:hover {
+  background-color: #f9f9f9;
 }
 
 .medicine-count {
-  background: #e3f2fd;
-  color: #1976d2;
-  padding: 4px 8px;
+  background-color: #E3F2FD;
+  color: #1976D2;
+  padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
 }
 
 .more-medicines {
-  color: #7f8c8d;
+  color: #666;
   font-size: 12px;
   margin-left: 5px;
 }
@@ -689,41 +787,35 @@ td {
   gap: 8px;
 }
 
-.btn-view,
-.btn-print,
-.btn-delete {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
 }
 
-.btn-view {
-  background: #2196F3;
-  color: white;
+.empty-state i {
+  font-size: 48px;
+  margin-bottom: 20px;
+  color: #ddd;
 }
 
-.btn-print {
-  background: #FF9800;
-  color: white;
+.empty-state p {
+  font-size: 18px;
+  margin-bottom: 20px;
 }
 
-.btn-delete {
-  background: #f44336;
-  color: white;
-}
-
+/* Modal */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   z-index: 1000;
 }
 
@@ -733,21 +825,21 @@ td {
   width: 90%;
   max-width: 800px;
   max-height: 90vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
+  padding: 20px;
+  border-bottom: 1px solid #eee;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #dee2e6;
 }
 
 .modal-header h2 {
   margin: 0;
-  font-size: 20px;
-  color: #2c3e50;
+  color: #333;
 }
 
 .close-btn {
@@ -755,22 +847,43 @@ td {
   border: none;
   font-size: 28px;
   cursor: pointer;
-  color: #7f8c8d;
+  color: #999;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  color: #333;
 }
 
 .modal-body {
   padding: 20px;
+  overflow-y: auto;
+  flex: 1;
 }
 
+.modal-footer {
+  padding: 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Form */
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 
 .form-group label {
   display: block;
   margin-bottom: 5px;
   font-weight: 500;
-  color: #2c3e50;
+  color: #333;
 }
 
 .form-group input,
@@ -783,12 +896,20 @@ td {
   font-size: 14px;
 }
 
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
 .form-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 15px;
 }
 
+/* Medicines Section */
 .medicines-section {
   margin-top: 20px;
 }
@@ -802,26 +923,32 @@ td {
 
 .section-header h3 {
   margin: 0;
-  font-size: 18px;
-  color: #2c3e50;
+  color: #333;
 }
 
 .btn-add-medicine {
-  background: #2196F3;
+  background-color: #2196F3;
   color: white;
   border: none;
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.medicine-card {
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
+.btn-add-medicine:hover {
+  background-color: #1976D2;
+}
+
+.medicine-form {
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
   padding: 15px;
   margin-bottom: 15px;
-  background: #fafafa;
 }
 
 .medicine-header {
@@ -834,67 +961,66 @@ td {
 .medicine-number {
   font-weight: 600;
   color: #4CAF50;
-  font-size: 16px;
 }
 
-.btn-remove-medicine {
-  background: #f44336;
+.btn-remove {
+  background-color: #f44336;
   color: white;
   border: none;
   padding: 4px 8px;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 12px;
 }
 
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #dee2e6;
+.btn-remove:hover {
+  background-color: #d32f2f;
 }
 
-.btn-secondary {
-  background: #6c757d;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.prescription-info {
-  background: #f8f9fa;
+/* View Modal */
+.view-modal .prescription-info {
+  background-color: #f9f9f9;
   padding: 15px;
   border-radius: 6px;
   margin-bottom: 20px;
 }
 
 .info-row {
-  margin-bottom: 8px;
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.info-row .label {
+  font-weight: 600;
+  width: 100px;
+  color: #666;
+}
+
+.info-row .value {
+  color: #333;
 }
 
 .medicines-list h3 {
+  margin-top: 0;
   margin-bottom: 15px;
-  color: #2c3e50;
+  color: #333;
 }
 
 .medicine-detail-card {
+  background-color: #f9f9f9;
+  border-left: 3px solid #4CAF50;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 4px;
   display: flex;
   gap: 15px;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  margin-bottom: 15px;
-  border-left: 4px solid #4CAF50;
 }
 
 .medicine-number-badge {
-  background: #4CAF50;
+  background-color: #4CAF50;
   color: white;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -909,19 +1035,18 @@ td {
 
 .medicine-details h4 {
   margin: 0 0 10px 0;
-  color: #2c3e50;
-  font-size: 16px;
+  color: #333;
 }
 
 .detail-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
 .detail-item {
   display: flex;
-  flex-direction: column;
+  gap: 8px;
 }
 
 .detail-item.full-width {
@@ -929,14 +1054,11 @@ td {
 }
 
 .detail-item .label {
-  font-size: 12px;
-  color: #7f8c8d;
-  margin-bottom: 2px;
+  font-weight: 600;
+  color: #666;
 }
 
 .detail-item .value {
-  font-size: 14px;
-  color: #2c3e50;
-  font-weight: 500;
+  color: #333;
 }
 </style>
